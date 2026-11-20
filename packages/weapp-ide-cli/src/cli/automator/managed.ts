@@ -6,7 +6,6 @@ import { beginManagedWechatProject } from '../../devtoolsProjectOwnership'
 import { assertWechatDevtoolsPort } from '../../devtoolsTarget'
 import { startWechatIdeAgent } from '../agentStart'
 import { populateAutomatorProjectSnapshot, readAutomatorProjectPlan } from '../automatorProject'
-import { importManagedDevtoolsProject } from '../projectImport'
 import { persistAutomatorSession } from './sessionStore'
 
 interface ManagedAutomatorOptions {
@@ -80,14 +79,6 @@ export async function launchManagedAutomator(options: ManagedAutomatorOptions): 
       await intent.prepareSnapshot(async destination => await populateAutomatorProjectSnapshot(snapshotPlan, destination))
       scope.throwIfAborted()
     }
-    await scope.step(() => importManagedDevtoolsProject({
-      cliPath: target.cliPath,
-      projectPath,
-      trusted: options.trustProject,
-      timeout: scope.remainingMs(),
-      signal: scope.signal,
-    }), { stage: 'project-import' })
-    scope.throwIfAborted()
     portLease = await scope.step(() => acquireAutomatorPortLease(port), {
       stage: 'port-lease',
       disposeLate: lease => lease.release(),
@@ -103,6 +94,7 @@ export async function launchManagedAutomator(options: ManagedAutomatorOptions): 
       throw new Error('DEVTOOLS_MANAGED_PROJECT_JOURNAL_REQUIRED: managed launch requires a project ownership journal.')
     }
     scope.throwIfAborted()
+    // 由官方 agent start 加载项目并返回窗口回执，避免依赖项目列表的导入回执。
     await startWechatIdeAgent({
       target,
       projectPath,

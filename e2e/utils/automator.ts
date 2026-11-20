@@ -13,7 +13,6 @@ import { execa } from 'execa'
 import { runWechatIdeEngineBuildByHttp } from '../../packages/weapp-ide-cli/src/cli/engine'
 import { openWechatIdeProjectByHttp, resetWechatIdeFileUtilsByHttp } from '../../packages/weapp-ide-cli/src/cli/http'
 import { ensureManagedWechatProject } from '../../packages/weapp-ide-cli/src/cli/managedProjectGate'
-import { importManagedDevtoolsProject } from '../../packages/weapp-ide-cli/src/cli/projectImport'
 import { getRuntimeWechatDevtoolsServicePort, setRuntimeWechatDevtoolsServicePort } from '../../packages/weapp-ide-cli/src/cli/wechatDevtoolsRuntimePort'
 import { cleanupManagedWechatProjects, closeManagedWechatProject, MANAGED_PROJECT_JOURNAL_ENV } from '../../packages/weapp-ide-cli/src/devtoolsProjectOwnership'
 import { normalizeRuntimeConsoleText } from '../ide/runtimeErrors'
@@ -3004,17 +3003,6 @@ function launchDevtoolsAutomator(options: LaunchAutomatorOptions, launchGuard: T
             }
             await lifecycle.step(() => waitForBridgeWrapperWarmupAsset(bridgeWrapperProject, resolvedWarmupRoute, project))
             const launchProjectPath = bridgeWrapperProject?.path ?? rest.projectPath
-            if (launchProjectPath) {
-              await assertLaunchAllowed()
-              await lifecycle.step(() => importManagedDevtoolsProject({
-                cliPath: selectedTarget.cliPath,
-                projectPath: launchProjectPath,
-                trusted: resolvedTrustProject,
-                timeout: lifecycle.remainingMs(launchTimeout),
-                signal: lifecycle.signal,
-              }))
-              lifecycle.throwIfAborted()
-            }
             const launchRest = {
               ...rest,
               ...(launchProjectPath ? { projectPath: launchProjectPath } : {}),

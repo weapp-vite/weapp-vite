@@ -7,7 +7,6 @@ const mocks = vi.hoisted(() => ({
   assertPort: vi.fn(async () => {}),
   begin: vi.fn(),
   command: vi.fn(),
-  importProject: vi.fn(async () => {}),
   lease: vi.fn(),
   persist: vi.fn(async (_session: unknown) => {}),
   plan: vi.fn(),
@@ -20,7 +19,6 @@ vi.mock('@weapp-vite/miniprogram-automator', () => ({ acquireAutomatorPortLease:
 vi.mock('../../devtoolsProjectOwnership', () => ({ beginManagedWechatProject: mocks.begin }))
 vi.mock('../../devtoolsTarget', () => ({ assertWechatDevtoolsPort: mocks.assertPort }))
 vi.mock('../agentStart', () => ({ startWechatIdeAgent: mocks.start }))
-vi.mock('../projectImport', () => ({ importManagedDevtoolsProject: mocks.importProject }))
 vi.mock('../automatorProject', () => ({ readAutomatorProjectPlan: mocks.plan, populateAutomatorProjectSnapshot: mocks.populate }))
 vi.mock('./sessionStore', () => ({ persistAutomatorSession: mocks.persist }))
 
@@ -83,29 +81,6 @@ beforeEach(() => {
 })
 
 describe('managed automator port ownership', () => {
-  it('initializes the resolved project with the selected installation before creating a window intent', async () => {
-    const scope = createScope()
-    await launchManagedAutomator({ ...options, launcher: { connect: vi.fn(async () => createProgram()) } as any, scope, target })
-    expect(mocks.importProject).toHaveBeenCalledExactlyOnceWith({
-      cliPath: target.cliPath,
-      projectPath: options.projectPath,
-      trusted: true,
-      timeout: 10_000,
-      signal: scope.signal,
-    })
-    expect(mocks.importProject.mock.invocationCallOrder[0]).toBeLessThan(mocks.begin.mock.invocationCallOrder[0]!)
-    expect(mocks.start.mock.calls[0]![0]).not.toHaveProperty('onBeforeDispatch')
-  })
-
-  it('does not acquire a port or create a window when official initialization fails', async () => {
-    const failure = new Error('official import failed')
-    mocks.importProject.mockRejectedValue(failure)
-    await expect(launchManagedAutomator({ ...options, launcher: { connect: vi.fn() } as any, scope: createScope(), target })).rejects.toBe(failure)
-    expect(mocks.lease).not.toHaveBeenCalled()
-    expect(mocks.begin).not.toHaveBeenCalled()
-    expect(mocks.start).not.toHaveBeenCalled()
-  })
-
   it('leases the selected port before starting the IDE and releases it on session close', async () => {
     const scope = createScope()
     const program = createProgram()
@@ -114,7 +89,17 @@ describe('managed automator port ownership', () => {
     const connected = await launchManagedAutomator({ ...options, launcher, scope, target })
 
     expect(mocks.lease).toHaveBeenCalledExactlyOnceWith(options.port)
-    expect(mocks.begin.mock.invocationCallOrder[0]).toBeLessThan(mocks.start.mock.invocationCallOrder[0]!)
+    expect(mocks.lease).toHaveBeenCalledBefore(mocks.begin)
+    expect(mocks.begin).toHaveBeenCalledBefore(mocks.start)
+    expect(mocks.start).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({
+      target,
+      projectPath: options.projectPath,
+      port: options.port,
+      trustProject: true,
+      signal: scope.signal,
+      timeout: 10_000,
+    }))
+    expect(mocks.start.mock.calls[0]![0]).not.toHaveProperty('onBeforeDispatch')
     expect(mocks.release).not.toHaveBeenCalled()
     await connected.disconnect()
     expect(mocks.release).toHaveBeenCalledOnce()
@@ -185,7 +170,7 @@ describe('managed automator port ownership', () => {
     expect(mocks.release).toHaveBeenCalledOnce()
   })
 
-  it('reserves and prepares an exclusive W before importing it, then dispatches exactly one start', async () => {
+  it('prepares the owned snapshot before dispatching exactly one agent start', async () => {
     const owner = createOwner()
     owner.projectPath = path.resolve('fixture-journal', 'snapshots', 'current-owner')
     const plan = { sourceProjectPath: options.projectPath, distRoot: path.join(options.projectPath, 'dist'), projectConfig: { compileType: 'plugin' } }
@@ -196,7 +181,8 @@ describe('managed automator port ownership', () => {
     expect(mocks.begin).toHaveBeenCalledExactlyOnceWith({ target, projectPath: options.projectPath, port: options.port, snapshotProject: true })
     expect(mocks.begin.mock.invocationCallOrder[0]).toBeLessThan(mocks.populate.mock.invocationCallOrder[0]!)
     expect(mocks.populate).toHaveBeenCalledExactlyOnceWith(plan, owner.projectPath)
-    expect(mocks.populate.mock.invocationCallOrder[0]).toBeLessThan(mocks.importProject.mock.invocationCallOrder[0]!)
+    expect(mocks.populate).toHaveBeenCalledBefore(mocks.start)
+    expect(mocks.start).toHaveBeenCalledOnce()
     expect(owner.markLaunchDispatched).toHaveBeenCalledOnce()
     expect(mocks.start.mock.invocationCallOrder[0]).toBeLessThan(owner.markLaunchDispatched.mock.invocationCallOrder[0]!)
     expect(owner.markLaunchDispatched.mock.invocationCallOrder[0]).toBeLessThan(mocks.command.mock.invocationCallOrder[0]!)
@@ -236,13 +222,12 @@ describe('managed automator port ownership', () => {
     expect(mocks.release).toHaveBeenCalledOnce()
   })
 
-  it('does not populate W or import a project when its owner budget is rejected', async () => {
+  it('does not populate or start the snapshot when its window budget is rejected', async () => {
     mocks.plan.mockResolvedValue({ sourceProjectPath: options.projectPath, distRoot: path.join(options.projectPath, 'dist'), projectConfig: {} })
     const failure = new Error('window budget exhausted')
     mocks.begin.mockRejectedValue(failure)
     await expect(launchManagedAutomator({ ...options, launcher: { connect: vi.fn() } as any, scope: createScope(), target })).rejects.toBe(failure)
     expect(mocks.populate).not.toHaveBeenCalled()
-    expect(mocks.importProject).not.toHaveBeenCalled()
     expect(mocks.lease).not.toHaveBeenCalled()
     expect(mocks.start).not.toHaveBeenCalled()
   })
