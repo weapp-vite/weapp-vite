@@ -56,10 +56,11 @@ describe.each(['classic', 'stateful-experimental'] as const)('issue #1134 native
     else {
       miniProgram = await reconnectAutomator(miniProgram!)
     }
-    // 重连可能早于 IDE 自动重载；确认新 App 及其页面就绪后才执行既有导航。
-    await waitForAppReload(miniProgram!, marker, '.profile-root')
-    if (!publication.stateful) {
-      await publication.assertClassicRuntime(miniProgram!)
+    // 配置切换可以先启动旧 stateful 产物，需在同一个新 App 上确认原生根和交付模式。
+    const requireClassic = !publication.stateful
+    await waitForAppReload(miniProgram!, marker, '.profile-root', { requireClassic })
+    if (requireClassic) {
+      await publication.assertClassicOutput()
     }
   }
 

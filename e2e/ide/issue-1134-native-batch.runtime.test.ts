@@ -75,9 +75,9 @@ describe.each(['classic', 'stateful-experimental'] as const)('issue #1134 native
     else {
       miniProgram = await reconnectAutomator(miniProgram!)
     }
-    // 协议重连不证明引擎已更新；任何后续导航前先核对 App 替换和原生根。
-    await waitForAppReload(miniProgram!, marker, '#batch')
-    await publication.assertClassicRuntime(miniProgram!)
+    // 配置切换可以先启动旧 stateful 产物，需在同一个新 App 上确认原生根和 classic 模式。
+    await waitForAppReload(miniProgram!, marker, '#batch', { requireClassic: true })
+    await publication.assertClassicOutput()
   }
 
   async function assertCurrentBatch(marker: string) {
