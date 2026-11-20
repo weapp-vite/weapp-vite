@@ -41,6 +41,7 @@ async function loadSuite(provider = 'devtools') {
   const dev = {
     stop: vi.fn(async () => release('dev')),
     waitFor: vi.fn(async () => {}),
+    waitForInitialBuild: vi.fn(async () => {}),
   }
   const launch = vi.fn(async () => session)
   const startDev = vi.fn(() => dev)
@@ -103,6 +104,8 @@ afterEach(() => {
 
 it('releases each resource in order and clears the session and dev references', async () => {
   const suite = await loadSuite()
+  expect(suite.dev.waitForInitialBuild).toHaveBeenCalledOnce()
+  expect(suite.dev.waitForInitialBuild).toHaveBeenCalledBefore(suite.launch)
   await suite.teardown!()
   expect(suite.events).toEqual(cleanupOrder)
   expect(suite.session.disconnect).toHaveBeenCalledOnce()
