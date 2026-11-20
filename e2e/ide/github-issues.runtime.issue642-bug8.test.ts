@@ -1,6 +1,7 @@
 import { fs } from '@weapp-core/shared/node'
 import path from 'pathe'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { findMarkupElements } from '../ci/githubIssuesBuild/markup'
 import { createDomAcceptance } from '../utils/domAcceptance'
 import {
   callRoutePageMethodWithOptions,
@@ -64,7 +65,7 @@ async function expectIssue642Bug8DistWxmlContract() {
   expect(pageWxml).toContain('generic:scoped-slots-default=')
   expect(pageWxml).toContain('vue-slots="{{ {default:true} }}"')
   expect(pageWxml).toContain('__wvSlotOwnerId="{{__wvOwnerId || \'\'}}"')
-  expect(pageWxml).toContain('<issue642-bug8-wrap id="issue642-bug8-wrap"')
+  expect(findMarkupElements(pageWxml, 'issue642-bug8-wrap').map(node => node.attribs.id)).toContain('issue642-bug8-wrap')
 
   expect(wrapWxml).toContain('id="issue642-bug8-wrapped-cell"')
   expect(wrapWxml).toContain('generic:scoped-slots-default=')
