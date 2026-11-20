@@ -1,4 +1,7 @@
 import { randomUUID } from 'node:crypto'
+import { WEAPP_VITE_STATEFUL_HMR_BRIDGE_KEY, WEAPP_VITE_STATEFUL_HMR_CLIENT_KEY, WEAPP_VITE_STATEFUL_HMR_CONTROL_KEY } from '@weapp-core/constants'
+
+const statefulKeys = [WEAPP_VITE_STATEFUL_HMR_BRIDGE_KEY, WEAPP_VITE_STATEFUL_HMR_CLIENT_KEY, WEAPP_VITE_STATEFUL_HMR_CONTROL_KEY]
 
 interface AppReloadSession {
   evaluateWithOptions: (fn: (...args: any[]) => unknown, options: { timeout: number }, ...args: unknown[]) => Promise<unknown>
@@ -17,6 +20,7 @@ interface AppReloadSnapshot {
   route: string
   width: number
   height: number
+  statefulGlobals?: string[]
 }
 
 /** 在改源前标记当前 App；另一次协议回读确认标记确实保留在同一宿主实例上。 */
@@ -43,7 +47,7 @@ export async function captureAppReloadMarker(session: AppReloadSession): Promise
   return marker
 }
 
-function readAppReloadSnapshot(marker: AppReloadMarker, rootSelector: string): Promise<AppReloadSnapshot> {
+function readAppReloadSnapshot(marker: AppReloadMarker, rootSelector: string, keys?: string[]): Promise<AppReloadSnapshot> {
   return new Promise((resolve, reject) => {
     const snapshot: AppReloadSnapshot = {
       appPresent: false,
@@ -84,6 +88,11 @@ function readAppReloadSnapshot(marker: AppReloadMarker, rootSelector: string): P
         snapshot.height = Number(node?.height ?? 0)
         snapshot.rootVisible = snapshot.width > 0 && snapshot.height > 0
         snapshot.appReplaced = token !== marker.token
+        if (keys) {
+          const globals = globalThis as Record<string, unknown>
+          const host = wx as unknown as Record<string, unknown>
+          snapshot.statefulGlobals = keys.filter(key => globals[key] || host[key])
+        }
         resolve(snapshot)
       }
       catch (error) {
@@ -113,7 +122,7 @@ export async function waitForAppReload(
   session: AppReloadSession,
   marker: AppReloadMarker,
   rootSelector: string,
-  timeoutMs = 30_000,
+  { timeoutMs = 30_000, requireClassic = false } = {},
 ): Promise<AppReloadSnapshot> {
   const deadline = Date.now() + timeoutMs
   let latest: unknown
@@ -125,9 +134,10 @@ export async function waitForAppReload(
     try {
       const result = await session.evaluateWithOptions(readAppReloadSnapshot, {
         timeout: readTimeout,
-      }, marker, rootSelector) as AppReloadSnapshot | null | undefined
+      }, marker, rootSelector, requireClassic ? statefulKeys : undefined) as AppReloadSnapshot | null | undefined
       latest = result
-      if (result?.appPresent === true && result.appReplaced === true && result.pagePresent === true && result.rootVisible === true) {
+      if (result?.appPresent === true && result.appReplaced === true && result.pagePresent === true && result.rootVisible === true
+        && (!requireClassic || result.statefulGlobals?.length === 0)) {
         return result
       }
     }
@@ -139,5 +149,5 @@ export async function waitForAppReload(
       await new Promise(resolve => setTimeout(resolve, Math.min(200, remaining)))
     }
   }
-  throw new Error(`Timed out waiting for a replaced App and visible root ${rootSelector}; latest=${JSON.stringify(latest)}`)
+  throw new Error(`Timed out waiting for a replaced ${requireClassic ? 'classic ' : ''}App and visible root ${rootSelector}; latest=${JSON.stringify(latest)}`)
 }

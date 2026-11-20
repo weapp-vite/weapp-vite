@@ -1,4 +1,5 @@
 import vm from 'node:vm'
+import { WEAPP_VITE_STATEFUL_HMR_BRIDGE_KEY, WEAPP_VITE_STATEFUL_HMR_CLIENT_KEY } from '@weapp-core/constants'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { assertAppRetained, captureAppReloadMarker, waitForAppReload } from './appReload'
 
@@ -100,7 +101,7 @@ describe('App reload boundary', () => {
   it('does not treat a visible page on the old App as a completed reload', async () => {
     const host = createHost()
     const marker = await captureAppReloadMarker(host.session)
-    const outcome = expect(waitForAppReload(host.session, marker, '.root', 500)).rejects.toThrow('Timed out')
+    const outcome = expect(waitForAppReload(host.session, marker, '.root', { timeoutMs: 500 })).rejects.toThrow('Timed out')
     await vi.advanceTimersByTimeAsync(500)
     await outcome
     expect(host.query.select).toHaveBeenCalledWith('.root')
@@ -114,7 +115,7 @@ describe('App reload boundary', () => {
     host.replaceApp()
     host.setSize({ width: 0, height: 0 })
     const fulfilled = vi.fn()
-    const pending = waitForAppReload(host.session, marker, '.root', 1_000).then(fulfilled)
+    const pending = waitForAppReload(host.session, marker, '.root', { timeoutMs: 1_000 }).then(fulfilled)
     await vi.advanceTimersByTimeAsync(400)
     expect(fulfilled).not.toHaveBeenCalled()
     host.setSize({ width: 100, height: 20 })
@@ -134,6 +135,31 @@ describe('App reload boundary', () => {
     expect(host.session.reLaunch).not.toHaveBeenCalled()
     expect(host.session.compile).not.toHaveBeenCalled()
     expect(host.session.disconnect).not.toHaveBeenCalled()
+  })
+
+  it('waits for classic when the config reload first runs the old stateful App', async () => {
+    const host = createHost()
+    const marker = await captureAppReloadMarker(host.session)
+    host.replaceApp()
+    vi.stubGlobal(WEAPP_VITE_STATEFUL_HMR_CLIENT_KEY, {})
+    const wxHost = { ...wx, [WEAPP_VITE_STATEFUL_HMR_BRIDGE_KEY]: {} }
+    vi.stubGlobal('wx', wxHost)
+
+    const fulfilled = vi.fn()
+    const pending = waitForAppReload(host.session, marker, '.root', { timeoutMs: 1_000, requireClassic: true }).then(fulfilled)
+    await vi.advanceTimersByTimeAsync(200)
+    expect(fulfilled).not.toHaveBeenCalled()
+    vi.stubGlobal(WEAPP_VITE_STATEFUL_HMR_CLIENT_KEY, undefined)
+    await vi.advanceTimersByTimeAsync(200)
+    expect(fulfilled).not.toHaveBeenCalled()
+
+    host.replaceApp()
+    vi.stubGlobal('wx', { ...wxHost, [WEAPP_VITE_STATEFUL_HMR_BRIDGE_KEY]: undefined })
+    await vi.advanceTimersByTimeAsync(200)
+    await pending
+    expect(fulfilled).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ appReplaced: true, rootVisible: true, statefulGlobals: [] }))
+    expect(host.session.reLaunch).not.toHaveBeenCalled()
+    expect(host.session.compile).not.toHaveBeenCalled()
   })
 
   it('creates selector options in the host realm while evaluating reload readiness', async () => {
@@ -157,7 +183,7 @@ describe('App reload boundary', () => {
     })
     const marker = await captureAppReloadMarker(host.session)
     host.replaceApp()
-    const pending = waitForAppReload(host.session, marker, '.root', 500).catch(error => error)
+    const pending = waitForAppReload(host.session, marker, '.root', { timeoutMs: 500 }).catch(error => error)
     await vi.advanceTimersByTimeAsync(500)
     expect(await pending).toEqual({ appPresent: true, appReplaced: true, pagePresent: true, rootVisible: true, route: page.route, width: 100, height: 20 })
     expect(host.query.in).toHaveBeenCalledWith(page)
@@ -180,7 +206,7 @@ describe('App reload boundary', () => {
       }
       callback([{ width: 100, height: 20 }])
     })
-    const outcome = expect(waitForAppReload(host.session, marker, '.root', 500)).rejects.toThrow('Timed out')
+    const outcome = expect(waitForAppReload(host.session, marker, '.root', { timeoutMs: 500 })).rejects.toThrow('Timed out')
     await vi.advanceTimersByTimeAsync(500)
     await outcome
     expect(host.session.reLaunch).not.toHaveBeenCalled()
@@ -209,7 +235,7 @@ describe('App reload boundary', () => {
     if (failure === 'protocol failed') {
       host.session.evaluateWithOptions.mockRejectedValue(new Error('protocol failed'))
     }
-    const outcome = expect(waitForAppReload(host.session, marker, '.root', 500)).rejects.toThrow('Timed out')
+    const outcome = expect(waitForAppReload(host.session, marker, '.root', { timeoutMs: 500 })).rejects.toThrow('Timed out')
     await vi.advanceTimersByTimeAsync(500)
     await outcome
     expect(host.session.reLaunch).not.toHaveBeenCalled()
@@ -220,7 +246,7 @@ describe('App reload boundary', () => {
     const marker = await captureAppReloadMarker(host.session)
     host.replaceApp()
     host.session.evaluateWithOptions.mockRejectedValueOnce(new Error('AppService restarting'))
-    const pending = waitForAppReload(host.session, marker, '.root', 500)
+    const pending = waitForAppReload(host.session, marker, '.root', { timeoutMs: 500 })
     await vi.advanceTimersByTimeAsync(200)
     await expect(pending).resolves.toMatchObject({ appReplaced: true, rootVisible: true })
     const timeoutValues = host.session.evaluateWithOptions.mock.calls.slice(2).map(([, options]) => options.timeout)
@@ -234,9 +260,9 @@ describe('App reload boundary', () => {
     host.session.evaluateWithOptions.mockImplementation((_fn, { timeout }) => new Promise((_resolve, reject) => {
       setTimeout(() => reject(new Error('App.callFunction timed out')), timeout)
     }))
-    const outcome = expect(waitForAppReload(host.session, marker, '.root', 500)).rejects.toThrow('App.callFunction timed out')
+    const outcome = expect(waitForAppReload(host.session, marker, '.root', { timeoutMs: 500 })).rejects.toThrow('App.callFunction timed out')
     await vi.advanceTimersByTimeAsync(500)
     await outcome
-    expect(host.session.evaluateWithOptions).toHaveBeenLastCalledWith(expect.any(Function), { timeout: 500 }, marker, '.root')
+    expect(host.session.evaluateWithOptions).toHaveBeenLastCalledWith(expect.any(Function), { timeout: 500 }, marker, '.root', undefined)
   })
 })

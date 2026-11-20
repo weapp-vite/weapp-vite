@@ -1,7 +1,7 @@
 import { readdir, readFile, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import process from 'node:process'
-import { WEAPP_VITE_STATEFUL_HMR_CLIENT_KEY } from '@weapp-core/constants'
+import { WEAPP_VITE_STATEFUL_HMR_BRIDGE_KEY, WEAPP_VITE_STATEFUL_HMR_CLIENT_KEY, WEAPP_VITE_STATEFUL_HMR_CONTROL_KEY } from '@weapp-core/constants'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { launchAutomator, reconnectAutomator } from '../utils/automator'
 import { startDevProcess } from '../utils/dev-process'
@@ -18,6 +18,7 @@ import { cleanupTemporaryRuntimeProject } from '../utils/temporaryRuntimeProject
 const route = '/pages/home/index'
 const fixture = 'e2e-apps/github-issues/fixtures/issue-1065'
 const instanceKey = '__e2eIssue1065Instance'
+const statefulKeys = [WEAPP_VITE_STATEFUL_HMR_BRIDGE_KEY, WEAPP_VITE_STATEFUL_HMR_CLIENT_KEY, WEAPP_VITE_STATEFUL_HMR_CONTROL_KEY]
 const colors = ['#ff0000', '#0000ff', '#00ff00', '#ff0000']
 const computed = ['rgb(255, 0, 0)', 'rgb(0, 0, 255)', 'rgb(0, 255, 0)', 'rgb(255, 0, 0)']
 
@@ -84,11 +85,25 @@ describe('issue #1065: third-party compiler runtime', { concurrent: false }, () 
       // 只重连原 owner，自动重载证据形成前不导航、不编译、不另开窗口。
       host = await reconnectAutomator(host!)
     }
-    await expect.poll(() => host!.evaluate((key: string) => {
+    // 配置切换可以先重建一次旧 stateful 产物；两项证据必须来自同一次运行时观察。
+    await expect.poll(() => host!.evaluate((key: string, keys: string[]) => {
       const pages = getCurrentPages()
-      return { page: Boolean((pages[pages.length - 1] as any)?.[key]), app: Boolean((getApp() as any)[key]) }
-    }, instanceKey), { timeout: 45_000 }).toEqual({ page: false, app: false })
-    await publication.assertClassicRuntime(host!)
+      const page = pages[pages.length - 1] as ({ route?: string } & Record<string, unknown>) | undefined
+      const app = getApp() as Record<string, unknown> | undefined
+      const globals = globalThis as typeof globalThis & Record<string, unknown>
+      return {
+        route: page?.route,
+        pageMarker: Boolean(page?.[key]),
+        appMarker: app ? Boolean(app[key]) : undefined,
+        stateful: keys.map(key => ({ global: Boolean(globals[key]), host: Boolean((globals.wx as Record<string, unknown> | undefined)?.[key]) })),
+      }
+    }, instanceKey, statefulKeys), { timeout: 45_000 }).toEqual({
+      route: route.slice(1),
+      pageMarker: false,
+      appMarker: false,
+      stateful: statefulKeys.map(() => ({ global: false, host: false })),
+    })
+    await publication.assertClassicOutput()
   }
 
   async function saveStyle(color: string, index: number, mixed = false) {
