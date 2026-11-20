@@ -87,13 +87,13 @@ it.each([false, true])('hands the asset lease to classic only after every old re
   await closing.promise
   expect(activate).not.toHaveBeenCalled()
   expect(handoff).not.toHaveBeenCalled()
-  expect(await fs.readJSON(configPath)).toMatchObject({ setting: { compileHotReLoad: false } })
+  expect((await fs.readJSON(configPath) as { setting: { compileHotReLoad: boolean } }).setting.compileHotReLoad).toBe(true)
   release.resolve()
   await task
   expect(activate).not.toHaveBeenCalled()
   expect(handoff).toHaveBeenCalledExactlyOnceWith(configPath, { assetOwner: expect.any(String), outDir: ctx.configService!.outDir })
   expect(runtime.classicIdeConfig.hasPendingAssetHandoff(configPath, ctx.configService!.outDir)).toBe(true)
-  expect(await fs.readJSON(configPath)).toMatchObject({ setting: { compileHotReLoad: false } })
+  expect((await fs.readJSON(configPath) as { setting: { compileHotReLoad: boolean } }).setting.compileHotReLoad).toBe(true)
   expect(await runtime.classicIdeConfig.readRequested(configPath)).toBe(original)
   // 完整 classic 原生发布才激活交接；关闭旧 adapter 本身不能提前改变 IDE 重载模式。
   expect(await runtime.classicIdeConfig.activatePendingAssetHandoff(configPath, ctx.configService!.outDir)).toBe(true)
@@ -193,8 +193,7 @@ it.each([
     },
   } as unknown as MutableCompilerContext
   const assertRule = async () => {
-    const config = await fs.readJSON(configPath) as { setting: { compileHotReLoad: boolean }, watchOptions: { ignore: string[] } }
-    expect(config.setting.compileHotReLoad).toBe(false)
+    const config = await fs.readJSON(configPath) as { watchOptions: { ignore: string[] } }
     const ignored = picomatch(config.watchOptions.ignore)
     const prefix = multiPlatform ? 'weapp' : 'dist'
     expect(ignored(`${prefix}/resources/changed.png`)).toBe(true)

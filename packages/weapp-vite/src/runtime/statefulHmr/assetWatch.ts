@@ -1,6 +1,4 @@
 import type { ClassicIdeConfigOwner } from '../classicIdeConfig'
-import type { IdeAssetWatchLease } from '../classicIdeConfig/assetLease'
-import type { PrivateIdeConfig } from '../classicIdeConfig/document'
 import type { StatefulHmrOutputFile } from './outputWriter'
 import { Buffer } from 'node:buffer'
 import { randomUUID } from 'node:crypto'
@@ -16,9 +14,16 @@ interface WatchConfig {
   [key: string]: unknown
 }
 
-interface PrivateConfig extends PrivateIdeConfig {
+interface PrivateConfig {
   watchOptions?: WatchConfig
   [key: string]: unknown
+}
+
+interface WatchLease {
+  owner?: string
+  original: string | null
+  installed: PrivateConfig
+  added: string[]
 }
 
 /** IDE 会用监听索引校验 JSON 声明的资源，保守保留这些文件名及主题配置中的资源。 */
@@ -76,9 +81,8 @@ export async function installIdeAssetWatch(options: {
   outDir: string
   inheritedWatchOptions?: WatchConfig
   output?: StatefulHmrOutputFile[]
-  classicOwner?: ClassicIdeConfigOwner
 }): Promise<(classic?: ClassicIdeConfigOwner) => Promise<void>> {
-  const { configPath, outDir, classicOwner } = options
+  const { configPath, outDir } = options
   const classicJournal = classicIdeConfigLeasePath(configPath)
   if (await fs.pathExists(classicJournal)) {
     throw new Error('[weapp-vite] IDE classic 配置已由其他 owner 持有，拒绝安装 stateful 资产监听。')
@@ -91,10 +95,6 @@ export async function installIdeAssetWatch(options: {
   }
   const original = await readIdeConfig(configPath)
   const config = parseIdeConfig(original) as PrivateConfig
-  if (classicOwner) {
-    // IDE 会在设置变化时立即重启 AppService，在首轮 stateful 写出前接管该开关。
-    config.setting = { ...config.setting, compileHotReLoad: false }
-  }
   const previous = config.watchOptions?.ignore ?? []
   const inherited = config.watchOptions ? [] : options.inheritedWatchOptions?.ignore ?? []
   const pattern = `${relative ? `${relative}/` : ''}${assetPattern(options.output ?? [])}`
@@ -106,8 +106,7 @@ export async function installIdeAssetWatch(options: {
   const owner = randomUUID()
   const journal = ideAssetWatchLeasePath(configPath)
   await fs.ensureDir(path.dirname(journal))
-  await fs.writeFile(journal, JSON.stringify({ owner, original, installed: config, added, ...(classicOwner ? { suppressScriptHotReload: true } : {}) } satisfies IdeAssetWatchLease), { flag: 'wx' })
-  const untrack = classicOwner?.trackActiveAssetWatch(configPath, owner)
+  await fs.writeFile(journal, JSON.stringify({ owner, original, installed: config, added } satisfies WatchLease), { flag: 'wx' })
   let writeStarted = false
   try {
     if (await fs.pathExists(classicJournal)) {
@@ -122,7 +121,7 @@ export async function installIdeAssetWatch(options: {
         await restoreIdeAssetWatch(configPath, owner)
       }
       else {
-        const saved = await fs.readJSON(journal) as IdeAssetWatchLease
+        const saved = await fs.readJSON(journal) as WatchLease
         if (saved.owner !== owner) {
           throw new Error('[weapp-vite] IDE 资产配置租约身份已改变，拒绝释放其他 owner。')
         }
@@ -132,11 +131,8 @@ export async function installIdeAssetWatch(options: {
     catch (cleanupError) {
       throw new AggregateError([error, cleanupError], 'IDE asset config installation and cleanup failed', { cause: error })
     }
-    finally {
-      untrack?.()
-    }
     throw error
   }
   let closing: Promise<void> | undefined
-  return classic => closing ??= restoreIdeAssetWatch(configPath, owner, classic, outDir).finally(untrack)
+  return classic => closing ??= restoreIdeAssetWatch(configPath, owner, classic, outDir)
 }

@@ -11,6 +11,7 @@ import { createStatefulHmrServerState, transitionStatefulHmrServer } from './ser
 
 const endpointPath = '/__weapp_vite_stateful_hmr__'
 const pollTimeout = 25_000
+const classicReloadTimeout = 30_000
 
 interface ClientReport {
   action: 'ack' | 'poll' | 'rebuild' | 'register'
@@ -20,6 +21,7 @@ interface ClientReport {
   version: number
   payloads?: string[]
   initialReady?: boolean
+  page?: string
   failure?: unknown
 }
 
@@ -35,6 +37,8 @@ export class StatefulHmrTransport {
   private closed = false
   private retired = false
   private suspended = false
+  private pageSession?: string
+  private classicReload?: ReturnType<typeof Promise.withResolvers<void>>
   private confirmationChain: Promise<void> = Promise.resolve()
   private publishedVersion = 0
   private executedVersion = 0
@@ -59,6 +63,10 @@ export class StatefulHmrTransport {
     return !this.closed && !this.retired && this.state.activeSessionId !== undefined
   }
 
+  get hasLoadedPage(): boolean {
+    return this.pageSession !== undefined && this.pageSession === this.state.activeSessionId
+  }
+
   get retainedDeltaBytes(): number {
     return this.state.retainedDeltaBytes
   }
@@ -73,6 +81,7 @@ export class StatefulHmrTransport {
 
   close(): void {
     this.closed = true
+    this.classicReload?.reject(new Error('Stateful HMR transport closed during classic reload'))
     this.cancelPendingDeliveries()
     this.respondToAll({ type: this.retired ? 'retired' : 'rebuilding' })
   }
@@ -81,6 +90,23 @@ export class StatefulHmrTransport {
     this.retired = true
     this.cancelPendingDeliveries()
     this.respondToAll({ type: 'retired' })
+  }
+
+  /** IDE 因配置变化重启时，保留旧磁盘模块，直到新客户端确认已执行旧 App 和首屏。 */
+  async waitForClassicReload(suspendScriptReload: () => Promise<boolean>): Promise<void> {
+    const reload = Promise.withResolvers<void>()
+    void reload.promise.catch(() => {})
+    this.classicReload = reload
+    const deadline = setTimeout(() => reload.reject(new Error('[weapp-vite] IDE 未确认旧 AppService 产物已加载，停止 classic 发布。')), classicReloadTimeout)
+    try {
+      if (await suspendScriptReload()) {
+        await reload.promise
+      }
+    }
+    finally {
+      clearTimeout(deadline)
+      this.classicReload = undefined
+    }
   }
 
   addDelta(code: string, changedIds: string[], delivered?: () => Promise<void>): Promise<void> {
@@ -191,7 +217,7 @@ export class StatefulHmrTransport {
   }
 
   private readonly handleRequest = async (request: IncomingMessage, response: ServerResponse) => {
-    if (this.retired) {
+    if (this.retired && !this.classicReload) {
       respond(response, 410, { type: 'retired' })
       return
     }
@@ -209,6 +235,20 @@ export class StatefulHmrTransport {
     }
     if (!isClientReport(body) || body.token !== this.token) {
       respond(response, 403, { type: 'forbidden' })
+      return
+    }
+    const pageLoaded = typeof body.page === 'string' && body.page.length > 0
+      && Array.isArray(body.payloads) && body.payloads.includes('app.js') && body.payloads.includes(`${body.page}.js`)
+    if (this.retired) {
+      if (body.buildId === this.state.buildId && body.sessionId !== this.state.activeSessionId
+        && !this.state.retiredSessionIds.includes(body.sessionId) && body.action === 'register') {
+        if (!pageLoaded) {
+          respond(response, 202, { type: 'handoff-pending' })
+          return
+        }
+        this.classicReload?.resolve()
+      }
+      respond(response, 410, { type: 'retired' })
       return
     }
     if (this.suspended && body.action !== 'rebuild') {
@@ -295,6 +335,9 @@ export class StatefulHmrTransport {
         acknowledgement: 'explicit-v1',
         ...(body.initialReady !== undefined ? { ready: this.initializedSessions.has(body.sessionId) } : {}),
       })
+      if (pageLoaded) {
+        this.pageSession = body.sessionId
+      }
       return
     }
     // 宿主可在 writeBundle 返回前执行已写出的补丁。发布尚未完成时，
@@ -373,6 +416,9 @@ export class StatefulHmrTransport {
     if (commands.some(command => command.type === 'ignore-client')) {
       respond(response, 409, { type: 'rebuilding', buildId: this.state.buildId })
       return
+    }
+    if (pageLoaded) {
+      this.pageSession = body.sessionId
     }
     this.holdPoll(body.sessionId, response)
   }

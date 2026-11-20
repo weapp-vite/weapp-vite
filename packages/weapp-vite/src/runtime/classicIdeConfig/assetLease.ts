@@ -1,6 +1,6 @@
 import { isDeepStrictEqual } from 'node:util'
 import { fs } from '@weapp-core/shared/fs'
-import { formatIdeConfig, parseIdeConfig, readIdeConfig, restoreRequestedHotReload } from './document'
+import { formatIdeConfig, parseIdeConfig, readIdeConfig } from './document'
 import { ideAssetWatchLeasePath } from './leases'
 
 export interface IdeAssetWatchConfig {
@@ -18,7 +18,6 @@ export interface IdeAssetWatchLease {
   original: string | null
   installed: AssetPrivateConfig
   added: string[]
-  suppressScriptHotReload?: boolean
 }
 
 /** 仅接受仍由调用者持有的资产租约，不恢复已被其他命令接管的配置。 */
@@ -35,28 +34,26 @@ export function restoreRequestedAssetWatch(source: string | null, saved: IdeAsse
   if (source === null) {
     return null
   }
-  let current = parseIdeConfig(source) as AssetPrivateConfig
+  const current = parseIdeConfig(source) as AssetPrivateConfig
   if (isDeepStrictEqual(current, saved.installed)) {
     return saved.original
   }
   if (saved.original !== null && isDeepStrictEqual(current, parseIdeConfig(saved.original))) {
     return source
   }
+  if (!current.watchOptions) {
+    return source
+  }
   const original = parseIdeConfig(saved.original) as AssetPrivateConfig
-  if (saved.suppressScriptHotReload) {
-    current = restoreRequestedHotReload(current, original) as AssetPrivateConfig
+  const remaining = (current.watchOptions.ignore ?? []).filter(rule => !saved.added.includes(rule))
+  current.watchOptions.ignore = remaining
+  if (!remaining.length && !original.watchOptions?.ignore) {
+    delete current.watchOptions.ignore
   }
-  if (current.watchOptions) {
-    const remaining = (current.watchOptions.ignore ?? []).filter(rule => !saved.added.includes(rule))
-    current.watchOptions.ignore = remaining
-    if (!remaining.length && !original.watchOptions?.ignore) {
-      delete current.watchOptions.ignore
-    }
-    if (!Object.keys(current.watchOptions).length && !original.watchOptions) {
-      delete current.watchOptions
-    }
+  if (!Object.keys(current.watchOptions).length && !original.watchOptions) {
+    delete current.watchOptions
   }
-  return isDeepStrictEqual(current, parseIdeConfig(source)) ? source : formatIdeConfig(current, source)
+  return formatIdeConfig(current, source)
 }
 
 /** classic 可以在同一 owner 内接管资产租约，其他命令不得绕过磁盘排他。 */

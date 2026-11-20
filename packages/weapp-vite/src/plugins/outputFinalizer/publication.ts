@@ -159,13 +159,18 @@ export function createOutputPublicationPlugin(ctx: CompilerContext, subPackageMe
           return
         }
         const write = async () => {
-          await pending.finishIdeHandoff?.()
           await scope?.publicAssets?.commit()
           if (pending.ownership) {
             await pending.ownership()
           }
           if (pending.epoch !== epoch) {
             return
+          }
+          if (pending.finishIdeHandoff) {
+            await pending.finishIdeHandoff()
+            if (closing || pending.epoch !== epoch) {
+              return
+            }
           }
           if (!pending.partial) {
             const retained = new Set(pending.outputNames)
@@ -303,7 +308,7 @@ export function createOutputPublicationPlugin(ctx: CompilerContext, subPackageMe
               if (!configPath || !owner.hasPendingAssetHandoff(configPath, root)) {
                 throw new Error('[weapp-vite] classic 原生发布与待交接 IDE 配置路径不匹配，停止输出。')
               }
-              // 先停止局部脚本热载。资产监听继续保护原生写出过程，避免 IDE 提前读取新旧混合产物。
+              // 首构前已暂停脚本热载；写出前重新核验租约及配置，资产保护保留至清理完成。
               const preparation = owner.preparePendingAssetHandoff(configPath, root, () => !closing && publicationEpoch === epoch)
               writes.add(preparation)
               try {
@@ -317,7 +322,7 @@ export function createOutputPublicationPlugin(ctx: CompilerContext, subPackageMe
                 writes.delete(preparation)
               }
               finishIdeHandoff = async () => {
-                if (!await owner.activatePendingAssetHandoff(configPath, root, () => !closing && publicationEpoch === epoch)) {
+                if (!await owner.activatePendingAssetHandoff(configPath, root, () => !closing && publicationEpoch === epoch) && !closing && publicationEpoch === epoch) {
                   throw new Error('[weapp-vite] classic 原生发布交接已取消，停止提交。')
                 }
               }

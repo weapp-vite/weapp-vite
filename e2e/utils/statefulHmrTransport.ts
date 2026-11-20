@@ -3,6 +3,7 @@ import { readFile } from 'node:fs/promises'
 import { request as httpRequest } from 'node:http'
 import path from 'node:path'
 import { WEAPP_VITE_STATEFUL_HMR_UPDATE_FILE } from '@weapp-core/constants'
+import { observeHeadlessHmrConfigReload } from './headlessHmrConfigReload'
 
 function postJson(url: URL, data: unknown, signal: AbortSignal) {
   return new Promise<{ data: { type: string }, statusCode: number }>((resolve, reject) => {
@@ -35,11 +36,14 @@ function postJson(url: URL, data: unknown, signal: AbortSignal) {
 }
 
 /** 以真实回环请求和实际 emitted 更新文件连接 headless 与开发宿主。 */
-export function installStatefulHmrTransport(session: HeadlessSession, outDir: string) {
+export function installStatefulHmrTransport(session: HeadlessSession, outDir: string, observeReload = true) {
   const wx = session.getWx()
   const original = wx.request
   const pending = new Set<AbortController>()
   let closed = false
+  const closeReload = observeReload
+    ? observeHeadlessHmrConfigReload(session, runtime => installStatefulHmrTransport(runtime, outDir, false))
+    : undefined
   wx.request = (option: HeadlessWxRequestOption) => {
     const url = new URL(option.url)
     if (url.protocol !== 'http:' || !['localhost', '127.0.0.1', '[::1]'].includes(url.hostname)
@@ -79,5 +83,6 @@ export function installStatefulHmrTransport(session: HeadlessSession, outDir: st
       controller.abort()
     }
     pending.clear()
+    return closeReload?.()
   }
 }

@@ -5,8 +5,9 @@ import os from 'node:os'
 import path from 'node:path'
 import { WEAPP_VITE_STATEFUL_HMR_UPDATE_FILE } from '@weapp-core/constants'
 import { build } from 'vite'
-import { expect, it } from 'vitest'
+import { expect, it, vi } from 'vitest'
 import { resetEmittedOutputCaches } from '../../runtime/buildPlugin/outputs'
+import * as classicIdeConfigJournal from '../../runtime/classicIdeConfig/journal'
 import { attachHmrRuntimeSession, getHmrRuntimeSession } from '../../runtime/hmrRuntimeSession'
 import { createRuntimeState } from '../../runtime/runtimeState'
 import { installIdeAssetWatch } from '../../runtime/statefulHmr/assetWatch'
@@ -133,9 +134,27 @@ it.each(['same-context', 'replacement-context'] as const)('keeps asset protectio
     expect(await output()).toBe('stateful app')
     classic.runtimeState.build.hmr.didEmitAllEntries = true
     fullWrite = true
-    await render()
+    const write = classicIdeConfigJournal.writeClassicIdeConfig
+    const configWrite = vi.spyOn(classicIdeConfigJournal, 'writeClassicIdeConfig').mockImplementation(async (file, source) => {
+      if (file === configPath) {
+        const config = JSON.parse(source) as Awaited<ReturnType<typeof readConfig>>
+        if (config.watchOptions?.ignore?.length === 1) {
+          expect(sawNativeWrite).toBe(true)
+          await expect(readFile(path.join(outDir, retired))).rejects.toMatchObject({ code: 'ENOENT' })
+        }
+      }
+      return write(file, source)
+    })
+    try {
+      await render()
+      expect(configWrite).toHaveBeenCalledTimes(2)
+    }
+    finally {
+      configWrite.mockRestore()
+    }
     expect(sawNativeWrite).toBe(true)
     expect(runtime.outputGenerations.size).toBe(1)
+    expect((await readConfig()).setting.compileHotReLoad).toBe(false)
     expect((await readConfig()).watchOptions?.ignore).toEqual(['user/**'])
     await expect(readFile(path.join(outDir, retired))).rejects.toMatchObject({ code: 'ENOENT' })
     expect(owner.hasPendingAssetHandoff(configPath)).toBe(false)

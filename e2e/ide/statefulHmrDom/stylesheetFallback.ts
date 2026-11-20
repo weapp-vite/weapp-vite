@@ -122,9 +122,6 @@ export async function verifyStylesheetFallback(options: StylesheetFallbackOption
     await check(id)
   }
 
-  const ideConfig = path.join(project, 'project.private.config.json')
-  const installedConfig = await fs.readFile(ideConfig, 'utf8')
-  expect(JSON.parse(installedConfig) as unknown).toMatchObject({ setting: { compileHotReLoad: false } })
   await expect.poll(() => app().evaluate((key: string) => {
     const client = (globalThis as any)[key]
     return client?.getTransportState?.()
@@ -135,6 +132,7 @@ export async function verifyStylesheetFallback(options: StylesheetFallbackOption
 
   // 真实 classic 首构停在原生写出前，确保再次保存发生在 switching 期间。
   const beforeStyles = await fs.readFile(output, 'utf8')
+  const privateConfigPath = path.join(project, 'project.private.config.json')
   const firstPublication = publication.capture(style)
   const gate = await armNativePrewriteGate(project)
   const entering = new AbortController()
@@ -143,8 +141,7 @@ export async function verifyStylesheetFallback(options: StylesheetFallbackOption
     await replaceFileByRename(style, colored('#dbeafe'))
     await dev.waitForOutput('[weapp-vite] HMR fallback ', 'compiled stylesheet capability decision')
     await dev.waitFor(gate.waitEntered(90_000, entering.signal), 'classic native prewrite gate')
-    expect(await fs.readFile(ideConfig, 'utf8'), 'entering classic prewrite must not trigger an IDE config reload').toBe(installedConfig)
-    const privateConfig = JSON.parse(installedConfig) as { setting?: { compileHotReLoad?: boolean }, watchOptions?: { ignore?: string[] } }
+    const privateConfig = await fs.readJSON(privateConfigPath) as { setting?: { compileHotReLoad?: boolean }, watchOptions?: { ignore?: string[] } }
     expect(privateConfig.setting?.compileHotReLoad, 'native script hot reload must stop before classic compilation publishes').toBe(false)
     expect(privateConfig.watchOptions?.ignore?.length, 'asset protection remains owned while classic output is withheld').toBeGreaterThan(0)
     const transition = () => dev.getOutput().slice(transitionOffset)
@@ -161,6 +158,7 @@ export async function verifyStylesheetFallback(options: StylesheetFallbackOption
     await gate.release()
   }
   await firstPublication.wait()
+  expect(await fs.readJSON(privateConfigPath)).toMatchObject({ setting: { compileHotReLoad: false } })
   await waitForEmittedStylesheet(output, '#dcfce7')
   await observeClassic()
   await check('style-updated')

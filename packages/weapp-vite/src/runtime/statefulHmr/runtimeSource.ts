@@ -516,10 +516,12 @@ globalThis[${JSON.stringify(WEAPP_VITE_STATEFUL_HMR_CONTROL_KEY)}] = ${JSON.stri
     if (phase === 'stopped' || (classicFallbackRequested && action !== 'rebuild')) return;
     const generation = ++requestGeneration;
     activeRequest?.abort?.();
+    const pages = typeof getCurrentPages === 'function' ? getCurrentPages() : [];
+    const page = pages[pages.length - 1];
     activeRequest = wx.request({
       url: control.url,
       method: 'POST',
-      data: { token: control.token, action, buildId: control.buildId, sessionId, version, failure, payloads, initialReady },
+      data: { token: control.token, action, buildId: control.buildId, sessionId, version, failure, payloads, initialReady, page: page?.route || page?.__route__ },
       timeout: 30000,
       success(result) {
         if (generation !== requestGeneration) return;
@@ -543,6 +545,7 @@ globalThis[${JSON.stringify(WEAPP_VITE_STATEFUL_HMR_CONTROL_KEY)}] = ${JSON.stri
           return;
         }
         if (type === 'error') console.error('[weapp-vite] stateful HMR stopped after a patch error');
+        if (action === 'register' && type === 'handoff-pending') { schedule(100); return; }
         if (type === 'retired' || type === 'error' || result?.statusCode === 410) {
           globalThis[${JSON.stringify(WEAPP_VITE_STATEFUL_HMR_CLIENT_KEY)}].stop();
           return;
