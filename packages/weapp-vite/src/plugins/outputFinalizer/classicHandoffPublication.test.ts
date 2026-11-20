@@ -14,7 +14,7 @@ import { writeStatefulHmrOutput } from '../../runtime/statefulHmr/outputWriter'
 import { prepareOutputOwnership } from './ownership'
 import { createOutputPublicationPlugin } from './publication'
 
-it.each(['same-context', 'replacement-context'] as const)('switches IDE settings only between complete generation and native writing: %s', async (contextKind) => {
+it.each(['same-context', 'replacement-context'] as const)('keeps asset protection until native classic writing completes: %s', async (contextKind) => {
   const root = await mkdtemp(path.join(os.tmpdir(), 'weapp-classic-prewrite-'))
   const outDir = path.join(root, 'dist')
   const configPath = path.join(root, 'project.private.config.json')
@@ -64,12 +64,12 @@ it.each(['same-context', 'replacement-context'] as const)('switches IDE settings
       async handler() {
         sawGeneration = true
         expect((await readConfig()).setting.compileHotReLoad).toBe(!fullWrite)
-        expect(owner.hasPendingAssetHandoff(configPath, outDir)).toBe(!fullWrite)
+        expect(owner.hasPendingAssetHandoff(configPath, outDir)).toBe(true)
         expect(runtime.outputGenerations.size).toBe(0)
         expect(await readFile(path.join(outDir, retired), 'utf8')).toBe('stateful update')
         if (fullWrite) {
           expect(await output()).toBe('stateful app')
-          expect((await readConfig()).watchOptions?.ignore).toEqual(['user/**'])
+          expect((await readConfig()).watchOptions?.ignore).toEqual(['user/**', expect.any(String)])
         }
       },
     },
@@ -79,6 +79,7 @@ it.each(['same-context', 'replacement-context'] as const)('switches IDE settings
         if (fullWrite) {
           sawNativeWrite = true
           expect((await readConfig()).setting.compileHotReLoad).toBe(false)
+          expect((await readConfig()).watchOptions?.ignore).toEqual(['user/**', expect.any(String)])
           expect(await output()).toContain('classicPrewrite')
           expect(runtime.outputGenerations.size).toBe(0)
           expect(await readFile(path.join(outDir, retired), 'utf8')).toBe('stateful update')
@@ -135,6 +136,7 @@ it.each(['same-context', 'replacement-context'] as const)('switches IDE settings
     await render()
     expect(sawNativeWrite).toBe(true)
     expect(runtime.outputGenerations.size).toBe(1)
+    expect((await readConfig()).watchOptions?.ignore).toEqual(['user/**'])
     await expect(readFile(path.join(outDir, retired))).rejects.toMatchObject({ code: 'ENOENT' })
     expect(owner.hasPendingAssetHandoff(configPath)).toBe(false)
     await owner.close()

@@ -96,14 +96,13 @@ export async function verifyStylesheetFallback(options: StylesheetFallbackOption
       return { input: page.data.input, identity: page.__capabilityIdentity }
     }), { timeout: 10_000 }).toEqual({ input: INPUT, identity: 'before-stylesheet-reload' })
   }
-  const assertClassicState = async () => {
-    expect(await app().evaluate(() => (getApp() as any).__stylesheetFallbackIdentity ?? null)).toBeNull()
+  const assertClassicPublication = () => {
     expect(publication.stateful).toBe(false)
     expect(dev.getBuildErrors()).toEqual([])
   }
   const observeClassic = async (marker = BASE) => {
     await options.observeClassic(marker)
-    await assertClassicState()
+    assertClassicPublication()
   }
   const tap = async (id: string) => {
     const increment = await (await currentPage()).$('.increment', { fallback: false })
@@ -181,12 +180,12 @@ export async function verifyStylesheetFallback(options: StylesheetFallbackOption
   const patched = options.initialSource.replace(BASE, 'STYLE-SCRIPT-A').replace('this.data.count + 1', 'this.data.count + 2')
   expect(patched).not.toBe(options.initialSource)
   await options.saveClassic(patched, 'STYLE-SCRIPT-A')
-  await assertClassicState()
+  assertClassicPublication()
   await check('script-updated')
   await tap('script-interaction')
   await markBeforeReload()
   await options.saveClassic(options.initialSource, BASE)
-  await assertClassicState()
+  assertClassicPublication()
   await check('script-restored')
 
   await options.saveClassic(options.initialSource.replace(`'${BASE}'`, '__HMR_CAPABILITY_CONFIG_MARKER__'), 'CONFIG-A')

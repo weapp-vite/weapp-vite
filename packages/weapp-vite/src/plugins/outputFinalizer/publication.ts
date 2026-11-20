@@ -159,6 +159,7 @@ export function createOutputPublicationPlugin(ctx: CompilerContext, subPackageMe
           return
         }
         const write = async () => {
+          await pending.finishIdeHandoff?.()
           await scope?.publicAssets?.commit()
           if (pending.ownership) {
             await pending.ownership()
@@ -293,17 +294,7 @@ export function createOutputPublicationPlugin(ctx: CompilerContext, subPackageMe
             }
             this.emitFile(asset)
           }
-          if (isWrite && nativeWrite && (ctx.configService.isDev || this.meta.watchMode) && !preserveCompleteBundle && root && scope && publicationEpoch === epoch) {
-            // 独立 helper 仅冻结普通归属数据与命令身份，不保留 generateBundle 的插件上下文。
-            const ownership = prepareOutputPublicationOwnership(ctx, root, {
-              outputNames,
-              independentOutputNames: [...independentOutputNames],
-              publicOutputNames,
-              partial,
-              retireStateful: !partial && !subPackageMeta && (ctx.currentBuildTarget ?? 'app') === 'app',
-            })
-            scope.pending = { epoch: publicationEpoch, ownership, generation, sources, outputNames, partial, observedAssets: [...independentSnapshot, ...independentAssets, ...publicOutputs] }
-          }
+          let finishIdeHandoff: (() => Promise<void>) | undefined
           if (isWrite && nativeWrite && !preserveCompleteBundle && !partial && !subPackageMeta
             && root && root === outDir && !isBorrowedHmrRuntimeSession(ctx) && shouldPublishClassicGeneration(ctx)) {
             const owner = getHmrRuntimeSession(ctx).classicIdeConfig
@@ -312,23 +303,38 @@ export function createOutputPublicationPlugin(ctx: CompilerContext, subPackageMe
               if (!configPath || !owner.hasPendingAssetHandoff(configPath, root)) {
                 throw new Error('[weapp-vite] classic 原生发布与待交接 IDE 配置路径不匹配，停止输出。')
               }
-              // 编译、校验和资产准备全部结束后切换；首个 classic JS 写出前必须禁用局部热载。
-              assertActive()
-              const activation = owner.activatePendingAssetHandoff(configPath, root, () => !closing && publicationEpoch === epoch)
-              writes.add(activation)
+              // 先停止局部脚本热载。资产监听继续保护原生写出过程，避免 IDE 提前读取新旧混合产物。
+              const preparation = owner.preparePendingAssetHandoff(configPath, root, () => !closing && publicationEpoch === epoch)
+              writes.add(preparation)
               try {
-                const activated = await activation
+                const prepared = await preparation
                 assertActive()
-                if (!activated) {
+                if (!prepared) {
                   throw new Error('[weapp-vite] classic 原生发布交接已取消，停止输出。')
                 }
               }
               finally {
-                writes.delete(activation)
+                writes.delete(preparation)
+              }
+              finishIdeHandoff = async () => {
+                if (!await owner.activatePendingAssetHandoff(configPath, root, () => !closing && publicationEpoch === epoch)) {
+                  throw new Error('[weapp-vite] classic 原生发布交接已取消，停止提交。')
+                }
               }
             }
           }
           assertActive()
+          if (isWrite && nativeWrite && (ctx.configService.isDev || this.meta.watchMode) && !preserveCompleteBundle && root && scope) {
+            // 独立 helper 仅冻结普通归属数据与命令身份，不保留 generateBundle 的插件上下文。
+            const ownership = prepareOutputPublicationOwnership(ctx, root, {
+              outputNames,
+              independentOutputNames: [...independentOutputNames],
+              publicOutputNames,
+              partial,
+              retireStateful: !partial && !subPackageMeta && (ctx.currentBuildTarget ?? 'app') === 'app',
+            })
+            scope.pending = { epoch: publicationEpoch, finishIdeHandoff, ownership, generation, sources, outputNames, partial, observedAssets: [...independentSnapshot, ...independentAssets, ...publicOutputs] }
+          }
           commitWxmlDependencies(ctx)
           commitValidation?.()
           checkpoint('publicationPruneMs')

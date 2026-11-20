@@ -77,7 +77,7 @@ export function createHmrCapabilityFallbackSuite(
       }
 
       async function state() {
-        return miniProgram.evaluate((keys: { client: string, bridge: string, control: string }) => {
+        return miniProgram.evaluate((keys: { client: string, bridge: string, control: string }, readStylesheetIdentity: boolean) => {
           const pages = getCurrentPages()
           const page = pages[pages.length - 1] as any
           const runtime = globalThis as any
@@ -88,11 +88,13 @@ export function createHmrCapabilityFallbackSuite(
             bridge: Boolean(host?.[keys.bridge]),
             control: Boolean(host?.[keys.control]),
           })
+          const app = readStylesheetIdentity ? getApp() as { __stylesheetFallbackIdentity?: string } | undefined : undefined
           return {
             marker: String(page?.data?.marker ?? ''),
             count: Number(page?.data?.count),
             input: String(page?.data?.input ?? ''),
             identity: String(page?.__capabilityIdentity ?? ''),
+            ...(app ? { stylesheetIdentity: app.__stylesheetFallbackIdentity ?? null } : {}),
             route: String(page?.route ?? ''),
             client: client?.getTransportState?.().phase ?? null,
             hostClient: hostClient?.getTransportState?.().phase ?? null,
@@ -100,7 +102,7 @@ export function createHmrCapabilityFallbackSuite(
             host: present(runtime.wx),
             pollingStopped: [client, hostClient].every(value => !value || value.getTransportState?.().phase === 'stopped'),
           }
-        }, { client: WEAPP_VITE_STATEFUL_HMR_CLIENT_KEY, bridge: WEAPP_VITE_STATEFUL_HMR_BRIDGE_KEY, control: WEAPP_VITE_STATEFUL_HMR_CONTROL_KEY })
+        }, { client: WEAPP_VITE_STATEFUL_HMR_CLIENT_KEY, bridge: WEAPP_VITE_STATEFUL_HMR_BRIDGE_KEY, control: WEAPP_VITE_STATEFUL_HMR_CONTROL_KEY }, reason === 'stylesheet-output')
       }
 
       async function waitState(marker: string, count = 0) {
@@ -122,6 +124,7 @@ export function createHmrCapabilityFallbackSuite(
             count,
             input: '',
             identity: '',
+            ...(reason === 'stylesheet-output' ? { stylesheetIdentity: null } : {}),
             route: 'pages/native/index',
             client: null,
             hostClient: null,

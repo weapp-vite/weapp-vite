@@ -18,6 +18,7 @@ export interface NativeOutputPublicationApi {
 
 interface PendingOutputPublication {
   epoch: number
+  finishIdeHandoff?: () => Promise<void>
   ownership?: () => Promise<void>
   generation?: () => unknown
   sources?: Map<string, string>

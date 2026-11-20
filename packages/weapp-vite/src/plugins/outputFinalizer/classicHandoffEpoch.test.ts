@@ -200,8 +200,11 @@ it.each([
       expect(getWxmlWatchFiles(project.ctx).map(file => path.basename(file)).sort()).toEqual(['next-transform.json', 'next-validate.json'])
     }
     else {
-      expect(await fs.readJSON(project.configPath)).toEqual({ setting: { compileHotReLoad: false } })
-      expect(owner.hasPendingAssetHandoff(project.configPath)).toBe(false)
+      expect(await fs.readJSON(project.configPath)).toEqual({
+        setting: { compileHotReLoad: false },
+        watchOptions: { ignore: [expect.any(String)] },
+      })
+      expect(owner.hasPendingAssetHandoff(project.configPath)).toBe(true)
     }
     await owner.close()
     expect(await fs.readFile(project.configPath, 'utf8')).toBe(project.original)
