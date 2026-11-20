@@ -70,10 +70,14 @@ function assertEqual(actual: unknown, expected: unknown, label: string) {
   }
 }
 
-async function assertRoute(session: DomSession, page: DomPage, checkpoint: DomCheckpoint) {
+async function assertRoute(session: DomSession, page: DomPage | undefined, checkpoint: DomCheckpoint, deadline: number) {
   const route = normalizeDomRoute(checkpoint.route)
-  assertEqual(normalizeDomRoute(page.path), route, 'DOM page route')
-  const current = await session.currentPage({ appFunctionFallback: false })
+  if (page) {
+    assertEqual(normalizeDomRoute(page.path), route, 'DOM page route')
+  }
+  const current = await session.currentPage(page
+    ? { appFunctionFallback: false }
+    : { appFunctionFallback: false, pageStackFallback: false, retries: 1, timeout: Math.max(1, Math.min(3_000, deadline - Date.now())) })
   assertEqual(current && normalizeDomRoute(current.path), route, 'DOM active route')
   return current!
 }
@@ -87,7 +91,7 @@ function readPageIdentity(page: DomPage) {
 
 export async function captureDomCheckpoint(
   session: DomSession,
-  page: DomPage,
+  page: DomPage | undefined,
   checkpoint: DomCheckpoint,
   provider: DomAcceptance['provider'],
   timeout = 15_000,
@@ -105,7 +109,7 @@ export async function captureDomCheckpoint(
     try {
       const routeTrace = phaseTrace?.start('route', { attempt })
       trace.beginQuery('session', 'currentPage')
-      const currentPage = await assertRoute(session, page, checkpoint)
+      const currentPage = await assertRoute(session, page, checkpoint, deadline)
       trace.endQuery()
       const pageId = readPageIdentity(currentPage)
       routeTrace?.end()
@@ -253,7 +257,7 @@ export async function captureDomCheckpoint(
       }
       const finalRouteTrace = phaseTrace?.start('final-route', { attempt })
       trace.beginQuery('session', 'currentPage')
-      const finalPage = await assertRoute(session, page, checkpoint)
+      const finalPage = await assertRoute(session, page, checkpoint, deadline)
       trace.endQuery()
       assertEqual(readPageIdentity(finalPage), pageId, 'DOM active page identity changed during capture')
       finalRouteTrace?.end()

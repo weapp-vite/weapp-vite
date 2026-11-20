@@ -42,6 +42,27 @@ function createTransport() {
 }
 
 describe('stateful hmr transport', () => {
+  it('keeps the old publication until a fresh client executes the App and current page', async () => {
+    const fixture = createTransport()
+    const page = 'pages/index'
+    const payloads = ['app.js', `${page}.js`]
+    await fixture.post({ action: 'register', page, payloads })
+    expect(fixture.transport.hasLoadedPage).toBe(true)
+    fixture.transport.retire()
+    const suspend = vi.fn(async () => true)
+    const ready = vi.fn()
+    const waiting = fixture.transport.waitForClassicReload(suspend).then(ready)
+    expect(suspend).toHaveBeenCalledOnce()
+    expect(await fixture.post({ action: 'register', page, payloads })).toEqual({ status: 410, value: { type: 'retired' } })
+    expect(await fixture.post({ action: 'register', sessionId: 'fresh', buildId: 'stale', page, payloads })).toEqual({ status: 410, value: { type: 'retired' } })
+    expect(await fixture.post({ action: 'register', sessionId: 'fresh', page, payloads: ['app.js'] })).toEqual({ status: 202, value: { type: 'handoff-pending' } })
+    expect(ready).not.toHaveBeenCalled()
+    expect(await fixture.post({ action: 'register', sessionId: 'fresh', page, payloads })).toEqual({ status: 410, value: { type: 'retired' } })
+    await waiting
+    expect(ready).toHaveBeenCalledOnce()
+    fixture.transport.close()
+  })
+
   it('renders executable deltas only into the literal update module', () => {
     const source = renderBatch({
       buildId: 'build-a',

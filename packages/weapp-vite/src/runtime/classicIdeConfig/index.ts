@@ -209,18 +209,21 @@ export class ClassicIdeConfigOwner {
   }
 
   /** 先停止 IDE 局部脚本热载；资产 ignore 与旧产物仍保护到完整原生发布。 */
-  preparePendingAssetHandoff(file: string, outDir: string): Promise<void> {
+  preparePendingAssetHandoff(file: string, outDir: string, isActive?: () => boolean, onlyIfChanged = false): Promise<boolean> {
     return this.enqueue(async () => {
       const configPath = path.resolve(file)
       const handoff = this.assetHandoffs.get(configPath)
       if (!handoff || handoff.outDir !== path.resolve(outDir)) {
         throw new Error('[weapp-vite] classic 编译准备与待交接资产输出根不匹配。')
       }
-      await this.activateOwned(configPath, undefined, handoff.assetOwner, undefined, true)
+      if (onlyIfChanged && parseIdeConfig(await readIdeConfig(configPath)).setting?.compileHotReLoad === false) {
+        return false
+      }
+      return await this.activateOwned(configPath, undefined, handoff.assetOwner, () => !this.closed && (!isActive || isActive()), true)
     })
   }
 
-  /** 完整原生写出前重读用户配置，在同一 owner 内一次交接 ignore 与重载开关。 */
+  /** 输出已完成或从未发布时，重读用户配置并交还资产监听。 */
   activatePendingAssetHandoff(file: string, outDir: string, isActive?: () => boolean): Promise<boolean> {
     return this.enqueue(async () => {
       if (this.closed || (isActive && !isActive())) {

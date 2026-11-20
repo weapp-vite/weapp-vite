@@ -447,10 +447,11 @@ class StatefulHmrSession {
 
   close(status: 'incomplete' | 'failed' = 'incomplete'): Promise<void> {
     const handoff = this.classicHandoff
+    const waitForIde = handoff && this.transport.hasLoadedPage
     return this.closing ??= (async () => {
       const failures: unknown[] = []
       try {
-        await this.closeResources(status, failures)
+        await this.closeResources(status, failures, waitForIde)
       }
       catch (error) {
         failures.push(error)
@@ -458,10 +459,21 @@ class StatefulHmrSession {
       const restore = this.restoreIdeAssetWatch
       this.restoreIdeAssetWatch = undefined
       try {
-        await restore?.(!failures.length && handoff ? getHmrRuntimeSession(this.ctx).classicIdeConfig : undefined)
+        const owner = !failures.length && handoff ? getHmrRuntimeSession(this.ctx).classicIdeConfig : undefined
+        await restore?.(owner)
+        const config = this.ctx.configService
+        const configPath = resolveIdePrivateConfigPath(config)
+        if (waitForIde && owner && configPath && owner.hasPendingAssetHandoff(configPath, config.outDir)) {
+          await this.transport.waitForClassicReload(() => owner.preparePendingAssetHandoff(configPath, config.outDir, undefined, true))
+        }
       }
       catch (error) {
         failures.push(error)
+      }
+      finally {
+        if (waitForIde) {
+          this.transport.close()
+        }
       }
       if (failures.length) {
         throw failures.length === 1 ? failures[0] : new AggregateError(failures, 'Stateful HMR session cleanup failed', { cause: failures[0] })
@@ -469,7 +481,7 @@ class StatefulHmrSession {
     })()
   }
 
-  private async closeResources(status: 'incomplete' | 'failed', failures: unknown[]): Promise<void> {
+  private async closeResources(status: 'incomplete' | 'failed', failures: unknown[], waitForIde: boolean): Promise<void> {
     const release = async (action: () => unknown) => {
       try {
         await action()
@@ -506,7 +518,7 @@ class StatefulHmrSession {
     if (this.ctx.onStatefulHmrSourceChange === this.sourceChangeListener) {
       this.ctx.onStatefulHmrSourceChange = undefined
     }
-    await release(() => this.transport.close())
+    await release(() => waitForIde ? this.transport.retire() : this.transport.close())
     await closeDelivery
     await closeSnapshots
     await release(() => this.adapter.close())

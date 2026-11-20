@@ -96,14 +96,13 @@ export async function verifyStylesheetFallback(options: StylesheetFallbackOption
       return { input: page.data.input, identity: page.__capabilityIdentity }
     }), { timeout: 10_000 }).toEqual({ input: INPUT, identity: 'before-stylesheet-reload' })
   }
-  const assertClassicState = async () => {
-    expect(await app().evaluate(() => (getApp() as any).__stylesheetFallbackIdentity ?? null)).toBeNull()
+  const assertClassicPublication = () => {
     expect(publication.stateful).toBe(false)
     expect(dev.getBuildErrors()).toEqual([])
   }
   const observeClassic = async (marker = BASE) => {
     await options.observeClassic(marker)
-    await assertClassicState()
+    assertClassicPublication()
   }
   const tap = async (id: string) => {
     const increment = await (await currentPage()).$('.increment', { fallback: false })
@@ -133,6 +132,7 @@ export async function verifyStylesheetFallback(options: StylesheetFallbackOption
 
   // 真实 classic 首构停在原生写出前，确保再次保存发生在 switching 期间。
   const beforeStyles = await fs.readFile(output, 'utf8')
+  const privateConfigPath = path.join(project, 'project.private.config.json')
   const firstPublication = publication.capture(style)
   const gate = await armNativePrewriteGate(project)
   const entering = new AbortController()
@@ -141,7 +141,7 @@ export async function verifyStylesheetFallback(options: StylesheetFallbackOption
     await replaceFileByRename(style, colored('#dbeafe'))
     await dev.waitForOutput('[weapp-vite] HMR fallback ', 'compiled stylesheet capability decision')
     await dev.waitFor(gate.waitEntered(90_000, entering.signal), 'classic native prewrite gate')
-    const privateConfig = await fs.readJSON(path.join(project, 'project.private.config.json')) as { setting?: { compileHotReLoad?: boolean }, watchOptions?: { ignore?: string[] } }
+    const privateConfig = await fs.readJSON(privateConfigPath) as { setting?: { compileHotReLoad?: boolean }, watchOptions?: { ignore?: string[] } }
     expect(privateConfig.setting?.compileHotReLoad, 'native script hot reload must stop before classic compilation publishes').toBe(false)
     expect(privateConfig.watchOptions?.ignore?.length, 'asset protection remains owned while classic output is withheld').toBeGreaterThan(0)
     const transition = () => dev.getOutput().slice(transitionOffset)
@@ -158,6 +158,7 @@ export async function verifyStylesheetFallback(options: StylesheetFallbackOption
     await gate.release()
   }
   await firstPublication.wait()
+  expect(await fs.readJSON(privateConfigPath)).toMatchObject({ setting: { compileHotReLoad: false } })
   await waitForEmittedStylesheet(output, '#dcfce7')
   await observeClassic()
   await check('style-updated')
@@ -181,12 +182,12 @@ export async function verifyStylesheetFallback(options: StylesheetFallbackOption
   const patched = options.initialSource.replace(BASE, 'STYLE-SCRIPT-A').replace('this.data.count + 1', 'this.data.count + 2')
   expect(patched).not.toBe(options.initialSource)
   await options.saveClassic(patched, 'STYLE-SCRIPT-A')
-  await assertClassicState()
+  assertClassicPublication()
   await check('script-updated')
   await tap('script-interaction')
   await markBeforeReload()
   await options.saveClassic(options.initialSource, BASE)
-  await assertClassicState()
+  assertClassicPublication()
   await check('script-restored')
 
   await options.saveClassic(options.initialSource.replace(`'${BASE}'`, '__HMR_CAPABILITY_CONFIG_MARKER__'), 'CONFIG-A')

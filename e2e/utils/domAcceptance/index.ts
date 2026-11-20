@@ -39,7 +39,7 @@ export function createDomAcceptance(context: TestContext, fixture: string, check
       }
       return await runDomCheckpointAction(plan, context.task.id, id, action)
     },
-    async check(id: string, session: DomSession, page: DomPage, timeout?: number) {
+    async check(id: string, session: DomSession, page?: DomPage, timeout?: number) {
       if (closed || context.task.meta.domAcceptance !== plan) {
         throw new Error('Cannot reuse DOM evidence across cases or retries')
       }

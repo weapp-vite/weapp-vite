@@ -2,9 +2,10 @@ import type { HeadlessSession, HeadlessWxNetworkRequestTask, HeadlessWxRequestOp
 import { readFile } from 'node:fs/promises'
 import { request as httpRequest } from 'node:http'
 import { createRequestTask } from '../../../mpcore/packages/simulator/src/runtime/request/task'
+import { observeHeadlessHmrConfigReload } from '../../utils/headlessHmrConfigReload'
 
 /** 仅将当前 CLI 控制文件声明的回环 HMR 端点交给真实 HTTP，不模拟发布响应。 */
-export function installStatefulHmrTransport(session: HeadlessSession, endpoint: string, updateFile: string) {
+export function installStatefulHmrTransport(session: HeadlessSession, endpoint: string, updateFile: string, observeReload = true) {
   const url = new URL(endpoint)
   if (url.protocol !== 'http:' || !['localhost', '127.0.0.1'].includes(url.hostname)
     || Number(url.port) <= 0 || url.username || url.password || url.search || url.hash
@@ -17,6 +18,9 @@ export function installStatefulHmrTransport(session: HeadlessSession, endpoint: 
   let disposed = false
   let publicationError: unknown
   let publication = Promise.resolve()
+  const closeReload = observeReload
+    ? observeHeadlessHmrConfigReload(session, runtime => installStatefulHmrTransport(runtime, endpoint, updateFile, false).close)
+    : undefined
   wx.request = (option: HeadlessWxRequestOption & { timeout?: number }) => {
     if (disposed || option.url !== endpoint || option.method !== 'POST') {
       return original.call(wx, option)
@@ -93,7 +97,7 @@ export function installStatefulHmrTransport(session: HeadlessSession, endpoint: 
         task.abort()
       }
       pending.clear()
-      await publication
+      await Promise.all([publication, closeReload?.()])
     },
   }
 }
