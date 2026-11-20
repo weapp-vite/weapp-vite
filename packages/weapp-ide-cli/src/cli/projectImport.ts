@@ -6,6 +6,9 @@ import { withMachineE2ELease } from '@weapp-vite/devtools-runtime'
 import { execa } from 'execa'
 import { MANAGED_PROJECT_JOURNAL_ENV } from '../devtoolsProjectOwnership'
 
+const PROJECT_CLIENT_NAME = 'weapp-vite-e2e'
+const WECHAT_SKILL_VERSION = '0.3.11'
+
 interface ProjectImportOptions {
   cliPath: string
   projectPath: string
@@ -112,28 +115,44 @@ export async function importManagedDevtoolsProject(options: ProjectImportOptions
   }
   options.signal.throwIfAborted()
   const projectPath = path.resolve(options.projectPath)
-  await withMachineE2ELease(() => preserveProjectConfig(projectPath, 'project.config.json', () => preserveProjectConfig(projectPath, 'project.private.config.json', async () => {
+  const deadline = performance.now() + options.timeout
+  const skillCli = resolveProjectImportCli(options.cliPath)
+  const invoke = async (tool: string, ...args: string[]): Promise<unknown> => {
     options.signal.throwIfAborted()
-    const { stdout } = await execa(resolveProjectImportCli(options.cliPath), [
-      '-c',
-      'weapp-vite-e2e',
-      'project_import',
-      '--project',
-      projectPath,
-    ], {
-      timeout: options.timeout,
+    const remaining = Math.floor(deadline - performance.now())
+    if (remaining <= 0) {
+      throw new Error(`DEVTOOLS_PROJECT_IMPORT_TIMEOUT: 官方项目初始化在执行 ${tool} 前已耗尽预算`)
+    }
+    const { stdout } = await execa(skillCli, ['-c', PROJECT_CLIENT_NAME, tool, ...args], {
+      timeout: remaining,
       cancelSignal: options.signal,
       // 入口可拉起共享宿主；取消仅终止命令，宿主由外层 runner 释放。
       killDescendants: false,
     })
-    const payload: unknown = JSON.parse(stdout)
-    const result = isRecord(payload) && isRecord(payload.result) ? payload.result : undefined
-    if (!isRecord(payload) || payload.ok !== true || payload.tool !== 'project_import'
-      || payload.clientName !== 'weapp-vite-e2e' || result?.success !== true
-      || result.projectPath !== projectPath || typeof result.alreadyImported !== 'boolean'
-      || result.taskId !== undefined || result.status !== undefined || result.error !== undefined) {
-      throw new Error(`DEVTOOLS_PROJECT_IMPORT_INCOMPLETE: 官方项目导入未完成；receipt=${describeProjectImportFailure(payload, projectPath)}`)
-    }
     options.signal.throwIfAborted()
-  })))
+    return JSON.parse(stdout) as unknown
+  }
+  await withMachineE2ELease(async () => {
+    // islogin 只读取登录标记。官方状态检查会同步主进程登录态，供导入查询 AppID 属性。
+    const status = await invoke('check_wechatide_status', '--skill-version', WECHAT_SKILL_VERSION)
+    const statusResult = isRecord(status) && isRecord(status.result) ? status.result : undefined
+    if (isRecord(status) && status.ok === true && status.tool === 'check_wechatide_status'
+      && status.clientName === PROJECT_CLIENT_NAME && statusResult?.loginExpired === true) {
+      throw new Error('DEVTOOLS_LOGIN_REQUIRED: 微信开发者工具需要重新登录')
+    }
+    if (!isRecord(status) || status.ok !== true || status.tool !== 'check_wechatide_status'
+      || status.clientName !== PROJECT_CLIENT_NAME || statusResult?.success !== true || statusResult.loginExpired !== false) {
+      throw new Error(`DEVTOOLS_PROJECT_STATUS_UNAVAILABLE: 官方项目服务未就绪；receipt=${describeProjectImportFailure(status, projectPath)}`)
+    }
+    await preserveProjectConfig(projectPath, 'project.config.json', () => preserveProjectConfig(projectPath, 'project.private.config.json', async () => {
+      const payload = await invoke('project_import', '--project', projectPath)
+      const result = isRecord(payload) && isRecord(payload.result) ? payload.result : undefined
+      if (!isRecord(payload) || payload.ok !== true || payload.tool !== 'project_import'
+        || payload.clientName !== PROJECT_CLIENT_NAME || result?.success !== true
+        || result.projectPath !== projectPath || typeof result.alreadyImported !== 'boolean'
+        || result.taskId !== undefined || result.status !== undefined || result.error !== undefined) {
+        throw new Error(`DEVTOOLS_PROJECT_IMPORT_INCOMPLETE: 官方项目导入未完成；receipt=${describeProjectImportFailure(payload, projectPath)}`)
+      }
+    }))
+  })
 }

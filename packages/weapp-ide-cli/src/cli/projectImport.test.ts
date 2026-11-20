@@ -5,8 +5,14 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { MANAGED_PROJECT_JOURNAL_ENV } from '../devtoolsProjectOwnership'
 import { importManagedDevtoolsProject, resolveProjectImportCli } from './projectImport'
 
-const { run, lease } = vi.hoisted(() => ({ run: vi.fn(), lease: vi.fn(async (callback: () => Promise<unknown>) => callback()) }))
-vi.mock('execa', () => ({ execa: run }))
+const { run, checkStatus, lease } = vi.hoisted(() => ({
+  run: vi.fn(),
+  checkStatus: vi.fn(),
+  lease: vi.fn(async (callback: () => Promise<unknown>) => callback()),
+}))
+vi.mock('execa', () => ({
+  execa: (cli: string, args: string[], options: unknown) => (args[2] === 'check_wechatide_status' ? checkStatus : run)(cli, args, options),
+}))
 vi.mock('@weapp-vite/devtools-runtime', () => ({ withMachineE2ELease: lease }))
 
 describe('official managed project initialization', () => {
@@ -14,9 +20,11 @@ describe('official managed project initialization', () => {
   const projectPath = path.resolve('fixtures/new project')
   const options = () => ({ cliPath: path.resolve('installation/cli'), projectPath, trusted: true, timeout: 12_345, signal: new AbortController().signal })
   const receipt = (result: Record<string, unknown>) => JSON.stringify({ ok: true, tool: 'project_import', clientName: 'weapp-vite-e2e', result })
+  const statusReceipt = (result: Record<string, unknown>) => JSON.stringify({ ok: true, tool: 'check_wechatide_status', clientName: 'weapp-vite-e2e', result })
 
   beforeEach(() => {
-    vi.clearAllMocks()
+    vi.resetAllMocks()
+    checkStatus.mockResolvedValue({ stdout: statusReceipt({ success: true, loginExpired: false }) })
     vi.stubEnv(MANAGED_PROJECT_JOURNAL_ENV, 'task-journal')
   })
   afterEach(async () => {
@@ -29,11 +37,51 @@ describe('official managed project initialization', () => {
     const selected = options()
     await importManagedDevtoolsProject(selected)
     expect(lease).toHaveBeenCalledOnce()
-    expect(run).toHaveBeenCalledExactlyOnceWith(resolveProjectImportCli(selected.cliPath), ['-c', 'weapp-vite-e2e', 'project_import', '--project', projectPath], {
-      timeout: selected.timeout,
+    expect(checkStatus).toHaveBeenCalledExactlyOnceWith(resolveProjectImportCli(selected.cliPath), ['-c', 'weapp-vite-e2e', 'check_wechatide_status', '--skill-version', '0.3.11'], {
+      timeout: expect.any(Number),
       cancelSignal: selected.signal,
       killDescendants: false,
     })
+    expect(checkStatus).toHaveBeenCalledBefore(run)
+    expect(run).toHaveBeenCalledExactlyOnceWith(resolveProjectImportCli(selected.cliPath), ['-c', 'weapp-vite-e2e', 'project_import', '--project', projectPath], {
+      timeout: expect.any(Number),
+      cancelSignal: selected.signal,
+      killDescendants: false,
+    })
+  })
+
+  it('does not import when the official status check fails', async () => {
+    const failure = new Error('status check timed out')
+    checkStatus.mockRejectedValueOnce(failure)
+    await expect(importManagedDevtoolsProject(options())).rejects.toBe(failure)
+    checkStatus.mockResolvedValueOnce({ stdout: statusReceipt({ success: true }) })
+    await expect(importManagedDevtoolsProject(options())).rejects.toThrow('DEVTOOLS_PROJECT_STATUS_UNAVAILABLE')
+    expect(run).not.toHaveBeenCalled()
+  })
+
+  it('reports an expired login before importing the project', async () => {
+    checkStatus.mockResolvedValue({ stdout: statusReceipt({ success: true, loginExpired: true }) })
+    await expect(importManagedDevtoolsProject(options())).rejects.toThrow('DEVTOOLS_LOGIN_REQUIRED')
+    expect(run).not.toHaveBeenCalled()
+  })
+
+  it('shares the initialization deadline across both commands', async () => {
+    vi.useFakeTimers({ toFake: ['performance'] })
+    try {
+      checkStatus.mockImplementation(async () => {
+        vi.advanceTimersByTime(700)
+        return { stdout: statusReceipt({ success: true, loginExpired: false }) }
+      })
+      run.mockResolvedValue({ stdout: receipt({ success: true, projectPath, alreadyImported: false }) })
+      await importManagedDevtoolsProject({ ...options(), timeout: 1000 })
+      expect(run).toHaveBeenCalledWith(expect.any(String), expect.any(Array), expect.objectContaining({ timeout: 300 }))
+      run.mockClear()
+      await expect(importManagedDevtoolsProject({ ...options(), timeout: 700 })).rejects.toThrow('DEVTOOLS_PROJECT_IMPORT_TIMEOUT')
+      expect(run).not.toHaveBeenCalled()
+    }
+    finally {
+      vi.useRealTimers()
+    }
   })
 
   it.each([
@@ -74,6 +122,7 @@ describe('official managed project initialization', () => {
     vi.stubEnv(MANAGED_PROJECT_JOURNAL_ENV, '')
     await importManagedDevtoolsProject(options())
     expect(lease).not.toHaveBeenCalled()
+    expect(checkStatus).not.toHaveBeenCalled()
     expect(run).not.toHaveBeenCalled()
   })
 
@@ -82,6 +131,7 @@ describe('official managed project initialization', () => {
     const failure = new Error('cancelled')
     controller.abort(failure)
     await expect(importManagedDevtoolsProject({ ...options(), signal: controller.signal })).rejects.toBe(failure)
+    expect(checkStatus).not.toHaveBeenCalled()
     expect(run).not.toHaveBeenCalled()
     const next = new AbortController()
     run.mockImplementation(async () => {
