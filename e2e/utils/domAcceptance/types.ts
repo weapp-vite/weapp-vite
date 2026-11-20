@@ -90,7 +90,7 @@ export interface DomPage {
 }
 
 export interface DomSession {
-  currentPage: (options?: { appFunctionFallback?: boolean }) => Promise<DomPage | undefined | null>
+  currentPage: (options?: { appFunctionFallback?: boolean, pageStackFallback?: boolean, retries?: number, timeout?: number }) => Promise<DomPage | undefined | null>
   toolInfo?: () => Promise<{ version?: string, SDKVersion?: string }>
   systemInfo?: () => Promise<{ windowWidth?: number }>
   screenshot?: (options: { path: string }) => Promise<unknown>

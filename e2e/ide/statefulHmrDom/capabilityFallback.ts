@@ -164,7 +164,8 @@ export function createHmrCapabilityFallbackSuite(
           miniProgram = await reconnectAutomator(miniProgram)
         }
         await waitState(marker)
-        await publication!.assertClassicRuntime(miniProgram)
+        // waitState 已在同一次观察中核验客户端与宿主全局；另发请求可能跨到下一次重载。
+        await publication!.assertClassicOutput()
         if (format === 'esm') {
           await assertEsmClassicOutput(fixture!.projectRoot)
         }
@@ -297,7 +298,7 @@ export function createHmrCapabilityFallbackSuite(
             configSource,
             compilerHost: host,
             check: async (id) => {
-              await dom.check(id, miniProgram, await miniProgram.currentPage())
+              await dom.check(id, miniProgram)
             },
           })
           return

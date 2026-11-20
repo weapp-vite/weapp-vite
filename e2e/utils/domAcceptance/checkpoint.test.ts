@@ -163,6 +163,17 @@ describe('DOM acceptance evidence', () => {
     expect(evidence.nodes[0]?.nodes[0]?.text).toBe('ready')
   })
 
+  it('acquires the new native page within the checkpoint budget when reload interrupts the first page read', async () => {
+    const { page, session } = createPage()
+    session.currentPage = vi.fn()
+      .mockRejectedValueOnce(new Error('timeout waiting for automator response'))
+      .mockResolvedValue(page)
+    const evidence = await captureDomCheckpoint(session, undefined, checkpoint, 'devtools', 500)
+    expect(session.currentPage).toHaveBeenCalledTimes(3)
+    expect(session.currentPage).toHaveBeenCalledWith({ appFunctionFallback: false, pageStackFallback: false, retries: 1, timeout: expect.any(Number) })
+    expect(evidence.nodes[0]?.nodes[0]?.text).toBe('ready')
+  })
+
   it('never uses a stale handle when the current route has no query capability', async () => {
     const { page, session } = createPage()
     session.currentPage = vi.fn().mockResolvedValue({ path: page.path, pageId: page.pageId })
