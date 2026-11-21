@@ -1,4 +1,5 @@
 import type { DomNodeExpectation } from '../domAcceptance/types'
+import { WEVU_SETUP_READY_KEY, WEVU_SLOT_OWNER_ID_ATTR } from '@weapp-core/constants'
 import { DomUtils, parseDocument } from 'htmlparser2'
 import { xpathClass } from '../../ide/tdesignDom'
 
@@ -49,6 +50,39 @@ function outer(node: MarkupNode) {
   return DomUtils.getOuterHTML(node, { xmlMode: true, decodeEntities: false })
 }
 
+function parseRetailWxml(source: string) {
+  return parseDocument(source, {
+    xmlMode: true,
+    decodeEntities: false,
+    lowerCaseAttributeNames: false,
+    lowerCaseTags: false,
+  })
+}
+
+/** 静态对照只展开编译器添加的就绪门禁和默认布局，保留业务分支中的全部节点。 */
+export function projectRetailBuiltTemplateWxml(source: string) {
+  const document = parseRetailWxml(source)
+  const [ready, ...otherRoots] = elements(document.children)
+  if (otherRoots.length || ready?.name !== 'block'
+    || Object.keys(ready.attribs).length !== 1
+    || ready.attribs['wx:if'] !== `{{${WEVU_SETUP_READY_KEY}}}`
+    || hasUnexpectedText(ready.children)) {
+    return source
+  }
+
+  const [layout, ...otherChildren] = elements(ready.children)
+  if (otherChildren.length || layout?.name !== 'weapp-layout-default'
+    || Object.keys(layout.attribs).length !== 1
+    || !Object.hasOwn(layout.attribs, WEVU_SLOT_OWNER_ID_ATTR)) {
+    return source
+  }
+
+  document.children.splice(document.children.indexOf(ready), 1, ...ready.children.flatMap(
+    child => child === layout ? layout.children : [child],
+  ))
+  return outer(document)
+}
+
 function isFeedbackHost(node: MarkupElement) {
   return node.name === 't-toast' || node.name === 't-dialog'
     || (node.name === 'miniprogram_npm' && ('overlay' in node.attribs || 'popup' in node.attribs))
@@ -62,12 +96,7 @@ function hasBusinessContent(nodes: MarkupNode[]): boolean {
 
 /** 验证唯一默认布局和自定义导航，仅投影已验收的导航及两层外壳。 */
 export function projectRetailTemplateWxml(source: string, contract: RetailNavigationContract) {
-  const document = parseDocument(source, {
-    xmlMode: true,
-    decodeEntities: false,
-    lowerCaseAttributeNames: false,
-    lowerCaseTags: false,
-  })
+  const document = parseRetailWxml(source)
   const all = descendants(document.children)
   const layout = one(all.filter(node => hasClass(node, 'layout-default')), 'default layout')
   if (layout.name !== 'view') {

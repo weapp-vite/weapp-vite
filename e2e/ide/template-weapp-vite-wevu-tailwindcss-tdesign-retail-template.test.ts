@@ -18,7 +18,7 @@ import { isRetailCartReady, readRetailCartSnapshot } from '../utils/templateAcce
 import { RETAIL_CHECKOUT_GOODS } from '../utils/templateAcceptance/retailCheckout'
 import { queryRetailPageRoot } from '../utils/templateAcceptance/retailPageRoot'
 import { prepareRetailParityHome } from '../utils/templateAcceptance/retailParityHome'
-import { projectRetailParityWxml, retailNavigationNodes } from '../utils/templateAcceptance/retailParityMarkup'
+import { projectRetailBuiltTemplateWxml, projectRetailParityWxml, retailNavigationNodes } from '../utils/templateAcceptance/retailParityMarkup'
 import { createRetailParityProject } from '../utils/templateAcceptance/retailParityProject'
 import { attachRuntimeErrorCollector } from './runtimeErrors'
 
@@ -993,14 +993,15 @@ describe('template e2e: weapp-vite-wevu-tailwindcss-tdesign-retail-template pari
         throw new Error(`missing captured wxml for page=${pagePath}`)
       }
 
-      const similarity = calcTokenDice(tokenizeStructure(appWxml), tokenizeStructure(templateWxml))
+      const comparisonWxml = useRuntimeParity ? templateWxml : projectRetailBuiltTemplateWxml(templateWxml)
+      const similarity = calcTokenDice(tokenizeStructure(appWxml), tokenizeStructure(comparisonWxml))
       comparisons.push({ pagePath, similarity })
       if (similarity < structureSimilarityThreshold) {
         await dumpCapturedWxml(pagePath, appWxml, templateWxml)
         mismatches.push({
           pagePath,
           similarity,
-          mismatchLine: findFirstMismatchLine(appWxml, templateWxml),
+          mismatchLine: findFirstMismatchLine(appWxml, comparisonWxml),
         })
       }
     }

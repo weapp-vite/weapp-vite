@@ -1,10 +1,31 @@
+import { WEVU_SETUP_READY_KEY, WEVU_SLOT_OWNER_ID_ATTR } from '@weapp-core/constants'
 import { describe, expect, it } from 'vitest'
-import { projectRetailParityWxml, projectRetailTemplateWxml, retailNavigationNodes } from './retailParityMarkup'
+import { projectRetailBuiltTemplateWxml, projectRetailParityWxml, projectRetailTemplateWxml, retailNavigationNodes } from './retailParityMarkup'
 
 const contract = { configuredTitle: '昵称', customTitle: '昵称', isTabRoute: false }
 const business = '<view id="form"><input placeholder="请输入文字"/><text>业务内容</text></view>'
 const feedback = '<miniprogram_npm overlay="" visible="false"/><miniprogram_npm popup="" name="dialog"><view>反馈内容</view></miniprogram_npm>'
 const tabbar = '<custom-tab-bar><button>购物车</button></custom-tab-bar>'
+
+describe('retail built template projection', () => {
+  const cart = '<block wx:if="{{cartIsNotEmpty}}"><cart-group/><view class="gap"/><cart-bar/></block><block wx:else=""><cart-empty/></block>'
+  const layout = `<weapp-layout-default ${WEVU_SLOT_OWNER_ID_ATTR}="{{owner}}">${cart}</weapp-layout-default>`
+  const ready = `<block wx:if="{{${WEVU_SETUP_READY_KEY}}}">${layout}</block>`
+
+  it('compares the complete cart branches beneath the generated layout and setup guard', () => {
+    expect(projectRetailBuiltTemplateWxml(ready)).toBe(cart)
+  })
+
+  it.each([
+    ready.replace(WEVU_SETUP_READY_KEY, 'showCart'),
+    ready.replace(WEVU_SLOT_OWNER_ID_ATTR, 'class'),
+    ready.replace(layout, `<view/>${layout}`),
+    ready.replace(layout, `text${layout}`),
+    `${ready}<custom-tab-bar/>`,
+  ])('preserves a nontransparent document verbatim', (source) => {
+    expect(projectRetailBuiltTemplateWxml(source)).toBe(source)
+  })
+})
 
 function navigation(title = '昵称', action = '<view class="layout-navigation__button"><t-icon name="home"/></view>') {
   return `<view class="layout-navigation"><view class="layout-navigation__bar"><view class="layout-navigation__side layout-navigation__side--left">${
