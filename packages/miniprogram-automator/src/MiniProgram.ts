@@ -172,8 +172,10 @@ function isCaptureScreenshotRecoverableError(error: unknown) {
   }
 
   // 协议超时无法取消 DevTools 内部仍在执行的截图任务；调用方应轮换会话，
-  // 不能在同一连接上继续堆积请求。只有 DevTools 明确返回的瞬时失败适合重试。
-  return error.message.includes('fail to capture screenshot')
+  // 不能在同一连接上继续堆积请求。IDE 前端重建时返回的 automator response
+  // timeout 已经结束当前截图请求，连接仍可继续使用，适合按瞬时失败重试。
+  return isAutomatorResponseTimeout(error)
+    || error.message.includes('fail to capture screenshot')
 }
 
 function isRouteContextProbeError(error: unknown) {

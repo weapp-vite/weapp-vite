@@ -261,6 +261,27 @@ describe('MiniProgram', () => {
     })
   })
 
+  it('retries screenshot capture after an IDE automator response timeout', async () => {
+    const connection = new FakeConnection()
+    const miniProgram = new MiniProgram(connection as any)
+
+    connection.send
+      .mockRejectedValueOnce(new Error('timeout waiting for automator response'))
+      .mockResolvedValueOnce({ data: 'base64-data' })
+
+    const pending = miniProgram.screenshot({ timeout: 12_000 })
+    await vi.advanceTimersByTimeAsync(600)
+
+    await expect(pending).resolves.toBe('base64-data')
+    expect(connection.send).toHaveBeenCalledTimes(2)
+    expect(connection.send).toHaveBeenNthCalledWith(1, 'App.captureScreenshot', {}, {
+      timeout: 12_000,
+    })
+    expect(connection.send).toHaveBeenNthCalledWith(2, 'App.captureScreenshot', {}, {
+      timeout: 12_000,
+    })
+  })
+
   it('does not retry a protocol timeout on the same connection', async () => {
     const connection = new FakeConnection()
     const miniProgram = new MiniProgram(connection as any)
