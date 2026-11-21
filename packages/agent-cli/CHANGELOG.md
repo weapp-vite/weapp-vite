@@ -1,5 +1,21 @@
 # @weapp-agent/cli
 
+## 0.2.7
+
+### Patch Changes
+
+- chore(deps): 刷新兼容的工作区与 Rust 原生依赖，并同步脚手架依赖目录。
+  - @mpcore/vitest：devDependencies.@vitest/browser
+  - @weapp-vite/web：dependencies.@csstools/css-tokenizer
+  - @weapp-vite/ast-native：devDependencies.vitest
+  - create-weapp-vite：dependencies.@npmcli/config
+  - @weapp-vite/language-service：dependencies.ignore
+
+- Updated dependencies:
+  - @weapp-vite/acceptance@0.2.6
+  - @weapp-vite/mcp@2.2.7
+  - weapp-ide-cli@6.4.6
+
 ## 0.2.6
 
 ### Patch Changes

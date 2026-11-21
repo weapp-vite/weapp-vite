@@ -1,5 +1,30 @@
 # weapp-ide-cli
 
+## 6.4.6
+
+### Patch Changes
+
+- chore(deps): 刷新兼容的工作区与 Rust 原生依赖，并同步脚手架依赖目录。
+  - @mpcore/vitest：devDependencies.@vitest/browser
+  - @weapp-vite/web：dependencies.@csstools/css-tokenizer
+  - @weapp-vite/ast-native：devDependencies.vitest
+  - create-weapp-vite：dependencies.@npmcli/config
+  - @weapp-vite/language-service：dependencies.ignore
+
+- fix(weapp-ide-cli): 修复微信开发者工具冷启动后受管项目导入可能挂起的问题。
+
+  受管启动由同一安装的官方 `agent start` 加载项目并确认窗口。移除启动前重复的项目列表导入，避免等待无响应的导入回执。
+
+- fix(weapp-vite): 修复独立输出目录的 npm 落位与构建钩子时序，并提前诊断 automator 项目配置。
+
+  生产应用的 npm 文件随 bundler 一同输出，支持在 writeBundle 与 closeBundle 中观察最终文件，避免并行拷贝覆盖后处理。原输出树内的相对 npm 映射跟随 outDir，外部映射保持固定。automator 与 acceptance 在缺少或损坏 project.config.json 时提供可操作的项目根配置指引。
+
+- Updated dependencies:
+  - @weapp-core/logger@3.2.6
+  - @weapp-core/shared@3.5.2
+  - @weapp-vite/devtools-runtime@0.7.6
+  - @weapp-vite/miniprogram-automator@1.5.6
+
 ## 6.4.5
 
 ### Patch Changes
