@@ -6,7 +6,7 @@ import path from 'node:path'
 import process from 'node:process'
 import { describe, expect, it, vi } from 'vitest'
 import { MANAGED_PROJECT_JOURNAL_ENV } from 'weapp-ide-cli'
-import { createBridgeWrapperProjectConfig, enhanceMiniProgramRelaunch, extractDevtoolsCliLoginState, formatRuntimeStatsLine, isDevtoolsHttpPortError, isLikelyRelaunchRetryableError, isWarmupPageRootTimeoutError, isWarmupRelaunchTimeoutError, resolveAutomatorLaunchMode, resolveLaunchRetryCount, shouldCloseCurrentPageQueryTimeout, shouldPrebuildAutomatorProject, validateLaunchProjectAssets } from './automator'
+import { createBridgeWrapperProjectConfig, enhanceMiniProgramRelaunch, extractDevtoolsCliLoginState, formatRuntimeStatsLine, isAppServiceReadinessTimeoutError, isDevtoolsHttpPortError, isLikelyRelaunchRetryableError, isWarmupPageRootTimeoutError, isWarmupRelaunchTimeoutError, resolveAutomatorLaunchMode, resolveLaunchRetryCount, shouldCloseCurrentPageQueryTimeout, shouldPrebuildAutomatorProject, validateLaunchProjectAssets } from './automator'
 import { terminateOwnedCliProcess } from './automatorCliProcess'
 import { ownDevtoolsCleanup } from './devtoolsProcessOwnership'
 import { cleanupResidualDevtoolsProcesses } from './ide-devtools-cleanup'
@@ -94,6 +94,18 @@ describe('automator', () => {
     const error = new Error('DevTools did not respond to protocol method App.getCurrentPage within 30000ms')
 
     expect(isLikelyRelaunchRetryableError(error)).toBe(true)
+  })
+
+  it.each([
+    new Error('Timeout in bridge AppService readiness after 3000ms'),
+    new Error('Timed out waiting App domain readiness after 3000ms'),
+    Object.assign(new Error('protocol request timed out'), { code: 'DEVTOOLS_PROTOCOL_TIMEOUT', method: 'App.getCurrentPage' }),
+  ])('recognizes an AppService readiness timeout as warmup-recoverable', (error) => {
+    expect(isAppServiceReadinessTimeoutError(error)).toBe(true)
+  })
+
+  it('does not classify unrelated bridge errors as an AppService readiness timeout', () => {
+    expect(isAppServiceReadinessTimeoutError(new Error('App initialization failed'))).toBe(false)
   })
 
   it('treats the generic DevTools reLaunch protocol rejection as retryable', () => {

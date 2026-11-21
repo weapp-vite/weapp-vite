@@ -255,6 +255,7 @@ function clearLaunchEnv() {
   delete process.env.WEAPP_VITE_E2E_RELUNCH_RETRY_DELAY
   delete process.env.WEAPP_VITE_E2E_AUTOMATOR_SKIP_WARMUP
   delete process.env.WEAPP_VITE_E2E_BRIDGE_CONNECT_SETTLE_DELAY
+  delete process.env.WEAPP_VITE_E2E_BRIDGE_APP_READY_PROBE_TIMEOUT
   delete process.env.WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_PREBUILD
   delete process.env.WEAPP_VITE_E2E_AUTOMATOR_POST_CONNECT_REFRESH
   delete process.env.WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_POST_CONNECT_REFRESH
@@ -2357,7 +2358,7 @@ describe('automator launch resilience', { concurrent: false, timeout: 30_000 }, 
     await Promise.race([probeStarted.promise, launching])
     try {
       expect(connectedMiniProgram.waitForAppReady).toHaveBeenCalledExactlyOnceWith(expect.any(Number))
-      expect(connectedMiniProgram.waitForAppReady.mock.calls[0]![0]).toBeLessThan(12_345)
+      expect(connectedMiniProgram.waitForAppReady.mock.calls[0]![0]).toBeLessThanOrEqual(3_000)
       expect(connectedMiniProgram.enableLog).not.toHaveBeenCalled()
     }
     finally {
@@ -2376,6 +2377,66 @@ describe('automator launch resilience', { concurrent: false, timeout: 30_000 }, 
     expect(connectedMiniProgram.__rawCurrentPage).toHaveBeenCalled()
     expect(connectedMiniProgram.__rawReLaunch).not.toHaveBeenCalled()
     expect(connectedMiniProgram.enableLog).toHaveBeenCalledOnce()
+  })
+
+  it('recovers through warmup when the bridge AppService readiness probe times out', async () => {
+    process.env.WEAPP_VITE_E2E_AUTOMATOR_LAUNCH_MODE = 'bridge'
+    process.env.WEAPP_VITE_E2E_APP_CONFIG_READY_TIMEOUT = '400'
+    process.env.WEAPP_VITE_E2E_BRIDGE_CONNECT_SETTLE_DELAY = '1'
+    process.env.WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_PREBUILD = '0'
+    process.env.WEAPP_VITE_E2E_BRIDGE_APP_READY_PROBE_TIMEOUT = '25'
+    process.env.WEAPP_VITE_E2E_RELUNCH_READY_TIMEOUT = '20'
+
+    createProjectFixture(sandboxRoot, {
+      pages: ['pages/index/index'],
+    })
+
+    const connectedMiniProgram = createMockMiniProgram({ currentPage: createMockPage('pages/other/index') })
+    connectedMiniProgram.waitForAppReady = vi.fn(async () => {
+      throw new Error('DevTools did not respond to protocol method App.getCurrentPage within 25ms')
+    })
+    execaMock.mockResolvedValueOnce({
+      exitCode: 0,
+      stdout: JSON.stringify({ wsEndpoint: 'ws://127.0.0.1:9420' }),
+      stderr: '',
+    })
+    connectMock.mockResolvedValueOnce(connectedMiniProgram)
+
+    const { launchAutomator } = await import('../utils/automator')
+    const session = await launchAutomator({ projectPath: sandboxRoot, timeout: 12_345 })
+
+    expect(connectedMiniProgram.waitForAppReady).toHaveBeenCalledExactlyOnceWith(19)
+    expect(connectedMiniProgram.enableLog).toHaveBeenCalledOnce()
+    expect(connectedMiniProgram.__rawReLaunch).toHaveBeenCalledExactlyOnceWith('/pages/index/index')
+    await session.close()
+  })
+
+  it('fails immediately when bridge AppService readiness rejects with a non-readiness error', async () => {
+    process.env.WEAPP_VITE_E2E_AUTOMATOR_LAUNCH_MODE = 'bridge'
+    process.env.WEAPP_VITE_E2E_APP_CONFIG_READY_TIMEOUT = '400'
+    process.env.WEAPP_VITE_E2E_BRIDGE_CONNECT_SETTLE_DELAY = '1'
+    process.env.WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_PREBUILD = '0'
+
+    createProjectFixture(sandboxRoot, {
+      pages: ['pages/index/index'],
+    })
+
+    const connectedMiniProgram = createMockMiniProgram()
+    const failure = new Error('App initialization failed')
+    connectedMiniProgram.waitForAppReady = vi.fn(async () => {
+      throw failure
+    })
+    execaMock.mockResolvedValueOnce({
+      exitCode: 0,
+      stdout: JSON.stringify({ wsEndpoint: 'ws://127.0.0.1:9420' }),
+      stderr: '',
+    })
+    connectMock.mockResolvedValueOnce(connectedMiniProgram)
+
+    const { launchAutomator } = await import('../utils/automator')
+    await expect(launchAutomator({ projectPath: sandboxRoot, timeout: 12_345 })).rejects.toBe(failure)
+    expect(connectedMiniProgram.enableLog).not.toHaveBeenCalled()
+    expect(connectedMiniProgram.__rawReLaunch).not.toHaveBeenCalled()
   })
 
   it('launches the complete snapshot without changing roots or clearing startup evidence', async () => {

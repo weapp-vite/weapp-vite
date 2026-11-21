@@ -114,6 +114,7 @@ const DEFAULT_PAGE_ROOT_QUERY_TIMEOUT = 1_000
 const CURRENT_PAGE_READY_RETRY_DELAY = 220
 const ROUTE_READY_PAGE_ROOT_PROBE_TIMEOUT = 1_500
 const DEFAULT_BRIDGE_CONNECT_SETTLE_DELAY = 5_000
+const DEFAULT_BRIDGE_APP_READY_PROBE_TIMEOUT = 3_000
 const AUTOMATOR_LAUNCH_MODE_ENV = 'WEAPP_VITE_E2E_AUTOMATOR_LAUNCH_MODE'
 const AUTOMATOR_LAUNCH_MODE_BRIDGE = 'bridge'
 const AUTOMATOR_PREBUILD_ENV = 'WEAPP_VITE_E2E_AUTOMATOR_PREBUILD'
@@ -171,6 +172,8 @@ const ERROR_PREFIX_PATTERN = /^error\s*:\s*/i
 const LOGIN_REQUIRED_CODE_PATTERN = /code\s*[:=]\s*(\d+)/i
 const BRIDGE_CONNECT_TIMEOUT_PATTERN = /Timeout in connect automator bridge/i
 const BRIDGE_CONNECT_FAILURE_PATTERN = /Failed connecting to /
+const BRIDGE_APP_READY_TIMEOUT_PATTERN = /Timeout in bridge AppService readiness after \d+ms/i
+const APP_READY_TIMEOUT_PATTERN = /Timed out waiting App domain readiness|App\.getCurrentPage returned no ready page with a valid pageId and path|DevTools did not respond to protocol method App\.getCurrentPage within \d+ms|timeout waiting for automator response/i
 const COMPACT_WHITESPACE_PATTERN = /\s+/g
 const LAUNCH_TIMEOUT_PATTERN = /Timeout in launch automator#/i
 const PROJECT_REFRESH_TIMEOUT_PATTERN = /Timeout in refresh project/i
@@ -233,6 +236,10 @@ const TOOL_COMPILE_TIMEOUT = resolvePositiveIntEnv(
 const BRIDGE_CONNECT_SETTLE_DELAY = resolvePositiveIntEnv(
   process.env.WEAPP_VITE_E2E_BRIDGE_CONNECT_SETTLE_DELAY,
   DEFAULT_BRIDGE_CONNECT_SETTLE_DELAY,
+)
+const BRIDGE_APP_READY_PROBE_TIMEOUT = resolvePositiveIntEnv(
+  process.env.WEAPP_VITE_E2E_BRIDGE_APP_READY_PROBE_TIMEOUT,
+  DEFAULT_BRIDGE_APP_READY_PROBE_TIMEOUT,
 )
 const isProjectPathTrustedByEnv = createAutomatorProjectTrust()
 
@@ -859,6 +866,16 @@ function isGenericDevtoolsRelaunchError(error: unknown) {
 export function isTransientDevtoolsPageMetadataError(error: unknown) {
   const message = error instanceof Error ? error.message : String(error)
   return isGenericDevtoolsRelaunchError(error) || /getPageMetaByWebviewId/i.test(message)
+}
+
+export function isAppServiceReadinessTimeoutError(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error)
+  if (error && typeof error === 'object'
+    && 'code' in error && error.code === 'DEVTOOLS_PROTOCOL_TIMEOUT'
+    && 'method' in error && error.method === 'App.getCurrentPage') {
+    return true
+  }
+  return BRIDGE_APP_READY_TIMEOUT_PATTERN.test(message) || APP_READY_TIMEOUT_PATTERN.test(message)
 }
 
 export function isLikelyRelaunchRetryableError(error: unknown) {
@@ -3067,13 +3084,35 @@ function launchDevtoolsAutomator(options: LaunchAutomatorOptions, launchGuard: T
             const withRuntimeLogs = await lifecycle.step(() => enhanceMiniProgramWithRuntimeLogs(miniProgram, project))
             if (usesBridge && typeof miniProgram.waitForAppReady === 'function') {
               // bridge 的 Tool.getInfo 只确认控制接口；AppService 就绪后才能建立 CDP 通道。
-              const readyBudget = lifecycle.remainingMs()
-              await lifecycle.step(() => runWithDevtoolsLogMonitor(
-                () => miniProgram.waitForAppReady(readyBudget),
-                readyBudget,
-                'bridge AppService readiness',
-                devtoolsLogMonitor,
-              ), { stage: 'app-ready' })
+              const readyProbeBudget = Math.min(lifecycle.remainingMs(), BRIDGE_APP_READY_PROBE_TIMEOUT)
+              const probeMargin = Math.min(500, Math.floor(readyProbeBudget / 4))
+              const readyBudget = Math.max(1, readyProbeBudget - probeMargin)
+              try {
+                await lifecycle.step(() => runWithDevtoolsLogMonitor(
+                  () => miniProgram.waitForAppReady(readyBudget),
+                  readyProbeBudget,
+                  'bridge AppService readiness',
+                  devtoolsLogMonitor,
+                ), { stage: 'app-ready' })
+              }
+              catch (error) {
+                if (shouldSkipAutomatorWarmup(skipWarmup)
+                  || warmupAllowRelaunch === false
+                  || !resolvedWarmupRoute
+                  || !isAppServiceReadinessTimeoutError(error)) {
+                  throw error
+                }
+                devtoolsLogMonitor.assertClean('bridge AppService readiness timeout')
+                process.stdout.write(`[warn] [runtime:launch-step] app-ready-timeout-recover route=${resolvedWarmupRoute} probe=${readyProbeBudget}ms project=${project} reason=${error instanceof Error ? error.message : String(error)}\n`)
+                appendIdeReportEvent({
+                  source: 'runtime',
+                  kind: 'message',
+                  project,
+                  level: 'warn',
+                  channel: 'app-ready',
+                  text: `timeout=${readyProbeBudget}ms recovery=warmup-relaunch route=${resolvedWarmupRoute}`,
+                })
+              }
             }
             // 订阅从本阶段开始计时，同时遵守原有整个启动 attempt 的截止时间。
             const subscriptionDeadlineAt = Math.min(performance.now() + launchTimeout, attemptDeadlineAt)

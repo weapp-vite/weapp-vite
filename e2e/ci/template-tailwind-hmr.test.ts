@@ -157,6 +157,23 @@ async function expectRetainedHeapWithinGuard(options: {
   ).toBeLessThanOrEqual(MAX_RETAINED_HEAP_GROWTH_BYTES)
 }
 
+async function waitForOutputAfter(
+  dev: ReturnType<typeof startDevProcess>,
+  matcher: string,
+  outputOffset: number,
+  timeoutMs = 90_000,
+) {
+  const startedAt = Date.now()
+  while (Date.now() - startedAt < timeoutMs) {
+    const output = dev.getOutput().slice(outputOffset)
+    if (output.includes(matcher)) {
+      return output
+    }
+    await new Promise(resolve => setTimeout(resolve, 100))
+  }
+  throw new Error(`Timed out waiting for dev output after a file update: ${matcher}`)
+}
+
 afterEach(async () => {
   await cleanupResidualDevProcesses()
 })
@@ -184,8 +201,11 @@ describe('template Tailwind CSS HMR (dev watch)', { concurrent: false }, () => {
       await dev.waitFor(waitForFileContains(fixture.appWxssFile, 'width: 137px'), `${kind} introduced module CSS`)
       await dev.waitForOutput('小程序已重新构建', `${kind} introduced module build completed`)
 
+      const refreshOutputOffset = dev.getOutput().length
       await replaceFileByRename(dependency, moduleSource(149))
-      const refreshed = await dev.waitFor(waitForFileContains(fixture.appWxssFile, 'width: 149px'), `${kind} refreshed module CSS`)
+      await dev.waitFor(waitForFileContains(fixture.appWxssFile, 'width: 149px'), `${kind} refreshed module CSS`)
+      await dev.waitFor(waitForOutputAfter(dev, '小程序已重新构建', refreshOutputOffset), `${kind} refreshed module build completed`)
+      const refreshed = await fs.readFile(fixture.appWxssFile, 'utf8')
       expect(refreshed).not.toContain('width: 137px')
       expect(await fs.pathExists(path.join(fixture.fixtureRoot, 'dist/pages/index/index.js'))).toBe(true)
     }
