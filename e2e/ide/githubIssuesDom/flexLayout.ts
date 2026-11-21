@@ -1,9 +1,18 @@
 import type { TestContext } from 'vitest'
 import { expect } from 'vitest'
+import { queryDomElements } from '../../utils/domAcceptance/query'
 
 export async function checkScopedFlexRow(context: TestContext, page: any) {
   const host = await page.$('#issue521-host', { fallback: false, timeout: 5_000 })
-  const candidates = await host.$$('component', { timeout: 5_000 })
+  if (!host) {
+    throw new Error('Expected #issue521-host in the rendered page')
+  }
+  const candidates = await queryDomElements(
+    selector => host.$$(selector, { timeout: 5_000 }),
+    'component',
+    'devtools',
+    'css',
+  )
   const owners = []
   for (const candidate of candidates) {
     if ((await candidate.$$('#issue521-a', { timeout: 5_000 })).length === 1) {
@@ -14,7 +23,13 @@ export async function checkScopedFlexRow(context: TestContext, page: any) {
   const rects = []
   for (const id of ['a', 'b']) {
     const item = await owners[0].$(`#issue521-${id}`, { timeout: 5_000 })
+    if (!item) {
+      throw new Error(`Expected scoped slot item #issue521-${id}`)
+    }
     const node = await item.$('.issue521-flex-item', { timeout: 5_000 })
+    if (!node) {
+      throw new Error(`Expected .issue521-flex-item inside #issue521-${id}`)
+    }
     rects.push(await node.offset())
   }
   await context.annotate(JSON.stringify({ checkpoint: 'initial', route: page.path, source: 'devtools-page-frame', rects }), 'layout-evidence')
