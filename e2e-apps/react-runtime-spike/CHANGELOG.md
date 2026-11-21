@@ -1,5 +1,13 @@
 # e2e-app-react-runtime-spike
 
+## 0.0.14
+
+### Patch Changes
+
+- Updated dependencies:
+  - @weapp-vite/react@0.5.2
+  - wevu@7.12.0
+
 ## 0.0.13
 
 ### Patch Changes

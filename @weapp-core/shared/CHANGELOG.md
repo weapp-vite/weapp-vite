@@ -1,5 +1,21 @@
 # @weapp-core/shared
 
+## 3.5.2
+
+### Patch Changes
+
+- chore(deps): 刷新兼容的工作区与 Rust 原生依赖，并同步脚手架依赖目录。
+  - @mpcore/vitest：devDependencies.@vitest/browser
+  - @weapp-vite/web：dependencies.@csstools/css-tokenizer
+  - @weapp-vite/ast-native：devDependencies.vitest
+  - create-weapp-vite：dependencies.@npmcli/config
+  - @weapp-vite/language-service：dependencies.ignore
+
+- chore(shared): 升级实体解码依赖至 9.x。
+
+- Updated dependencies:
+  - @weapp-vite/wxml@0.0.4
+
 ## 3.5.1
 
 ### Patch Changes

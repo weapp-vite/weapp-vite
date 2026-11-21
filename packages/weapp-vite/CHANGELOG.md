@@ -1,5 +1,61 @@
 # weapp-vite
 
+## 7.12.0
+
+### Minor Changes
+
+- feat(weapp-vite): 支持按引用裁剪小程序 npm 产物
+
+  支持通过 `weapp.npm.pruneUnusedFiles` 按最终产物引用闭包裁剪小程序 npm 包内未使用的文件，并覆盖主包、分包、独立分包和插件输出。
+
+- feat(wevu): 新增 `weapp.wevu.setupInitialRenderBarrier` 总开关，可退回 setup 首帧按静态初值直接渲染。
+
+### Patch Changes
+
+- fix(weapp-vite): 修复微信开发者工具从状态保持 HMR 回退到 classic 时的资产监听交接。
+
+  在 stateful 交接到 classic 时停用 IDE 局部脚本热载，并等待因配置变更重启的 AppService 确认已加载旧 App 和当前页面。首轮 classic 写出并清理旧产物后再恢复资产监听，避免 IDE 加载混合产物。
+
+- chore(deps): 刷新兼容的工作区与 Rust 原生依赖，并同步脚手架依赖目录。
+  - @mpcore/vitest：devDependencies.@vitest/browser
+  - @weapp-vite/web：dependencies.@csstools/css-tokenizer
+  - @weapp-vite/ast-native：devDependencies.vitest
+  - create-weapp-vite：dependencies.@npmcli/config
+  - @weapp-vite/language-service：dependencies.ignore
+
+- fix(weapp-vite): 修复独立输出目录的 npm 落位与构建钩子时序，并提前诊断 automator 项目配置。
+
+  生产应用的 npm 文件随 bundler 一同输出，支持在 writeBundle 与 closeBundle 中观察最终文件，避免并行拷贝覆盖后处理。原输出树内的相对 npm 映射跟随 outDir，外部映射保持固定。automator 与 acceptance 在缺少或损坏 project.config.json 时提供可操作的项目根配置指引。
+
+- fix(weapp-vite): 处理 WXML 扫描中的文件删除竞争
+
+  修复开发监听中 WXML 文件在检查后、读取前被删除时导致构建进程退出的问题。清理该文件的扫描缓存和依赖，恢复文件后继续编译。
+
+- Updated dependencies:
+  - @weapp-core/constants@0.6.2
+  - @weapp-core/init@6.1.6
+  - @weapp-core/logger@3.2.6
+  - @weapp-core/schematics@6.3.6
+  - @weapp-core/shared@3.5.2
+  - @weapp-vite/acceptance@0.2.6
+  - @weapp-vite/ast@7.12.0
+  - @weapp-vite/eslint@0.3.6
+  - @weapp-vite/hmr@0.3.6
+  - @weapp-vite/i18n@0.3.7
+  - @weapp-vite/language-service@0.1.6
+  - @weapp-vite/mcp@2.2.7
+  - @weapp-vite/miniprogram-automator@1.5.6
+  - @weapp-vite/tailwindcss@1.1.6
+  - @weapp-vite/volar@2.2.6
+  - @weapp-vite/web@2.2.6
+  - @weapp-vite/wxml@0.0.4
+  - @wevu/api@0.4.6
+  - @wevu/web-apis@1.5.3
+  - rolldown-require@2.1.6
+  - vite-plugin-performance@2.1.6
+  - weapp-ide-cli@6.4.6
+  - wevu@7.12.0
+
 ## 7.11.1
 
 ### Patch Changes
