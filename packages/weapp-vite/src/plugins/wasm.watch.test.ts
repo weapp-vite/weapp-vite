@@ -10,11 +10,13 @@ import { createWasmPlugin } from './wasm'
 it('keeps cached init ownership across watch rebuilds and releases removed imports', async () => {
   const root = await mkdtemp(path.join(os.tmpdir(), 'weapp-vite-wasm-watch-'))
   const entry = path.join(root, 'entry.js')
+  const dist = path.join(root, 'dist')
+  const output = path.join(dist, 'entry.js')
   const initEntry = path.join(root, 'init.js')
   const bytes = new Uint8Array([0, 97, 115, 109, 1, 0, 0, 0])
   await writeFile(path.join(root, 'add.wasm'), bytes)
   await writeFile(initEntry, 'import init from "./add.wasm?init"; globalThis.init = init')
-  await writeFile(entry, 'import "./init.js"; globalThis.version = 1')
+  await writeFile(entry, 'import "./init.js"; globalThis.version = "wasm-watch-initial"')
   const ctx = { configService: { platform: 'weapp' } } as unknown as CompilerContext
   let assetDirectory = 'assets'
   const watcher = await build({
@@ -32,35 +34,42 @@ it('keeps cached init ownership across watch rebuilds and releases removed impor
   if (!('on' in watcher)) {
     throw new Error('Expected a watch build')
   }
-  const waitForBuild = () => new Promise<void>((resolve, reject) => {
-    const onEvent: Parameters<typeof watcher.on<'event'>>[1] = (event) => {
-      if (event.code === 'END' || event.code === 'ERROR') {
+  const waitForBuild = (version: string) => new Promise<string>((resolve, reject) => {
+    const onEvent: Parameters<typeof watcher.on<'event'>>[1] = async (event) => {
+      if (event.code === 'ERROR') {
         watcher.off('event', onEvent)
-        if (event.code === 'ERROR') {
-          reject(event.error)
+        reject(event.error)
+      }
+      if (event.code === 'BUNDLE_END') {
+        try {
+          // An intermediate rebuild can read the file between truncation and writing.
+          const code = await readFile(output, 'utf8')
+          if (code.includes(version)) {
+            watcher.off('event', onEvent)
+            resolve(code)
+          }
         }
-        else {
-          resolve()
+        catch (error) {
+          watcher.off('event', onEvent)
+          reject(error)
         }
       }
     }
     watcher.on('event', onEvent)
   })
   try {
-    await waitForBuild()
-    const dist = path.join(root, 'dist')
+    await waitForBuild('wasm-watch-initial')
     expect(await readFile(path.join(dist, 'assets/add.wasm'))).toEqual(Buffer.from(bytes))
-    const second = waitForBuild()
-    await writeFile(entry, 'import "./init.js"; globalThis.version = 2')
-    await second
-    expect(await readFile(path.join(dist, 'entry.js'), 'utf8')).toContain('/assets/add.wasm')
+    const second = waitForBuild('wasm-watch-update')
+    await writeFile(entry, 'import "./init.js"; globalThis.version = "wasm-watch-update"')
+    expect(await second).toContain('/assets/add.wasm')
     expect(await readFile(path.join(dist, 'assets/add.wasm'))).toEqual(Buffer.from(bytes))
-    const third = waitForBuild()
+    const third = waitForBuild('wasm-watch-url')
     assetDirectory = 'regular'
-    await writeFile(entry, 'import url from "./add.wasm?url"; globalThis.url = url')
-    await third
+    await writeFile(entry, 'import url from "./add.wasm?url"; globalThis.url = url; globalThis.version = "wasm-watch-url"')
+    const code = await third
     expect(await readFile(path.join(dist, 'regular/add.wasm'))).toEqual(Buffer.from(bytes))
-    expect(await readFile(path.join(dist, 'entry.js'), 'utf8')).not.toContain('WXWebAssembly')
+    expect(code).not.toContain('WXWebAssembly')
   }
   finally {
     await watcher.close()
