@@ -38,6 +38,7 @@ export async function withWindowsInspectorDirectory<T>(operation: (directory: st
       throw new Error(`Windows kernel inspector directory retained because its child identity is unconfirmed: ${directory}`)
     }
     await Promise.all(pending)
-    await fs.rm(directory, { recursive: true, force: true })
+    // 原生 close 后，Windows 仍可能短暂锁定可执行文件映像。
+    await fs.rm(directory, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 })
   })
 }
