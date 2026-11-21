@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import {
   assertNoRecentDevtoolsSimulatorBootIssues,
   captureDevtoolsLogBaseline,
+  scanRecentDevtoolsSimulatorBootDiagnostics,
   scanRecentDevtoolsSimulatorBootIssues,
   waitForDevtoolsLogQuiescence,
 } from '../utils/ide-devtools-logs'
@@ -243,19 +244,40 @@ describe('ide devtools logs', () => {
     })).toThrow(failure)
   })
 
-  it('ignores a generic launch failure after the same simulator reaches webview ready', () => {
+  it.each(['Error: simulator launch failed', 'timeout'])('records recovery of generic startup error %j after the same simulator reaches webview ready', (message) => {
     const startedAt = Date.now() - 1_000
     const timestamp = formatDevtoolsLogTimestamp(new Date())
-    writeLog(sandboxRoot, [
-      `[${timestamp}][ERROR][rt:0,win:s0] [appservice] simulator launch catch error Error: simulator launch failed`,
+    const failure = `[${timestamp}][ERROR][rt:0,win:s0] [appservice] simulator launch catch error ${message}`
+    const ready = `[${timestamp}][INFO][rt:0,win:s0] [devtools] webview page ready`
+    const logFile = writeLog(sandboxRoot, [
+      failure,
       `[${timestamp}][INFO][rt:0,win:s0] [appservice] simulator launch success, set src http://127.0.0.1/appservice/s0/mainframe`,
+      `[${timestamp}][INFO][rt:0,win:s1] [devtools] webview page ready`,
+      '',
+    ].join('\n'))
+
+    const options = { rootDir: sandboxRoot, sinceMs: startedAt }
+    const diagnostic = { file: logFile, line: failure, windowId: 's0' }
+    expect(scanRecentDevtoolsSimulatorBootDiagnostics(options)).toEqual([{ ...diagnostic, state: 'pending' }])
+    expect(scanRecentDevtoolsSimulatorBootIssues(options)).toEqual([{ file: logFile, line: failure }])
+
+    fs.appendFileSync(logFile, ready)
+    expect(scanRecentDevtoolsSimulatorBootDiagnostics(options)).toEqual([{ ...diagnostic, state: 'recovered', readyLine: ready }])
+    expect(scanRecentDevtoolsSimulatorBootIssues(options)).toEqual([])
+  })
+
+  it('keeps a detailed simulator timeout fatal even after the same window becomes ready', () => {
+    const timestamp = formatDevtoolsLogTimestamp(new Date())
+    const failure = `[${timestamp}][ERROR][rt:0,win:s0] [appservice] simulator launch catch error Error: timeout waiting for compiler response`
+    const logFile = writeLog(sandboxRoot, [
+      failure,
       `[${timestamp}][INFO][rt:0,win:s0] [devtools] webview page ready`,
     ].join('\n'))
 
-    expect(scanRecentDevtoolsSimulatorBootIssues({
+    expect(scanRecentDevtoolsSimulatorBootDiagnostics({
       rootDir: sandboxRoot,
-      sinceMs: startedAt,
-    })).toEqual([])
+      sinceMs: Date.now() - 1_000,
+    })).toEqual([{ file: logFile, line: failure, state: 'fatal', windowId: 's0' }])
   })
 
   it('does not report a successful startup and ready current page without a launch failure', () => {

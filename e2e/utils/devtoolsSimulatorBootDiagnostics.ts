@@ -8,7 +8,7 @@ const BOOT_ERROR_PATTERNS = [
 ] as const
 const SIMULATOR_NOT_FOUND_PATTERN = /\[SimulatorService\]\s+updateSimulatorCompileOptions:\s+simulator not found\s+(\S+)/i
 const SIMULATOR_INIT_PATTERN = /\[SimulatorService\]\s+init simulator\s+(\S+)\s+with clientSid\b/i
-const GENERIC_LAUNCH_FAILURE_PATTERN = /simulator launch catch error(?: stack)?\s+(?:Error:\s*)?simulator launch failed\s*$/i
+const GENERIC_LAUNCH_FAILURE_PATTERN = /simulator launch catch error(?: stack)?\s+(?:timeout|(?:Error:\s*)?simulator launch failed)\s*$/i
 const WEBVIEW_PAGE_READY_PATTERN = /\[devtools\]\s+webview page ready/i
 const WINDOW_ID_PATTERN = /\bwin:([^\]\s]+)/i
 
