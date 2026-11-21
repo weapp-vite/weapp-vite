@@ -94,6 +94,28 @@ export function createNativeHmrPublication(
     }
   }
 
+  async function waitForClassicReload(session: Pick<Awaited<ReturnType<typeof launchAutomator>>, 'evaluateWithOptions'>, route: string, instanceKey: string) {
+    // 配置重载也会替换 App 和页面，但只有运行 classic 产物后全局对象才会消失。
+    await expect.poll(() => session.evaluateWithOptions((key: string, keys: string[]) => {
+      const pages = getCurrentPages()
+      const page = pages[pages.length - 1] as ({ route?: string } & Record<string, unknown>) | undefined
+      const app = getApp() as Record<string, unknown> | undefined
+      const globals = globalThis as Record<string, unknown>
+      return {
+        route: page?.route,
+        pageMarker: Boolean(page?.[key]),
+        appMarker: app ? Boolean(app[key]) : undefined,
+        stateful: keys.filter(key => globals[key] || (globals.wx as Record<string, unknown> | undefined)?.[key]),
+      }
+    }, { timeout: 2_500 }, instanceKey, statefulKeys), { timeout: 45_000 }).toEqual({
+      route: route.slice(1),
+      pageMarker: false,
+      appMarker: false,
+      stateful: [],
+    })
+    await assertClassicOutput()
+  }
+
   return {
     get stateful() { return updateMode() === 'stateful-experimental' },
     async settleMode() {
@@ -136,6 +158,7 @@ export function createNativeHmrPublication(
       }
     },
     assertClassicOutput,
+    waitForClassicReload,
     async assertClassicRuntime(session: Awaited<ReturnType<typeof launchAutomator>>) {
       await assertClassicOutput()
       expect(await session.evaluate((keys: string[]) => keys.map(key => ({

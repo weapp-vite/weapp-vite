@@ -4,6 +4,8 @@ import type { createDevBuildCompletion } from '../devBuildCompletion'
 import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
+import vm from 'node:vm'
+import { WEAPP_VITE_STATEFUL_HMR_BRIDGE_KEY, WEAPP_VITE_STATEFUL_HMR_CLIENT_KEY } from '@weapp-core/constants'
 import { afterEach, expect, it, vi } from 'vitest'
 import { createNativeHmrPublication } from '../nativeHmrPublication'
 import { nativePublicationGeneration, nativePublicationHash } from './files'
@@ -95,6 +97,29 @@ it.each(['auto', 'stateful-experimental'] as const)('validates the configured %s
   run.append(readyLog({ ...readyRecord, requested }))
   expect(run.publication.stateful).toBe(false)
   await expect(run.publication.assertClassicOutput()).resolves.toBeUndefined()
+})
+
+it('waits for the classic App and current page in the same runtime observation', async () => {
+  const run = await fixture(fallback + ready)
+  const route = 'pages/index/index'
+  const instanceKey = '__previousAppAndPage'
+  const readyApp = {}
+  const readyPage = { route }
+  const readyRuntime = { getApp: () => readyApp, getCurrentPages: () => [readyPage], wx: {} }
+  const runtimes = [
+    { ...readyRuntime, [WEAPP_VITE_STATEFUL_HMR_CLIENT_KEY]: {} },
+    { ...readyRuntime, wx: { [WEAPP_VITE_STATEFUL_HMR_BRIDGE_KEY]: {} } },
+    { ...readyRuntime, getApp: () => undefined },
+    { ...readyRuntime, getCurrentPages: () => [{ ...readyPage, [instanceKey]: true }] },
+    readyRuntime,
+  ]
+  const evaluateWithOptions = vi.fn(async (callback: (...args: any[]) => unknown, _options: { timeout: number }, ...args: unknown[]) => {
+    const evaluate = vm.runInNewContext(`(${callback.toString()})`, runtimes.shift()) as typeof callback
+    return evaluate(...args)
+  })
+
+  await expect(run.publication.waitForClassicReload({ evaluateWithOptions }, `/${route}`, instanceKey)).resolves.toBeUndefined()
+  expect(evaluateWithOptions).toHaveBeenCalledTimes(5)
 })
 
 it('rejects internally consistent logs for a different configured request', async () => {

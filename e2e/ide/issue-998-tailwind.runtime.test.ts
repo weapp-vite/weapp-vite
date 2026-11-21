@@ -115,11 +115,7 @@ describe('issue #998: managed imports and ordinary CSS HMR', { concurrent: false
         // 原窗口自动重载；恢复协议后、任何导航前验收新实例和真实样式。
         miniProgram = await reconnectAutomator(miniProgram!)
       }
-      await expect.poll(() => miniProgram!.evaluate((key: string) => {
-        const pages = getCurrentPages()
-        return { page: Boolean((pages[pages.length - 1] as any)?.[key]), app: Boolean((getApp() as any)[key]) }
-      }, INSTANCE_KEY), { timeout: 45_000 }).toEqual({ page: false, app: false })
-      await publication.assertClassicRuntime(miniProgram!)
+      await publication.waitForClassicReload(miniProgram!, ROUTE, INSTANCE_KEY)
     }
 
     await check('initial')

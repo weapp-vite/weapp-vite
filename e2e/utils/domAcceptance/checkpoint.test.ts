@@ -1,7 +1,10 @@
 import type { DomAcceptance, DomCheckpoint, DomPage, DomSession } from './types'
+import { setTimeout as delay } from 'node:timers/promises'
 import { describe, expect, it, vi } from 'vitest'
 import { assertDomAcceptanceComplete, captureDomCheckpoint, validateDomPlan } from './checkpoint'
 import { createDomAcceptance } from './index'
+
+vi.mock('node:timers/promises', { spy: true })
 
 const checkpoint: DomCheckpoint = {
   id: 'initial',
@@ -192,8 +195,21 @@ describe('DOM acceptance evidence', () => {
     const { page, session } = createPage()
     const replacement = createPage('wrong replacement text').page
     session.currentPage = vi.fn().mockResolvedValueOnce(page).mockResolvedValue(replacement)
-    await expect(captureDomCheckpoint(session, page, checkpoint, 'devtools', 150)).rejects.toThrow('wrong replacement text')
-    expect(replacement.$$).toHaveBeenCalled()
+    vi.useFakeTimers()
+    try {
+      await vi.mocked(delay).withImplementation(async <T>(duration: number = 1, value?: T) => {
+        return new Promise<T>(resolve => setTimeout(() => resolve(value as T), duration))
+      }, async () => {
+        const captured = captureDomCheckpoint(session, page, checkpoint, 'devtools', 150)
+        const rejected = expect(captured).rejects.toThrow('wrong replacement text')
+        await vi.advanceTimersByTimeAsync(150)
+        await rejected
+      })
+      expect(replacement.$$).toHaveBeenCalledExactlyOnceWith('#message', expect.objectContaining({ fallback: false }))
+    }
+    finally {
+      vi.useRealTimers()
+    }
   })
 
   it('accepts matching replacement DOM only after querying that new page', async () => {
