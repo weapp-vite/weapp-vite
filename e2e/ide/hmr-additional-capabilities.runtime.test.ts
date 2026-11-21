@@ -1,5 +1,5 @@
 import path from 'node:path'
-import { WEAPP_VITE_STATEFUL_HMR_BRIDGE_KEY, WEAPP_VITE_STATEFUL_HMR_CLIENT_KEY } from '@weapp-core/constants'
+import { WEAPP_VITE_STATEFUL_HMR_BRIDGE_KEY, WEAPP_VITE_STATEFUL_HMR_CLIENT_KEY, WEAPP_VITE_STATEFUL_HMR_CONTROL_KEY } from '@weapp-core/constants'
 import { fs } from '@weapp-core/shared/node'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { launchAutomator, reconnectAutomator } from '../utils/automator'
@@ -62,12 +62,14 @@ for (const reason of ['engine-full-reload', 'patch-shape', 'skyline'] as const) 
     }
 
     async function state() {
-      return app().evaluate((keys: { client: string, bridge: string }) => {
+      return app().evaluate((keys: { client: string, bridge: string, control: string }) => {
         const pages = getCurrentPages()
         const page = pages[pages.length - 1] as any
         const snapshot = getApp().globalData?.capabilitySnapshot ?? page?.data
-        const client = (globalThis as any)[keys.client]
-        const hostClient = (globalThis as any).wx?.[keys.client]
+        const globals = globalThis as any
+        const host = globals.wx
+        const client = globals[keys.client]
+        const hostClient = host?.[keys.client]
         return {
           marker: String(snapshot?.marker ?? ''),
           count: Number(snapshot?.count),
@@ -77,12 +79,17 @@ for (const reason of ['engine-full-reload', 'patch-shape', 'skyline'] as const) 
           renderer: String(getApp().globalData?.renderer ?? ''),
           client: client?.getTransportState?.().phase ?? null,
           pollingStopped: [client, hostClient].every(value => !value || value.getTransportState?.().phase === 'stopped'),
-          bridge: Boolean((globalThis as any)[keys.bridge]),
+          bridge: Boolean(globals[keys.bridge]),
+          statefulGlobals: Object.values(keys).filter(key => globals[key] || host?.[key]),
         }
-      }, { client: WEAPP_VITE_STATEFUL_HMR_CLIENT_KEY, bridge: WEAPP_VITE_STATEFUL_HMR_BRIDGE_KEY })
+      }, {
+        client: WEAPP_VITE_STATEFUL_HMR_CLIENT_KEY,
+        bridge: WEAPP_VITE_STATEFUL_HMR_BRIDGE_KEY,
+        control: WEAPP_VITE_STATEFUL_HMR_CONTROL_KEY,
+      })
     }
 
-    async function waitState(marker: string, count = 0, input = '', identity = '') {
+    async function waitState(marker: string, { count = 0, input = '', identity = '', classic = false } = {}) {
       await expect.poll(async () => state().catch(() => null), { timeout: 90_000, interval: 250 }).toMatchObject({
         marker,
         count,
@@ -90,6 +97,7 @@ for (const reason of ['engine-full-reload', 'patch-shape', 'skyline'] as const) 
         identity,
         route: 'pages/native/index',
         ...(reason === 'skyline' ? { renderer: 'skyline' } : {}),
+        ...(classic ? { statefulGlobals: [] } : {}),
       })
     }
 
@@ -115,8 +123,8 @@ for (const reason of ['engine-full-reload', 'patch-shape', 'skyline'] as const) 
         // 重连原 owner，不导航、不编译，不创建第二个窗口。
         miniProgram = await reconnectAutomator(app())
       }
-      await waitState(marker)
-      expect(await state()).toMatchObject({ client: null, bridge: false })
+      // 首轮重载可能已经替换页面，但 AppService 仍在运行上一代 stateful 产物。
+      await waitState(marker, { classic: true })
       await publication!.assertClassicRuntime(app())
     }
 
@@ -217,7 +225,7 @@ for (const reason of ['engine-full-reload', 'patch-shape', 'skyline'] as const) 
         await inputElement.input('boundary-input')
       }
       await (await page.$('.increment', { fallback: false })).tap()
-      await waitState('STATEFUL-NATIVE-BASE', 1, 'boundary-input', 'before-boundary')
+      await waitState('STATEFUL-NATIVE-BASE', { count: 1, input: 'boundary-input', identity: 'before-boundary' })
       await dom.check('prepared', app(), page)
 
       const patched = fixture!.initialSource.replace('STATEFUL-NATIVE-BASE', 'BOUNDARY-A').replace('count + 1', 'count + 2')
@@ -243,7 +251,7 @@ for (const reason of ['engine-full-reload', 'patch-shape', 'skyline'] as const) 
       await dom.check('edited', app(), (await app().currentPage())!)
       page = await app().currentPage()
       await (await page!.$('.increment', { fallback: false })).tap()
-      await waitState('BOUNDARY-A', 2)
+      await waitState('BOUNDARY-A', { count: 2, classic: true })
       await dom.check('interaction', app(), page!)
 
       const subsequent = publication!.capture(fixture!.source)
