@@ -1,5 +1,20 @@
 # @weapp-vite/react
 
+## 0.5.2
+
+### Patch Changes
+
+- chore(deps): 刷新兼容的工作区与 Rust 原生依赖，并同步脚手架依赖目录。
+  - @mpcore/vitest：devDependencies.@vitest/browser
+  - @weapp-vite/web：dependencies.@csstools/css-tokenizer
+  - @weapp-vite/ast-native：devDependencies.vitest
+  - create-weapp-vite：dependencies.@npmcli/config
+  - @weapp-vite/language-service：dependencies.ignore
+
+- Updated dependencies:
+  - @weapp-core/constants@0.6.2
+  - @weapp-core/shared@3.5.2
+
 ## 0.5.1
 
 ### Patch Changes
