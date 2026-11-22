@@ -2411,6 +2411,39 @@ describe('automator launch resilience', { concurrent: false, timeout: 30_000 }, 
     await session.close()
   })
 
+  it('continues on the same bridge connection when skipWarmup readiness sees missing page metadata', async () => {
+    process.env.WEAPP_VITE_E2E_AUTOMATOR_LAUNCH_MODE = 'bridge'
+    process.env.WEAPP_VITE_E2E_APP_CONFIG_READY_TIMEOUT = '400'
+    process.env.WEAPP_VITE_E2E_BRIDGE_CONNECT_SETTLE_DELAY = '1'
+    process.env.WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_PREBUILD = '0'
+    process.env.WEAPP_VITE_E2E_BRIDGE_APP_READY_PROBE_TIMEOUT = '25'
+
+    createProjectFixture(sandboxRoot, {
+      pages: ['pages/index/index'],
+    })
+
+    const connectedMiniProgram = createMockMiniProgram({ currentPage: createMockPage('pages/index/index') })
+    connectedMiniProgram.waitForAppReady = vi.fn(async () => {
+      throw new Error('Cannot destructure property \'rawPath\' of \'t.getPageMetaByWebviewId(...)\' as it is null.')
+    })
+    execaMock.mockResolvedValueOnce({
+      exitCode: 0,
+      stdout: JSON.stringify({ wsEndpoint: 'ws://127.0.0.1:9420' }),
+      stderr: '',
+    })
+    connectMock.mockResolvedValueOnce(connectedMiniProgram)
+
+    const { launchAutomator } = await import('../utils/automator')
+    const session = await launchAutomator({ projectPath: sandboxRoot, timeout: 12_345, skipWarmup: true })
+
+    expect(execaMock).toHaveBeenCalledTimes(1)
+    expect(connectMock).toHaveBeenCalledTimes(1)
+    expect(connectedMiniProgram.waitForAppReady).toHaveBeenCalledExactlyOnceWith(19)
+    expect(connectedMiniProgram.enableLog).toHaveBeenCalledOnce()
+    expect(connectedMiniProgram.__rawReLaunch).not.toHaveBeenCalled()
+    await session.close()
+  })
+
   it('fails immediately when bridge AppService readiness rejects with a non-readiness error', async () => {
     process.env.WEAPP_VITE_E2E_AUTOMATOR_LAUNCH_MODE = 'bridge'
     process.env.WEAPP_VITE_E2E_APP_CONFIG_READY_TIMEOUT = '400'

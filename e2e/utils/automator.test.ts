@@ -99,6 +99,7 @@ describe('automator', () => {
   it.each([
     new Error('Timeout in bridge AppService readiness after 3000ms'),
     new Error('Timed out waiting App domain readiness after 3000ms'),
+    new Error('Cannot destructure property \'rawPath\' of \'t.getPageMetaByWebviewId(...)\' as it is null.'),
     Object.assign(new Error('protocol request timed out'), { code: 'DEVTOOLS_PROTOCOL_TIMEOUT', method: 'App.getCurrentPage' }),
   ])('recognizes an AppService readiness timeout as warmup-recoverable', (error) => {
     expect(isAppServiceReadinessTimeoutError(error)).toBe(true)
@@ -106,6 +107,7 @@ describe('automator', () => {
 
   it('does not classify unrelated bridge errors as an AppService readiness timeout', () => {
     expect(isAppServiceReadinessTimeoutError(new Error('App initialization failed'))).toBe(false)
+    expect(isAppServiceReadinessTimeoutError(new Error('Uncaught [object Object]'))).toBe(false)
   })
 
   it('treats the generic DevTools reLaunch protocol rejection as retryable', () => {

@@ -875,7 +875,9 @@ export function isAppServiceReadinessTimeoutError(error: unknown) {
     && 'method' in error && error.method === 'App.getCurrentPage') {
     return true
   }
-  return BRIDGE_APP_READY_TIMEOUT_PATTERN.test(message) || APP_READY_TIMEOUT_PATTERN.test(message)
+  return BRIDGE_APP_READY_TIMEOUT_PATTERN.test(message)
+    || APP_READY_TIMEOUT_PATTERN.test(message)
+    || /getPageMetaByWebviewId/i.test(message)
 }
 
 export function isLikelyRelaunchRetryableError(error: unknown) {
@@ -3096,21 +3098,21 @@ function launchDevtoolsAutomator(options: LaunchAutomatorOptions, launchGuard: T
                 ), { stage: 'app-ready' })
               }
               catch (error) {
-                if (shouldSkipAutomatorWarmup(skipWarmup)
-                  || warmupAllowRelaunch === false
-                  || !resolvedWarmupRoute
-                  || !isAppServiceReadinessTimeoutError(error)) {
+                if (!isAppServiceReadinessTimeoutError(error)) {
                   throw error
                 }
+                const shouldRecoverWithWarmup = !shouldSkipAutomatorWarmup(skipWarmup)
+                  && warmupAllowRelaunch !== false
+                  && Boolean(resolvedWarmupRoute)
                 devtoolsLogMonitor.assertClean('bridge AppService readiness timeout')
-                process.stdout.write(`[warn] [runtime:launch-step] app-ready-timeout-recover route=${resolvedWarmupRoute} probe=${readyProbeBudget}ms project=${project} reason=${error instanceof Error ? error.message : String(error)}\n`)
+                process.stdout.write(`[warn] [runtime:launch-step] app-ready-timeout-recover mode=${shouldRecoverWithWarmup ? 'warmup-relaunch' : 'continue'} route=${resolvedWarmupRoute ?? '<none>'} probe=${readyProbeBudget}ms project=${project} reason=${error instanceof Error ? error.message : String(error)}\n`)
                 appendIdeReportEvent({
                   source: 'runtime',
                   kind: 'message',
                   project,
                   level: 'warn',
                   channel: 'app-ready',
-                  text: `timeout=${readyProbeBudget}ms recovery=warmup-relaunch route=${resolvedWarmupRoute}`,
+                  text: `timeout=${readyProbeBudget}ms recovery=${shouldRecoverWithWarmup ? 'warmup-relaunch' : 'continue'} route=${resolvedWarmupRoute ?? '<none>'}`,
                 })
               }
             }
