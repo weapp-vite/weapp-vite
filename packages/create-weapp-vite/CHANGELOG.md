@@ -1,5 +1,50 @@
 # create-weapp-vite
 
+## 3.7.0
+
+### Minor Changes
+
+- feat(wevu): 新增 `weapp.wevu.setupInitialRenderBarrier` 总开关，可退回 setup 首帧按静态初值直接渲染。
+
+### Patch Changes
+
+- fix(weapp-vite): 修复微信开发者工具从状态保持 HMR 回退到 classic 时的资产监听交接。
+
+  在 stateful 交接到 classic 时停用 IDE 局部脚本热载，并等待因配置变更重启的 AppService 确认已加载旧 App 和当前页面。首轮 classic 写出并清理旧产物后再恢复资产监听，避免 IDE 加载混合产物。
+
+- chore(deps): 刷新兼容的工作区与 Rust 原生依赖，并同步脚手架依赖目录。
+  - @mpcore/vitest：devDependencies.@vitest/browser
+  - @weapp-vite/web：dependencies.@csstools/css-tokenizer
+  - @weapp-vite/ast-native：devDependencies.vitest
+  - create-weapp-vite：dependencies.@npmcli/config
+  - @weapp-vite/language-service：dependencies.ignore
+
+- feat(wevu): 支持自定义 history 驱动，并让路由守卫读取自定义位置。
+
+  `createRouter({ history })` 现在接受业务实现的 `RouterHistory`：`readLocation` 读取自有位置，`push` / `replace` 接管导航提交，`check` 替换平台校验，`resolveGo` / `go` 接管前后退，`resetLocation` 释放页面位置，省略的钩子沿用小程序原生行为；`syncWithNative: false` 可使用独立于原生页面栈的逻辑路由状态。`wevu/router` 同步导出 `createMiniProgramHistory` 与相关类型。
+
+  守卫（含返回守卫）的 `to` / `from` 会带上自定义位置表示，登录校验、二次确认等拦截统一写进 `beforeEach` / `beforeResolve` 即可。原始位置显式带 query 时以调用方为准；改道目标未带 query 时按目标 path 读回业务存储。
+
+  守卫与驱动校验共用同一套返回契约：`undefined` / `true` 放行，`false` / `Error` / `NavigationFailure` 中止，原始位置或 `NavigationRedirect` 改道，支持返回 Promise 异步确认；`Error` 现在也是守卫的合法返回值。提供 `check` 会整体替换平台校验（重复导航、hash-only、tab-query），需要保留时由驱动自行实现。
+
+- fix(weapp-vite): 修复独立输出目录的 npm 落位与构建钩子时序，并提前诊断 automator 项目配置。
+
+  生产应用的 npm 文件随 bundler 一同输出，支持在 writeBundle 与 closeBundle 中观察最终文件，避免并行拷贝覆盖后处理。原输出树内的相对 npm 映射跟随 outDir，外部映射保持固定。automator 与 acceptance 在缺少或损坏 project.config.json 时提供可操作的项目根配置指引。
+
+- feat(weapp-vite): 支持按引用裁剪小程序 npm 产物
+
+  支持通过 `weapp.npm.pruneUnusedFiles` 按最终产物引用闭包裁剪小程序 npm 包内未使用的文件，并覆盖主包、分包、独立分包和插件输出。
+
+- fix(weapp-vite): 处理 WXML 扫描中的文件删除竞争
+
+  修复开发监听中 WXML 文件在检查后、读取前被删除时导致构建进程退出的问题。清理该文件的扫描缓存和依赖，恢复文件后继续编译。
+
+- Updated dependencies:
+  - @weapp-core/init@6.1.6
+  - @weapp-core/logger@3.2.6
+  - @weapp-core/shared@3.5.2
+  - @weapp-vite/language-service@0.1.6
+
 ## 3.6.2
 
 ### Patch Changes
