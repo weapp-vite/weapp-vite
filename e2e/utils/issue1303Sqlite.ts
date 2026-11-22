@@ -94,13 +94,14 @@ async function ownedSourceSnapshot(project: string) {
   }))
 }
 
-async function assertIssue1303ColdRuntime(project: string, value: number, withTextDecoder = true) {
+async function assertIssue1303ColdRuntime(project: string, value: number, withTextDecoder = true, blockPackageReads = false) {
   const TextDecoder = withTextDecoder ? globalThis.TextDecoder : undefined
   const session = createHeadlessSession({ projectPath: project, globals: { TextDecoder } })
   try {
     session.reLaunch(ISSUE_1303_ROUTE)
     expect(session.evaluateRuntime('() => typeof globalThis.TextDecoder')).toBe(typeof TextDecoder)
-    expect(await session.evaluateRuntime<Promise<unknown>>('() => getCurrentPages()[0].runQuery()')).toEqual({ value, engine: ISSUE_1303_ENGINE })
+    const method = blockPackageReads ? 'runQueryWithDeviceRuntimeRestrictions' : 'runQuery'
+    expect(await session.evaluateRuntime<Promise<unknown>>(`() => getCurrentPages()[0].${method}()`)).toEqual({ value, engine: ISSUE_1303_ENGINE })
     expect(session.evaluateRuntime('() => typeof globalThis.TextDecoder')).toBe(typeof TextDecoder)
     expect(session.renderCurrentPage().wxml).toContain(String(value))
   }
@@ -116,6 +117,8 @@ export async function exerciseIssue1303Watch(project: string, mode: Issue1303Pac
   await assertIssue1303ColdRuntime(project, 1303)
   // #1365：微信 iOS 的 JavaScriptCore 不提供 TextDecoder。
   await assertIssue1303ColdRuntime(project, 1303, false)
+  // #1367：真机不允许 FileSystemManager 读取代码包内的 WASM 文件。
+  await assertIssue1303ColdRuntime(project, 1303, false, true)
   const sources = await ownedSourceSnapshot(project)
   await assertClassicDevRemainsStable(dev, 120_000, async () => {
     expect(await ownedSourceSnapshot(project)).toEqual(sources)

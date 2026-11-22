@@ -67,7 +67,7 @@ describe.each(['existing-subpackage', 'generated-subpackage'] as const)('issue #
     ])
     const page = await host!.currentPage()
     await dom.check('initial', host!, page)
-    expect(await page.callMethodWithOptions('runQuery', { timeout: 45_000 })).toEqual({ value: 1304, engine: ISSUE_1303_ENGINE })
+    expect(await page.callMethodWithOptions('runQueryWithDeviceRuntimeRestrictions', { timeout: 45_000 })).toEqual({ value: 1304, engine: ISSUE_1303_ENGINE })
     await dom.check('queried', host!, page)
     const button = await page.$('#query-sqlite')
     expect(button).toBeTruthy()
