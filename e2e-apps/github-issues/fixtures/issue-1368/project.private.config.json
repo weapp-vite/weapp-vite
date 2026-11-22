@@ -1,0 +1,14 @@
+{
+  "condition": {
+    "miniprogram": {
+      "list": [
+        {
+          "name": "issue 1368 page",
+          "pathName": "pages/goal/index",
+          "query": "",
+          "scene": null
+        }
+      ]
+    }
+  }
+}

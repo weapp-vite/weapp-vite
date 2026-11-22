@@ -6,6 +6,7 @@ import { findCssEntry, findJsEntry, findJsonEntry, findTemplateEntry, findVueEnt
 import {
   collectCandidateForBase,
   isConfigFile,
+  isExcludedAutoRoutePath,
   isScriptFile,
   isStyleFile,
   isTemplateFile,
@@ -50,7 +51,7 @@ export function matchesRouteFile(
     cwd: configService.cwd,
     absoluteSrcRoot: configService.absoluteSrcRoot,
   })
-  if (!resolvedPath) {
+  if (!resolvedPath || isExcludedAutoRoutePath(resolvedPath.relativePath)) {
     return false
   }
 
@@ -154,6 +155,14 @@ export async function updateCandidateFromFile(
     absoluteSrcRoot: ctx.configService.absoluteSrcRoot,
     managedOutputPaths: resolveAutoRoutesManagedOutputPaths(ctx),
   })) {
+    return false
+  }
+
+  const resolvedPath = resolveAutoRoutesPath(filePath, {
+    cwd: ctx.configService.cwd,
+    absoluteSrcRoot: ctx.configService.absoluteSrcRoot,
+  })
+  if (!resolvedPath || isExcludedAutoRoutePath(resolvedPath.relativePath)) {
     return false
   }
 

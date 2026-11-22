@@ -131,6 +131,56 @@ describe('npm output pruning', () => {
     ])
   })
 
+  it('follows a cross-package import through the dependency package main entry', () => {
+    const output = createOutput({
+      'miniprogram_npm/tdesign-miniprogram/toast/toast.js': 'import { __rest } from "tslib"; Component({})',
+      'miniprogram_npm/tdesign-miniprogram/package.json': '{}',
+      'miniprogram_npm/tslib/package.json': JSON.stringify({ main: 'tslib.js' }),
+      'miniprogram_npm/tslib/tslib.js': 'export function __rest(source, excluded) { return source }',
+      'miniprogram_npm/tslib/unused.js': 'export const unused = true',
+    })
+    const bundle = createBundle({
+      'pages/index.json': JSON.stringify({
+        usingComponents: { toast: '../miniprogram_npm/tdesign-miniprogram/toast/toast' },
+      }),
+    })
+
+    pruneNpmOutput(output, bundle, { enabled: true })
+
+    expect(outputNames(output)).toContain('miniprogram_npm/tslib/tslib.js')
+    expect(outputNames(output)).not.toContain('miniprogram_npm/tslib/unused.js')
+  })
+
+  it('follows cross-package template and style references', () => {
+    const output = createOutput({
+      'miniprogram_npm/ui/button/index.js': 'Component({})',
+      'miniprogram_npm/ui/button/index.json': JSON.stringify({ usingComponents: { icon: 'shared/components/icon' } }),
+      'miniprogram_npm/ui/button/index.wxml': '<import src="shared/templates/button.wxml"/>',
+      'miniprogram_npm/ui/button/index.wxss': '@import "shared/styles/button.wxss";',
+      'miniprogram_npm/shared/package.json': '{}',
+      'miniprogram_npm/shared/components/icon.js': 'Component({})',
+      'miniprogram_npm/shared/templates/button.wxml': '<view>button</view>',
+      'miniprogram_npm/shared/styles/button.wxss': '.button { color: red }',
+      'miniprogram_npm/shared/unused.wxml': '<view>unused</view>',
+    })
+    const bundle = createBundle({
+      'pages/index.json': JSON.stringify({ usingComponents: { button: 'ui/button' } }),
+    })
+
+    pruneNpmOutput(output, bundle, { enabled: true })
+
+    expect(outputNames(output)).toEqual([
+      'miniprogram_npm/shared/components/icon.js',
+      'miniprogram_npm/shared/package.json',
+      'miniprogram_npm/shared/styles/button.wxss',
+      'miniprogram_npm/shared/templates/button.wxml',
+      'miniprogram_npm/ui/button/index.js',
+      'miniprogram_npm/ui/button/index.json',
+      'miniprogram_npm/ui/button/index.wxml',
+      'miniprogram_npm/ui/button/index.wxss',
+    ])
+  })
+
   it('does not treat declarations and sourcemaps as runtime dependencies', () => {
     const output = createOutput({
       'miniprogram_npm/ui/button/index.js': 'Component({})',

@@ -173,6 +173,16 @@ describe('auto routes candidates helpers', () => {
     expect(resolveCandidateEntryPath('/project/src', '/project/components/card/index.vue')).toBeUndefined()
   })
 
+  it('excludes test files and __tests__ directories from route candidates', () => {
+    expect(resolveCandidateEntryPath('/project/src', '/project/src/pages/goal/__tests__/index.artifact.spec.ts')).toBeUndefined()
+    expect(resolveCandidateEntryPath('C:/project/src', 'C:\\project\\src\\pages\\goal\\__tests__\\index.artifact.spec.ts')).toBeUndefined()
+    expect(resolveCandidateEntryPath('/project/src', '/project/src/pages/goal/index.test.ts')).toBeUndefined()
+    expect(resolveCandidateEntryPath('/project/src', '/project/src/pages/goal/index.spec.ts')).toBeUndefined()
+    expect(resolveCandidateEntryPath('/project/src', '/project/src/pages/goal/index.vue')).toMatchObject({
+      relativeBase: 'pages/goal/index',
+    })
+  })
+
   it('does not resolve generated auto-routes files as candidate entries', () => {
     expect(resolveCandidateEntryPath('/project/src', '/project/src/pages/home/.app.json.auto-routes-inline.ts')).toBeUndefined()
     expect(resolveCandidateEntryPath('/project/src', '/project/src/.weapp-vite/typed-router.d.ts')).toBeUndefined()
