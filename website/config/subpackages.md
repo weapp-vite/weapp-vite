@@ -33,7 +33,7 @@ export default defineConfig({
 })
 ```
 
-小程序构建的默认值仍为 `.`。显式配置 `assetsDir: 'assets'` 后，按来源与消费者归属命名的主包资源输出到 `assets/`，分包资源输出到 `packages/feature/assets/`。没有来源信息的插件资源仍可发射，主构建在 `assets/` 中输出。这个写法不会给普通分包的 JS chunk 路径加分包前缀；如需让默认 chunk 路径也按包展开，可以使用 `assetsDir: '[subpackage]/assets'`。页面、组件等固定文件名入口及 `publicDir` 原样复制文件保持原有路径。
+小程序构建的默认值仍为 `.`。与 Vite 中 `assetsDir` 通常相对 `outDir` 的通用含义不同，在 weapp-vite 小程序构建中，显式配置 `assetsDir: 'assets'` 会把有明确来源的资源按包归属输出：主包资源进入 `assets/`，分包资源进入 `packages/feature/assets/`。这是面向小程序分包输出的扩展，升级时请检查是否有脚本或工具依赖所有命名资源集中在主包 `assets/`。没有来源信息的插件资源仍可发射，主构建在 `assets/` 中输出。这个写法不会给普通分包的 JS chunk 路径加分包前缀；如需让默认 chunk 路径也按包展开，可以使用 `assetsDir: '[subpackage]/assets'`。页面、组件等固定文件名入口及 `publicDir` 原样复制文件保持原有路径。
 
 需要单独指定 JS chunk 路径时，可以设置：
 

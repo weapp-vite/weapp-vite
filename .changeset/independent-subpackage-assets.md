@@ -19,7 +19,7 @@ fix(weapp-vite): 修复独立分包引用依赖包资源时的输出路径。
 
 独立分包显式配置普通 `assetsDir` 或 `assetFileNames` 时，资源仍输出到包内的指定目录；已包含分包根目录的模板不重复添加前缀。
 
-显式配置 `assetsDir: 'assets'` 时，普通分包独占的资源也输出到分包的 `assets/` 目录。省略配置仍保留原默认目录；需要统一输出主包时可通过 `assetFileNames` 指定公共目录。
+显式配置 `assetsDir: 'assets'` 时，普通分包独占的资源也输出到分包的 `assets/` 目录。这是 weapp-vite 面向小程序分包的目录语义扩展；Vite 的通用 `assetsDir` 则相对 `outDir`。升级时检查依赖资源固定在主包目录的脚本或工具。省略配置仍保留原默认目录；需要统一输出主包时可通过 `assetFileNames` 指定公共目录。
 
 正式构建使用 `[subpackage]` 时，仅由一个普通分包的 JS 或 WXSS 引用的依赖图片输出到该分包；多个包共用时只在主包输出一份。
 
