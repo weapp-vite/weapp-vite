@@ -2058,8 +2058,8 @@ importers:
   e2e-apps/github-issues:
     dependencies:
       '@weapp-sqlite/weapp-vite':
-        specifier: 0.3.3
-        version: 0.3.3(@types/node@26.6.6)(@vitejs/devtools@0.8.3)(esbuild@0.28.2)(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(sass-embedded@1.108.2)(sass@1.108.2)(terser@5.51.2)(tsx@4.23.15)(vite@8.3.5)(weapp-vite@packages+weapp-vite)(yaml@2.9.1)
+        specifier: 0.3.4
+        version: 0.3.4(@types/node@26.6.6)(@vitejs/devtools@0.8.3)(esbuild@0.28.2)(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(sass-embedded@1.108.2)(sass@1.108.2)(terser@5.51.2)(tsx@4.23.15)(vite@8.3.5)(weapp-vite@packages+weapp-vite)(yaml@2.9.1)
       '@wevu/web-apis':
         specifier: workspace:*
         version: link:../../packages-runtime/web-apis
@@ -11761,8 +11761,8 @@ packages:
     resolution: {integrity: sha512-L3nL8efMRNQp+NFSCvvJNWqEiSWGFSF3zSYUmv4M80a3giDdJwoRkW+ede7Q6Y3PK1aD79+ljkE6n2mDokgeEA==}
     engines: {node: '>=18.0.0'}
 
-  '@weapp-sqlite/miniprogram@0.2.1':
-    resolution: {integrity: sha512-uPnKglnNhWabOKR6kkmt021S05A/a/VSy+AEvfcQjhpZ4c6gX6NVKpxY7V5IfqJzmxPLXa+DGP41LyujdyxToQ==}
+  '@weapp-sqlite/miniprogram@0.2.2':
+    resolution: {integrity: sha512-pLKoK602lBluwUywqJBTAdQ8ixAA92JIoEOqXVXzNePoN6G1tE6Sg3OSBmUdbrJC0P9MQApKBX0f2sQ163MLLA==}
     engines: {node: '>=18.0.0'}
 
   '@weapp-sqlite/sqljs@0.3.2':
@@ -11773,8 +11773,8 @@ packages:
     resolution: {integrity: sha512-wzizroXnarLDTTIeG1Fi/kxro8nJ+8FPb2yyiuFN5OjlN6kXA6ReNs++e0rxQuaO/JNDOAs4sgoRYK8O57r08w==}
     engines: {node: '>=18.0.0'}
 
-  '@weapp-sqlite/weapp-vite@0.3.3':
-    resolution: {integrity: sha512-3Mq3YEMICKL0p8zpdHlDY3AQTNgK3JJOcli6rXAfwmUqNn4wFFEfWTTo/mK8OCVRSoM1fzjSTY0yDY7Yp1SA2A==}
+  '@weapp-sqlite/weapp-vite@0.3.4':
+    resolution: {integrity: sha512-oubCDZ8PReqPgmryFHCHzGUMMWUD3PcjswyqGSMJaunlVVxD/uBUQcogWB+LGYt1C/Yzodz/JE98FEgsvYg0Ew==}
     engines: {node: ^20.19.0 || >=22.12.0}
     peerDependencies:
       '@weapp-sqlite/devtools': 0.1.2
@@ -25658,7 +25658,7 @@ snapshots:
       '@weapp-sqlite/core': 0.2.1
       '@weapp-sqlite/wasm': 0.2.1
 
-  '@weapp-sqlite/miniprogram@0.2.1':
+  '@weapp-sqlite/miniprogram@0.2.2':
     dependencies:
       '@weapp-sqlite/wasm': 0.2.1
 
@@ -25670,11 +25670,11 @@ snapshots:
     dependencies:
       '@weapp-sqlite/core': 0.2.1
 
-  '@weapp-sqlite/weapp-vite@0.3.3(@types/node@26.6.6)(@vitejs/devtools@0.8.3)(esbuild@0.28.2)(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(sass-embedded@1.108.2)(sass@1.108.2)(terser@5.51.2)(tsx@4.23.15)(vite@8.3.5)(weapp-vite@packages+weapp-vite)(yaml@2.9.1)':
+  '@weapp-sqlite/weapp-vite@0.3.4(@types/node@26.6.6)(@vitejs/devtools@0.8.3)(esbuild@0.28.2)(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(sass-embedded@1.108.2)(sass@1.108.2)(terser@5.51.2)(tsx@4.23.15)(vite@8.3.5)(weapp-vite@packages+weapp-vite)(yaml@2.9.1)':
     dependencies:
       '@weapp-sqlite/core': 0.2.1
       '@weapp-sqlite/debug': 0.2.1
-      '@weapp-sqlite/miniprogram': 0.2.1
+      '@weapp-sqlite/miniprogram': 0.2.2
       '@weapp-sqlite/sqljs': 0.3.2
       '@weapp-sqlite/wasm': 0.2.1
       '@weapp-sqlite/web': 0.2.1
