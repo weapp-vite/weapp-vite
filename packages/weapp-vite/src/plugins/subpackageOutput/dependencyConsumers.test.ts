@@ -1,4 +1,5 @@
-import { copyFile, mkdir, readdir, readFile, writeFile } from 'node:fs/promises'
+import { Buffer } from 'node:buffer'
+import { copyFile, mkdir, readdir, readFile, stat, writeFile } from 'node:fs/promises'
 import path from 'pathe'
 import { build } from 'vite'
 import { expect, it } from 'vitest'
@@ -68,6 +69,64 @@ it.each([
     if ('mainLogo' in options) {
       expect(await readFile(path.join(dist, `${mainRoute}.js`), 'utf8')).toContain(`/${logos[0]}`)
     }
+  }
+  finally {
+    await fixture.close()
+  }
+})
+
+it('moves the dependency image bytes out of the main package when the subpackage is the only consumer', async () => {
+  const fixture = await createSubpackageOutputFixture()
+  try {
+    const [main, feature] = fixture.routes
+    const subpackage = 'packages/feature'
+    const source = (file: string) => path.join(fixture.root, 'src', file)
+    const dist = path.join(fixture.root, 'dist')
+    const dependency = path.join(fixture.root, 'node_modules/fixture-images')
+    const image = `<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><desc>${'fixture image description '.repeat(4096)}</desc><rect width="100" height="100"/></svg>`
+    const imageBytes = Buffer.byteLength(image)
+    await mkdir(dependency)
+    await writeFile(path.join(dependency, 'package.json'), JSON.stringify({ name: 'fixture-images', exports: { './logo.svg': './logo.svg' } }))
+    await writeFile(path.join(dependency, 'logo.svg'), image)
+    await writeFile(source(`${main}.js`), 'Page({})')
+    await writeFile(source(`${main}.wxss`), '')
+    await writeFile(source(`${feature}.js`), 'import logo from "fixture-images/logo.svg"; Page({ data: { image: logo } })')
+    await writeFile(source(`${feature}.wxss`), '')
+    const measure = async (assetsDir: string, expectedDirectory: string) => {
+      await build({
+        root: fixture.root,
+        configFile: false,
+        logLevel: 'silent',
+        plugins: [weapp()],
+        weapp: { srcRoot: 'src', vue: { enable: false }, autoRoutes: false, autoImport: false, autoImportComponents: false, npm: { enable: false } },
+        build: { assetsDir, assetsInlineLimit: 0, emptyOutDir: true },
+      })
+      const entries = await readdir(dist, { recursive: true, withFileTypes: true })
+      const files = entries.filter(entry => entry.isFile())
+      const logo = files.filter(entry => /^logo-[^/]+\.svg$/.test(entry.name))
+      expect(logo).toHaveLength(1)
+      const logoFile = path.join(logo[0]!.parentPath, logo[0]!.name)
+      expect(path.dirname(path.relative(dist, logoFile))).toBe(expectedDirectory)
+      expect(await readFile(logoFile, 'utf8')).toBe(image)
+      expect(await readFile(path.join(dist, `${feature}.js`), 'utf8')).toContain(`/${path.relative(dist, logoFile)}`)
+      const sizes = await Promise.all(files.map(async ({ name, parentPath }) => {
+        const absolute = path.join(parentPath, name)
+        return { relative: path.relative(dist, absolute), bytes: (await stat(absolute)).size }
+      }))
+      return sizes.reduce((bytes, file) => {
+        if (file.relative.startsWith(`${subpackage}/`)) {
+          bytes.feature += file.bytes
+        }
+        else {
+          bytes.main += file.bytes
+        }
+        return bytes
+      }, { main: 0, feature: 0 })
+    }
+    const ordinary = await measure('assets', 'assets')
+    const owned = await measure('[subpackage]/assets', `${subpackage}/assets`)
+    expect(ordinary.main - owned.main).toBeGreaterThanOrEqual(imageBytes - 1024)
+    expect(owned.feature - ordinary.feature).toBeGreaterThanOrEqual(imageBytes)
   }
   finally {
     await fixture.close()

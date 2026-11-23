@@ -166,14 +166,16 @@ it('keeps a recoverable host after an initial syntax failure', async () => {
 }, 30_000)
 
 it.each([
-  { type: 'WXML', mixed: false },
-  { type: 'JS, WXSS and WXML', mixed: true },
-])('moves shared images used by $type between packages as a page template changes', async ({ mixed }) => {
+  { type: 'WXML', mixed: false, style: false, runtime: 'classic' },
+  { type: 'JS, WXSS and WXML', mixed: true, style: true, runtime: 'classic' },
+  { type: 'JS, WXSS and WXML', mixed: true, style: true, runtime: 'stateful-experimental' },
+  { type: 'JS and WXML', mixed: true, style: false, runtime: 'stateful-experimental' },
+] as const)('moves shared images used by $type between packages in $runtime', async ({ mixed, runtime, style }) => {
   const home = 'pages/home/index'
   const feature = 'packages/feature/pages/home/index'
   const pic = '<image src="/packages/feature/image.png"/>'
   const image = Buffer.from('asset update fixture')
-  const { root, read } = await fixture([], undefined, async (root) => {
+  const { root, read, server } = await fixture([], undefined, async (root) => {
     await mkdir(path.join(root, 'src', path.dirname(feature)), { recursive: true })
     for (const [file, content] of Object.entries({
       'app.json': JSON.stringify({ pages: [home], subpackages: [{ root: 'packages/feature', pages: ['pages/home/index'] }] }),
@@ -182,17 +184,19 @@ it.each([
         : 'Page({})',
       [`${feature}.json`]: '{}',
       [`${feature}.wxml`]: pic,
-      ...(mixed && { [`${feature}.wxss`]: 'view { background: url("../../image.png"); }' }),
+      ...(style && { [`${feature}.wxss`]: 'view { background: url("../../image.png"); }' }),
       'packages/feature/image.png': image,
     })) {
       await writeFile(path.join(root, 'src', file), content)
     }
     return {
+      weapp: { srcRoot: 'src', autoRoutes: false, vue: { enable: false }, hmr: { runtime } },
       build: mixed
         ? { assetsInlineLimit: 0, rolldownOptions: { output: { assetFileNames: () => '[subpackage]/assets/[name]-[hash][extname]' } } }
         : { assetsDir: '[subpackage]/assets', assetsInlineLimit: 0 },
     }
   })
+  expect(server.config.experimental.bundledDev).toBe(runtime === 'stateful-experimental')
   const outputImage = async (route: string) => {
     const src = /<image\s+src="([^"]+)"/.exec(await read(`${route}.wxml`))?.[1]
     return src?.startsWith('/') ? src.slice(1) : src && path.posix.normalize(path.posix.join(path.posix.dirname(route), src))
@@ -203,6 +207,8 @@ it.each([
     expect(await payload(file)).toEqual(image)
     if (mixed) {
       expect(await read(`${feature}.js`)).toContain(`/${file}`)
+    }
+    if (style) {
       expect(await read(`${feature}.wxss`)).toContain(`/${file}`)
     }
   }
@@ -222,6 +228,7 @@ it.each([
   await expect.poll(() => payload(shared).catch(error => error.code), { timeout: 10_000 }).toBe('ENOENT')
   expect(await outputImage(home)).toBeUndefined()
   await expectFeature(local!)
+  expect(server.config.experimental.bundledDev).toBe(runtime === 'stateful-experimental' && !style)
 }, 35_000)
 
 it('reloads imported config exactly once through the host before rebuilding', async () => {
