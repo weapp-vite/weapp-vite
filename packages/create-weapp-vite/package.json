@@ -84,7 +84,7 @@
     "registry": "https://registry.npmjs.org"
   },
   "dependencies": {
-    "@inquirer/prompts": "^8.8.0",
+    "@inquirer/prompts": "^8.8.1",
     "@npmcli/config": "^11.2.1",
     "@weapp-core/init": "workspace:*",
     "@weapp-core/logger": "workspace:*",

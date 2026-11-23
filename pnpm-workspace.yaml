@@ -32,16 +32,16 @@ versioning:
     storage: repository
 
 catalog:
-  '@ai-sdk/anthropic': 4.0.106
-  '@ai-sdk/openai': 4.0.121
-  '@ai-sdk/openai-compatible': 3.0.93
-  '@babel/core': ^8.1.2
-  '@babel/generator': ^8.1.2
-  '@babel/parser': ^8.1.2
+  '@ai-sdk/anthropic': 4.0.107
+  '@ai-sdk/openai': 4.0.122
+  '@ai-sdk/openai-compatible': 3.0.94
+  '@babel/core': ^8.1.3
+  '@babel/generator': ^8.1.3
+  '@babel/parser': ^8.1.3
   '@babel/preset-env': ^8.0.7
   '@babel/preset-typescript': ^8.0.7
-  '@babel/traverse': ^8.1.2
-  '@babel/types': ^8.1.2
+  '@babel/traverse': ^8.1.3
+  '@babel/types': ^8.1.3
   '@devframes/agentic': 1.3.6
   '@devframes/hub': 1.3.6
   '@devframes/hub-ui': 1.3.6
@@ -59,7 +59,7 @@ catalog:
   '@modelcontextprotocol/server': ^2.4.0
   '@swc/core': ^1.16.22
   '@tailwindcss/vite': ^4.3.5
-  '@tanstack/vue-query': ^5.108.0
+  '@tanstack/vue-query': ^5.108.3
   '@types/d3': ^7.4.3
   '@types/express': ^5.0.6
   '@types/node': ^26.6.6
@@ -73,20 +73,20 @@ catalog:
   '@vitejs/devtools': 0.8.3
   '@vitejs/devtools-kit': 0.8.3
   '@vitejs/plugin-vue': ^6.0.11
-  '@vue/compiler-core': ^3.5.45
-  '@vue/compiler-dom': ^3.5.45
+  '@vue/compiler-core': ^3.5.46
+  '@vue/compiler-dom': ^3.5.46
   '@vue/babel-plugin-jsx': 3.0.0
-  '@vue/reactivity': ^3.5.45
-  '@vue/runtime-core': ^3.5.45
+  '@vue/reactivity': ^3.5.46
+  '@vue/runtime-core': ^3.5.46
   '@vue/language-core': ^3.3.14
   '@weapp-tailwindcss/engine': 0.1.8
   '@wot-ui/ui': 2.4.0
-  ai: 7.0.176
+  ai: 7.0.179
   antd-mini: ^3.4.3
-  autoprefixer: ^10.6.2
+  autoprefixer: ^10.7.0
   axios: ^1.21.1
   bundle-require: ^5.1.0
-  cac: ^7.1.0
+  cac: ^7.1.1
   cheerio: ^1.2.0
   class-variance-authority: ^0.7.1
   clsx: ^2.1.1
@@ -136,9 +136,9 @@ catalog:
   sharp: ^0.35.5
   shiki: ^4.6.0
   socket.io: ^4.8.4
-  stylelint: ^18.0.0
+  stylelint: ^18.1.0
   socket.io-client: ^4.8.4
-  tailwind-merge: ^3.7.0
+  tailwind-merge: ^3.7.1
   tailwind-variants: ^4.0.2
   tailwindcss: ^4.3.5
   tdesign-miniprogram: ^1.18.0
@@ -155,14 +155,14 @@ catalog:
   vite-plugin-inspect: ^12.1.0
   vite-plus: 1.5.0
   vitest: ^5.1.1
-  vue: ^3.5.45
+  vue: ^3.5.46
   vue-eslint-parser: ^10.4.2
   vue-router: 5.5.1
   vue-tsc: ^3.3.14
   weapp-tailwindcss: ^5.7.5
   yaml: ^2.9.1
   zod: ^4.6.7
-  '@vue/shared': ^3.5.45
+  '@vue/shared': ^3.5.46
 
 catalogs:
   latest:
@@ -185,6 +185,7 @@ gitChecks: false
 minimumReleaseAge: 0
 
 overrides:
+  monaco-editor>dompurify: 3.4.17
   rolldown: 'catalog:'
 
 allowBuilds:
