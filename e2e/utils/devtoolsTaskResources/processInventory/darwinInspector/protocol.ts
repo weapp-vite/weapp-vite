@@ -173,8 +173,8 @@ export function parseDarwinProcessFrame(line: string, requestId: number, phase: 
     for (const row of rows) {
       withinAbsoluteInterval(row.absolute!, absolute)
       if (row.confirmation) {
-        if (phase !== 'closure2') {
-          return invalid('confirmation outside final closure')
+        if (phase !== 'closure1' && phase !== 'closure2') {
+          return invalid('confirmation outside closure proof')
         }
         withinAbsoluteInterval(row.confirmation, absolute)
       }

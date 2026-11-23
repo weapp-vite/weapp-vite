@@ -45,6 +45,13 @@ export function verifiedPostAnchorForeignProcesses(inventory: NativeInventory, i
         valid = false
         break
       }
+      if (row.entry.confirmation) {
+        const frame = frames[firstIndex + index]!
+        if (!completeForeignConfirmation(row, first.identity!, value, anchorEnd, frame, installationRoot)) {
+          valid = false
+          break
+        }
+      }
       birth = value
       previousImage = row.entry.pathAfter.executable
     }

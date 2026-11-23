@@ -119,7 +119,7 @@ static NSDictionary *readConfirmation(pid_t pid, uint64_t deadline) {
   NSDictionary *after = readIdentity(pid); budget(deadline);
   return @{@"clockDomain":@"mach-absolute-ticks", @"startedAtTicks":precise(started), @"endedAtTicks":precise(mach_absolute_time()), @"before":before, @"birthBefore":birthBefore, @"pathBefore":pathBefore, @"pathAfter":pathAfter, @"birthAfter":birthAfter, @"after":after};
 }
-static NSDictionary *readRow(pid_t pid, NSDictionary *enumeratedIdentity, uint64_t deadline, BOOL confirmChanges) {
+static NSDictionary *readRow(pid_t pid, NSDictionary *enumeratedIdentity, NSDictionary *priorCredentialDriftIdentity, uint64_t deadline, BOOL confirmImageChanges, BOOL confirmCredentialChanges) {
   budget(deadline);
   uint64_t started = nowNs();
   uint64_t absoluteStarted = mach_absolute_time();
@@ -142,10 +142,14 @@ static NSDictionary *readRow(pid_t pid, NSDictionary *enumeratedIdentity, uint64
   BOOL imagesAvailable = [pathBefore[@"executable"] isKindOfClass:[NSString class]] && [pathAfter[@"executable"] isKindOfClass:[NSString class]];
   BOOL imageChanged = imagesAvailable && ![pathBefore[@"executable"] isEqual:pathAfter[@"executable"]];
   BOOL credentialsChanged = generationStable && (![enumeratedIdentity[@"uid"] isEqual:before[@"identity"][@"uid"]] || ![before[@"identity"][@"uid"] isEqual:after[@"identity"][@"uid"]]);
-  id confirmation = confirmChanges && generationStable && imagesAvailable && (imageChanged || credentialsChanged) ? readConfirmation(pid, deadline) : [NSNull null];
+  BOOL priorCredentialDrift = priorCredentialDriftIdentity
+    && sameGenerationIdentity(priorCredentialDriftIdentity, enumeratedIdentity)
+    && sameGenerationIdentity(priorCredentialDriftIdentity, before[@"identity"]);
+  BOOL requiresConfirmation = (confirmImageChanges && imageChanged) || (confirmCredentialChanges && credentialsChanged) || priorCredentialDrift;
+  id confirmation = requiresConfirmation && generationStable && imagesAvailable ? readConfirmation(pid, deadline) : [NSNull null];
   return @{@"pid":@(pid), @"enumeratedIdentity":enumeratedIdentity, @"startedAtNanoseconds":precise(started), @"endedAtNanoseconds":precise(nowNs()), @"before":before, @"pathBefore":pathBefore, @"task":task, @"pathAfter":pathAfter, @"after":after, @"absolute":absolute, @"confirmation":confirmation};
 }
-static NSDictionary *frame(NSUInteger requestId, NSString *phase, uint64_t deadline) {
+static NSDictionary *frame(NSUInteger requestId, NSString *phase, uint64_t deadline, NSMutableDictionary<NSNumber *, NSDictionary *> *closureCredentialDrifts) {
   uint64_t started = nowNs();
   NSDictionary *startCalibration = calibrate();
   int mib[] = {CTL_KERN, KERN_PROC, KERN_PROC_ALL, 0};
@@ -174,7 +178,28 @@ static NSDictionary *frame(NSUInteger requestId, NSString *phase, uint64_t deadl
       [identities addObject:kernelIdentity(&values[index])];
     }
     if (zeroCount > 1 || pids.count == 0 || pids.count > 100000) fail(@"Incomplete process enumeration.");
-    for (NSUInteger index = 0; index < pids.count; index++) [rows addObject:readRow([pids[index] intValue], identities[index], deadline, [phase isEqual:@"closure2"])];
+    BOOL confirmImageChanges = [phase isEqual:@"closure2"];
+    BOOL confirmCredentialChanges = [phase isEqual:@"closure1"] || confirmImageChanges;
+    for (NSUInteger index = 0; index < pids.count; index++) {
+      pid_t pid = [pids[index] intValue];
+      NSDictionary *enumeratedIdentity = identities[index];
+      NSDictionary *priorDrift = [phase isEqual:@"closure2"] ? closureCredentialDrifts[@(pid)] : nil;
+      NSDictionary *row = readRow(pid, enumeratedIdentity, priorDrift, deadline, confirmImageChanges, confirmCredentialChanges);
+      [rows addObject:row];
+      if ([phase isEqual:@"closure1"]) {
+        id beforeIdentity = row[@"before"][@"identity"];
+        id taskIdentity = row[@"task"][@"identity"];
+        id afterIdentity = row[@"after"][@"identity"];
+        BOOL generationStable = sameGenerationIdentity(enumeratedIdentity, beforeIdentity)
+          && sameGenerationIdentity(beforeIdentity, taskIdentity)
+          && sameGenerationIdentity(beforeIdentity, afterIdentity)
+          && [beforeIdentity[@"zombie"] isEqual:@NO];
+        BOOL credentialsChanged = generationStable
+          && (![enumeratedIdentity[@"uid"] isEqual:beforeIdentity[@"uid"]]
+            || ![beforeIdentity[@"uid"] isEqual:afterIdentity[@"uid"]]);
+        if (credentialsChanged) closureCredentialDrifts[@(pid)] = beforeIdentity;
+      }
+    }
     budget(deadline);
     NSDictionary *enumeration = @{@"startedAtNanoseconds":precise(enumerationStarted), @"endedAtNanoseconds":precise(enumerationEnded), @"complete":@YES, @"bytes":@(bytes), @"recordSize":@(sizeof(*values)), @"pidCount":@(pids.count), @"pids":pids, @"zeroPidCount":@(zeroCount)};
     NSDictionary *endCalibration = calibrate();
@@ -203,6 +228,7 @@ int main(void) {
       NSArray *phases = @[@"prepare", @"anchor", @"closure1", @"closure2"];
       NSUInteger completed = 0;
       uint64_t deadline = UINT64_MAX;
+      NSMutableDictionary<NSNumber *, NSDictionary *> *closureCredentialDrifts = [NSMutableDictionary dictionary];
       char *line = NULL;
       size_t capacity = 0;
       @try {
@@ -224,7 +250,7 @@ int main(void) {
             uint64_t proposed = nowNs() + remaining * 1000000ULL;
             if (proposed < deadline) deadline = proposed;
             budget(deadline);
-            sendInspectorResponse(frame(completed + 1, phases[completed], deadline));
+            sendInspectorResponse(frame(completed + 1, phases[completed], deadline, closureCredentialDrifts));
             completed++;
           }
         }

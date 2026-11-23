@@ -1,9 +1,9 @@
 import type { DarwinProcessFrame } from '../processInventory/darwinInspector/types'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createNativeInventory } from './closure'
-import { entry, fixtureInstallation, fixtureSelected } from './fixture'
+import { entry, fixtureForeign, fixtureInstallation, fixtureSelected } from './fixture'
 import { normalizeNativeFrame } from './model'
-import { postAnchorFrames, setRowIdentity } from './postAnchorFixture'
+import { postAnchorFrames, processAbsolute, setRowIdentity } from './postAnchorFixture'
 import { summarizeNativeInventory } from './summary'
 
 function summarize(frames: DarwinProcessFrame[], textConflict = false) {
@@ -212,6 +212,7 @@ describe('post-anchor foreign process requires birth and final independent nativ
     const frames = postAnchorFrames('closure1')
     const first = frames[2]!.rows.find(row => row.pid === 22)!
     first.enumeratedIdentity.uid = 501
+    first.pathBefore = first.pathAfter = { count: fixtureForeign.length, errno: 0, executable: fixtureForeign }
     first.gaps = ['enumeration-identity-changed']
     const final = frames[3]!.rows.find(row => row.pid === 22)!
     final.enumeratedIdentity.uid = 502
@@ -222,6 +223,38 @@ describe('post-anchor foreign process requires birth and final independent nativ
       installationRssBytes: { status: 'unavailable' },
       closureOwnership: { status: 'unavailable' },
       verifiedPostAnchorForeignProcesses: [],
+    })
+  })
+
+  it('accepts a closure1 credential transition with an independent confirmation in the same frame', () => {
+    const frames = postAnchorFrames('closure1')
+    const first = frames[2]!.rows.find(row => row.pid === 22)!
+    first.enumeratedIdentity.uid = 501
+    first.pathBefore = first.pathAfter = { count: fixtureForeign.length, errno: 0, executable: fixtureForeign }
+    first.gaps = ['enumeration-identity-changed']
+    first.confirmation = {
+      ...processAbsolute(3300, '3001'),
+      before: structuredClone(first.before),
+      after: structuredClone(first.after),
+      pathBefore: { ...first.pathAfter },
+      pathAfter: { ...first.pathAfter },
+    }
+    const final = frames[3]!.rows.find(row => row.pid === 22)!
+    final.enumeratedIdentity.uid = 502
+    final.pathBefore = final.pathAfter = { ...first.pathAfter }
+    final.gaps = []
+    final.confirmation = {
+      ...processAbsolute(4300, '3001'),
+      before: structuredClone(final.before),
+      after: structuredClone(final.after),
+      pathBefore: { ...final.pathAfter },
+      pathAfter: { ...final.pathAfter },
+    }
+
+    expect(summarize(frames)).toMatchObject({
+      installationRssBytes: { status: 'observed', value: 1000 },
+      closureOwnership: { status: 'observed', value: 'verified' },
+      verifiedPostAnchorForeignProcesses: [{ confirmationPhase: 'closure2' }],
     })
   })
 })

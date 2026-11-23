@@ -108,8 +108,8 @@ describe('Darwin Mach absolute evidence protocol', () => {
     expect(() => parse(frame)).toThrow(/protocol/)
   })
 
-  it.each(['early', 'outside', 'another-pid', 'extra-rss', 'wrong-phase'] as const)('rejects a malformed %s confirmation', (kind) => {
-    const frame = fixtureAbsoluteFrame(kind === 'wrong-phase' ? 3 : 4)
+  it.each(['early', 'outside', 'another-pid', 'extra-rss'] as const)('rejects a malformed %s confirmation', (kind) => {
+    const frame = fixtureAbsoluteFrame(4)
     const row = frame.rows[1]!
     row.confirmation = fixtureConfirmation(row)
     if (kind === 'early') {
@@ -125,6 +125,23 @@ describe('Darwin Mach absolute evidence protocol', () => {
       Reflect.set(row.confirmation, 'rssBytes', '1000')
     }
     expect(() => parse(frame)).toThrow(/protocol/)
+  })
+
+  it('accepts an independent confirmation in closure1', () => {
+    const frame = fixtureAbsoluteFrame(3)
+    const row = frame.rows[1]!
+    row.enumeratedIdentity.uid++
+    row.confirmation = fixtureConfirmation(row)
+
+    expect(parse(frame).rows[1]!.confirmation).toEqual(row.confirmation)
+  })
+
+  it('rejects a confirmation in prepare or anchor', () => {
+    for (const requestId of [1, 2] as const) {
+      const frame = fixtureAbsoluteFrame(requestId)
+      frame.rows[1]!.confirmation = fixtureConfirmation(frame.rows[1]!)
+      expect(() => parse(frame)).toThrow(/protocol/)
+    }
   })
 
   it.each([0, -1, 1.5, 0x100000000])('rejects an invalid Mach timebase component %s', (component) => {
