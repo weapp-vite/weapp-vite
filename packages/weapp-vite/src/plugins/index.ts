@@ -96,6 +96,7 @@ export function vitePluginWeapp(
   const vueRuntimeEnabled = vueEnabled && (!reactEnabled || hasWevuDependency(ctx))
   const runtimeProvider = resolveRuntimeProvider('miniprogram', vueRuntimeEnabled ? 'vue' : 'native')
   const templateAssetPackages = new Map<string, string>()
+  const rewrittenTemplateImageSources = new Set<string>()
   const groups: Plugin[][] = [
     [createContextPlugin(ctx), createPackageImportsQueryPlugin(), createSelectedRuntimeProviderPlugin(runtimeProvider, ctx.configService.isDev)],
     [createWasmPlugin(ctx, resolveWasmScope(ctx, subPackageMeta?.subPackage.independent ? subPackageMeta.subPackage.root : undefined)), createSubpackageOutputPlugin({
@@ -113,7 +114,7 @@ export function vitePluginWeapp(
     groups.push(wevu(ctx))
   }
   const autoRoutesEnabled = resolveWeappAutoRoutesConfig(ctx.configService?.weappViteConfig?.autoRoutes).enabled
-  const assetPlugins = subPackageMeta ? undefined : asset(ctx)
+  const assetPlugins = subPackageMeta ? undefined : asset(ctx, rewrittenTemplateImageSources)
 
   if (assetPlugins) {
     groups.push([assetPlugins[0]])
@@ -136,7 +137,7 @@ export function vitePluginWeapp(
   if (!subPackageMeta && !libModeEnabled) {
     groups.push([createProjectConfigDirectoryPlugin(ctx), createAppBuilderPlugin(ctx), createWorkerOutputPlugin(ctx), createPluginProjectOutputPlugin(ctx)])
   }
-  groups.push([createOutputFinalizerPlugin(ctx, subPackageMeta, templateAssetPackages)])
+  groups.push([createOutputFinalizerPlugin(ctx, subPackageMeta, templateAssetPackages, rewrittenTemplateImageSources)])
   if (assetPlugins) {
     groups.push([assetPlugins[1]])
   }

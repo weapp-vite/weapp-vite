@@ -2,6 +2,7 @@ import type { EmittedAsset, OutputBundle } from 'rolldown'
 import type { SubpackageNamingContext } from '../subpackageOutput/ownership'
 import type { OutputAssetEntry } from './templates'
 import { Buffer } from 'node:buffer'
+import { createHash } from 'node:crypto'
 import { readFile, stat } from 'node:fs/promises'
 import path from 'pathe'
 import { getScriptModuleTagNames } from '../../utils/wxmlScriptModule'
@@ -57,6 +58,7 @@ export function createTemplateImageRewriter(
     publicDir: string | false
     assetsInclude: (file: string) => boolean
     useConsumerPackages: boolean
+    onRewrite?: (source: string) => void
     emit: (asset: EmittedAsset & { originalFileName: string }, owner: string | undefined) => string
   },
 ) {
@@ -95,8 +97,7 @@ export function createTemplateImageRewriter(
       }
       return [{ fileName, code, output, references }]
     })
-    const resolvedTargets = new Map<string, Promise<string | null | undefined>>()
-    const resolveTarget = async (relative: string) => {
+    const loadTarget = async (relative: string) => {
       const original = path.resolve(srcRoot, relative)
       const target = bySource.get(original)
       if (target !== null && naming?.publicDir && (await stat(path.join(naming.publicDir, relative), { throwIfNoEntry: false }))?.isFile()) {
@@ -108,14 +109,44 @@ export function createTemplateImageRewriter(
       if (!(await stat(original, { throwIfNoEntry: false }))?.isFile()) {
         return null
       }
-      const owners = packages.get(relative)
-      return naming.emit({
-        type: 'asset',
+      return {
+        type: 'asset' as const,
         name: path.basename(original),
         originalFileName: original,
         source: await readFile(original),
-      }, owners && (owners.size === 1 ? owners.values().next().value : ''))
+      }
     }
+    const imageKeys = new Map<string, string>()
+    const ownersByContent = new Map<string, Set<string>>()
+    const loads = new Map<string, Promise<Awaited<ReturnType<typeof loadTarget>>>>()
+    if (naming?.useConsumerPackages) {
+      // Rolldown 在首次发射相同字节时决定名称；同内容图片需要先合并全部模板消费者。
+      for (const relative of packages.keys()) {
+        loads.set(relative, loadTarget(relative))
+      }
+      for (const [relative, target] of await Promise.all([...loads].map(async ([relative, load]) => [relative, await load] as const))) {
+        if (!target || typeof target === 'string') {
+          continue
+        }
+        const key = createHash('sha256').update(target.source).digest('hex')
+        imageKeys.set(relative, key)
+        const owners = ownersByContent.get(key) ?? new Set<string>()
+        for (const owner of packages.get(relative)!) {
+          owners.add(owner)
+        }
+        ownersByContent.set(key, owners)
+      }
+    }
+    const resolveTarget = async (relative: string) => {
+      const target = await (loads.get(relative) ?? loadTarget(relative))
+      if (!target || typeof target === 'string') {
+        return target
+      }
+      const key = imageKeys.get(relative)
+      const owners = key === undefined ? undefined : ownersByContent.get(key)
+      return naming!.emit(target, owners && (owners.size === 1 ? owners.values().next().value : ''))
+    }
+    const resolvedTargets = new Map<string, Promise<string | null | undefined>>()
     for (const { fileName, code, output, references } of templates) {
       const edits = []
       for (const { relative, start, end, suffix } of references) {
@@ -129,6 +160,7 @@ export function createTemplateImageRewriter(
           continue
         }
         assertReferenceAccess(fileName, target, scope)
+        naming?.onRewrite?.(path.resolve(srcRoot, relative))
         const encoded = target.split('/').map(segment => encodeURIComponent(segment).replaceAll('\'', '%27')).join('/')
         edits.push({ start, end, text: `/${encoded}${suffix}` })
       }

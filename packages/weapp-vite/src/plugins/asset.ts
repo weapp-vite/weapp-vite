@@ -27,6 +27,7 @@ interface AssetPluginState {
   buildTarget: BuildTarget
   resolvedConfig?: ResolvedConfig
   pendingAssets?: Promise<string[]>
+  rewrittenTemplateImageSources?: ReadonlySet<string>
 }
 
 function stripQueryAndHash(value: string) {
@@ -423,8 +424,11 @@ function createAssetCollector(state: AssetPluginState): [Plugin, Plugin] {
         const independent = state.buildTarget === 'app'
           ? collectIndependentLocalAssets(ctx, state.resolvedConfig?.root ?? configService.cwd)
           : undefined
-        const candidates = independent?.sources.size
-          ? deferredFiles.filter(file => !independent.sources.has(normalizePath(file)))
+        const candidates = independent?.sources.size || state.rewrittenTemplateImageSources?.size
+          ? deferredFiles.filter((file) => {
+              const source = normalizePath(file)
+              return !independent?.sources.has(source) && !state.rewrittenTemplateImageSources?.has(source)
+            })
           : deferredFiles
         const pending = resolvePendingAssetFiles(candidates, bundle as OutputBundle, () => this.getModuleIds(), state.resolvedConfig?.root)
         await emitAssets(ctx, this, bundle as Record<string, any>, pending, 8)
@@ -447,7 +451,7 @@ function createAssetCollector(state: AssetPluginState): [Plugin, Plugin] {
   }]
 }
 
-export function asset(ctx: CompilerContext): [Plugin, Plugin] {
-  const state: AssetPluginState = { ctx, buildTarget: ctx.currentBuildTarget ?? 'app' }
+export function asset(ctx: CompilerContext, rewrittenTemplateImageSources?: ReadonlySet<string>): [Plugin, Plugin] {
+  const state: AssetPluginState = { ctx, buildTarget: ctx.currentBuildTarget ?? 'app', rewrittenTemplateImageSources }
   return createAssetCollector(state)
 }

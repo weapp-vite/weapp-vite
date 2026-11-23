@@ -2,7 +2,7 @@ import type { EmittedAsset, OutputBundle, PluginContext } from 'rolldown'
 import type { ResolvedConfig } from 'vite'
 import type { SubpackageNamingContext } from './ownership'
 import { createHash } from 'node:crypto'
-import { stat } from 'node:fs/promises'
+import { readFile, stat } from 'node:fs/promises'
 import path from 'pathe'
 import { normalizeFsResolvedId } from '../../utils/resolvedId'
 import { findLocalImageReferences } from '../outputFinalizer/templateImages'
@@ -51,32 +51,44 @@ export function createDeferredAssets(context: SubpackageNamingContext, templates
   const namesByPlaceholder = new Map<string, string>()
   let root: string
   let publicDir: string | false
+  let assetsInclude: ResolvedConfig['assetsInclude']
 
   function sourcePath(id: string) {
     return path.resolve(root, normalizeFsResolvedId(id))
   }
 
-  async function collectTemplatePackages() {
-    const referenced = new Map<string, Set<string>>()
+  async function collectTemplatePackages(keys: Map<string, string>, groups: Map<string, Set<string>>) {
+    const referenced = new Map<string, { source: string, owners: Set<string> }>()
     for (const [fileName, code] of templates()) {
       let owner: string | undefined
       for (const { relative } of findLocalImageReferences(code, fileName)) {
         const source = sourcePath(path.join(context.srcRoot, relative))
-        if (pending.has(source)) {
-          const owners = referenced.get(relative) ?? new Set<string>()
-          owners.add(owner ??= outputPackage(fileName, context))
-          referenced.set(relative, owners)
+        if (assetsInclude(source)) {
+          const entry = referenced.get(relative) ?? { source, owners: new Set<string>() }
+          entry.owners.add(owner ??= outputPackage(fileName, context))
+          referenced.set(relative, entry)
         }
       }
     }
-    const publicRoot = publicDir
-    const bySource = new Map<string, Set<string>>()
-    await Promise.all([...referenced].map(async ([relative, owners]) => {
-      if (!publicRoot || !(await stat(path.join(publicRoot, relative), { throwIfNoEntry: false }))?.isFile()) {
-        bySource.set(sourcePath(path.join(context.srcRoot, relative)), owners)
+    for (const [relative, { source, owners }] of referenced) {
+      if (publicDir && (await stat(path.join(publicDir, relative), { throwIfNoEntry: false }))?.isFile()) {
+        continue
       }
-    }))
-    return bySource
+      let key = keys.get(source)
+      if (key === undefined) {
+        if (!(await stat(source, { throwIfNoEntry: false }))?.isFile()) {
+          continue
+        }
+        // 仅在模板中引用的不同源文件也可能与待发射文件同内容。
+        key = createHash('sha256').update(await readFile(source)).digest('hex')
+      }
+      const resolved = groups.get(key)
+      if (resolved) {
+        for (const owner of owners) {
+          resolved.add(owner)
+        }
+      }
+    }
   }
 
   return {
@@ -91,6 +103,7 @@ export function createDeferredAssets(context: SubpackageNamingContext, templates
       }
       root = config.root
       publicDir = config.publicDir || false
+      assetsInclude = config.assetsInclude
       context = { ...context, root, preserveSymlinks: config.resolve.preserveSymlinks }
       interceptAssetHooks(config.plugins, {
         emit(ctx, asset) {
@@ -136,7 +149,6 @@ export function createDeferredAssets(context: SubpackageNamingContext, templates
       packages.clear()
       const groups = new Map<string, Set<string>>()
       const assetKeys = new Map<string, string>()
-      const templatePackages = await collectTemplatePackages()
       const entryPackages = new Map<string, string | undefined>()
       const entryPackage = (id: string) => {
         if (!entryPackages.has(id)) {
@@ -149,14 +161,12 @@ export function createDeferredAssets(context: SubpackageNamingContext, templates
         assetKeys.set(source, key)
         const owners = groups.get(key) ?? new Set<string>()
         const found = findEntryPackages(this, consumersByReference.get(reference)!, entryPackage)
-        for (const owner of templatePackages.get(source) ?? []) {
-          found.add(owner)
-        }
         for (const owner of found.size ? found : [resolveSourcePackage(source, context) ?? '']) {
           owners.add(owner)
         }
         groups.set(key, owners)
       }
+      await collectTemplatePackages(assetKeys, groups)
       for (const [source, key] of assetKeys) {
         const owners = groups.get(key)!
         packages.set(source, owners.size === 1 ? owners.values().next().value! : '')

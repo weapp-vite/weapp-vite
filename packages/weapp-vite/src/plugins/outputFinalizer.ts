@@ -188,7 +188,12 @@ export async function normalizeTemplateAssets(
   await normalizeTemplateAssetEntries(ctx, collectOutputFinalizerAssetEntries(bundle).templateAssets)
 }
 
-export function createOutputFinalizerPlugin(ctx: CompilerContext, subPackageMeta?: SubPackageMetaValue, templateAssetPackages?: Map<string, string>): Plugin {
+export function createOutputFinalizerPlugin(
+  ctx: CompilerContext,
+  subPackageMeta?: SubPackageMetaValue,
+  templateAssetPackages?: Map<string, string>,
+  rewrittenTemplateImageSources?: Set<string>,
+): Plugin {
   let preserveCompleteBundle = false
   let imageNaming: Pick<ResolvedConfig, 'publicDir' | 'assetsInclude'> | undefined
   let unobserve: (() => Promise<void>) | undefined
@@ -252,6 +257,7 @@ export function createOutputFinalizerPlugin(ctx: CompilerContext, subPackageMeta
     generateBundle: {
       order: 'post',
       async handler(_options, bundle) {
+        rewrittenTemplateImageSources?.clear()
         const checkpoint = createHmrProfileCheckpoint(ctx.configService.isDev ? ctx.runtimeState?.build?.hmr?.profile : undefined)
         deferWxmlDependencyCommit(ctx)
         const assets = createOutputAssetTransaction(bundle as unknown as OutputBundle)
@@ -293,6 +299,7 @@ export function createOutputFinalizerPlugin(ctx: CompilerContext, subPackageMeta
                 publicDir: imageNaming.publicDir,
                 assetsInclude: imageNaming.assetsInclude,
                 useConsumerPackages: Boolean(templateAssetPackages && !subPackageMeta && !ctx.configService.isDev),
+                onRewrite: source => rewrittenTemplateImageSources?.add(source),
                 emit: (asset, owner) => {
                   this.addWatchFile(asset.originalFileName)
                   if (owner !== undefined) {

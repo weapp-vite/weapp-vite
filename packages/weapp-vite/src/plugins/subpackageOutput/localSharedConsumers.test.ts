@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs'
-import { mkdir, readdir, readFile, writeFile } from 'node:fs/promises'
+import { copyFile, mkdir, readdir, readFile, writeFile } from 'node:fs/promises'
 import { runInNewContext } from 'node:vm'
 import path from 'pathe'
 import { build } from 'vite'
@@ -94,6 +94,40 @@ it.each([
     if (!('mainOnly' in options)) {
       expect(readPageImage(dist, featureRoute)).toBe(`/${images[0]}`)
       expect(await readFile(path.join(dist, `${featureRoute}.wxss`), 'utf8')).toContain(`/${images[0]}`)
+    }
+  }
+  finally {
+    await fixture.close()
+  }
+})
+
+it.each(['wxml', 'mixed'] as const)('promotes identical images at different paths with %s consumers', async (kind) => {
+  const fixture = await createSubpackageOutputFixture()
+  try {
+    const [main, feature] = fixture.routes
+    const source = (file: string) => path.join(fixture.root, 'src', file)
+    await copyFile(source('packages/feature/image.png'), source('image.png'))
+    for (const [route, src] of [[main, '/image.png'], [feature, '../../image.png']] as const) {
+      await writeFile(source(`${route}.js`), 'Page({})')
+      const style = route === feature && kind === 'mixed'
+      await writeFile(source(`${route}.wxss`), style ? `.page { background: url("${src}"); }` : '')
+      await writeFile(source(`${route}.wxml`), style ? '<view class="page"/>' : `<image src="${src}"/>`)
+    }
+    await build({
+      root: fixture.root,
+      configFile: false,
+      logLevel: 'silent',
+      plugins: [weapp()],
+      weapp: { srcRoot: 'src', vue: { enable: false }, autoRoutes: false, autoImport: false, autoImportComponents: false, npm: { enable: false } },
+      build: { assetsDir: '[subpackage]/assets', assetsInlineLimit: 0 },
+    })
+    const dist = path.join(fixture.root, 'dist')
+    const files = (await readdir(dist, { recursive: true })).map(file => path.normalize(file))
+    const images = files.filter(file => /(?:^|\/)image(?:-[^/]+)?\.png$/.test(file))
+    expect(images).toEqual([expect.stringMatching(/^assets\/image-[^/]+\.png$/)])
+    for (const route of fixture.routes) {
+      const style = route === feature && kind === 'mixed'
+      expect(await readFile(path.join(dist, `${route}.${style ? 'wxss' : 'wxml'}`), 'utf8')).toContain(`/${images[0]}`)
     }
   }
   finally {
