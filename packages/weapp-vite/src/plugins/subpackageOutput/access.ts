@@ -42,34 +42,21 @@ function resolveStyleReference(value: string, consumer: string, base: string) {
 
 /** 使用最终消费者及资源路径验证可见性，来源目录不能替代引用关系。 */
 export function assertBundleAssetAccess(bundle: OutputBundle, context: SubpackageNamingContext, base: string) {
-  const assets = new Set(Object.values(bundle).filter(item => item.type === 'asset').map(item => item.fileName))
+  const outputs = Object.values(bundle)
+  const assets = new Set(outputs.filter(item => item.type === 'asset' && (context.independentRoot || outputPackage(item.fileName, context)))
+    .map(item => item.fileName))
+  if (!assets.size) {
+    return
+  }
   const assertTarget = (consumer: string, target: string) => {
     if (assets.has(target)) {
       assertReferenceAccess(consumer, target, context)
     }
   }
-  for (const item of Object.values(bundle)) {
+  const chunks: AssetConsumerChunk[] = []
+  for (const item of outputs) {
     if (item.type === 'chunk') {
-      const chunk = item as AssetConsumerChunk
-      const pending = [chunk]
-      const visited = new Set<string>()
-      while (pending.length) {
-        const dependency = pending.pop()!
-        if (visited.has(dependency.fileName)) {
-          continue
-        }
-        visited.add(dependency.fileName)
-        for (const target of [...dependency.referencedFiles ?? [], ...dependency.viteMetadata?.importedAssets ?? []]) {
-          assertTarget(chunk.fileName, target)
-        }
-        // 同步共享 chunk 的资产也由其静态引用方消费；动态导航不提前消费目标分包。
-        for (const imported of dependency.imports) {
-          const output = bundle[imported]
-          if (output?.type === 'chunk') {
-            pending.push(output as AssetConsumerChunk)
-          }
-        }
-      }
+      chunks.push(item)
       continue
     }
     if (!/\.(?:css|wxss|acss|ttss|qss|jxss)$/.test(item.fileName)) {
@@ -114,5 +101,38 @@ export function assertBundleAssetAccess(bundle: OutputBundle, context: Subpackag
         }
       }
     })
+  }
+  // 样式给出确切的引用文件；脚本再沿入口的静态依赖验证共享块。
+  const isLoadRoot = (chunk: AssetConsumerChunk) => chunk.isEntry || chunk.isDynamicEntry
+  const reachedFromEntry = new Set<string>()
+  chunks.sort((left, right) => Number(Boolean(isLoadRoot(right))) - Number(Boolean(isLoadRoot(left))))
+  for (const chunk of chunks) {
+    const entry = isLoadRoot(chunk)
+    // 已被入口访问的普通共享块没有独立的消费者归属。
+    if (!entry && reachedFromEntry.has(chunk.fileName)) {
+      continue
+    }
+    const pending = [chunk]
+    const visited = new Set<string>()
+    while (pending.length) {
+      const dependency = pending.pop()!
+      if (visited.has(dependency.fileName)) {
+        continue
+      }
+      visited.add(dependency.fileName)
+      if (entry) {
+        reachedFromEntry.add(dependency.fileName)
+      }
+      for (const target of [...dependency.referencedFiles ?? [], ...dependency.viteMetadata?.importedAssets ?? []]) {
+        assertTarget(chunk.fileName, target)
+      }
+      // 同步共享 chunk 的资产也由其静态引用方消费；动态导航不提前消费目标分包。
+      for (const imported of dependency.imports) {
+        const output = bundle[imported]
+        if (output?.type === 'chunk') {
+          pending.push(output as AssetConsumerChunk)
+        }
+      }
+    }
   }
 }

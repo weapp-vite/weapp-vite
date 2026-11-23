@@ -65,12 +65,12 @@ export function createTemplateImageRewriter(
   },
 ) {
   const bySource = new Map<string, string | null>()
-  const outputPaths = new Set<string>()
+  const outputs = new Map<string, Extract<OutputBundle[string], { type: 'asset' }>>()
   for (const output of Object.values(bundle)) {
     if (output.type !== 'asset') {
       continue
     }
-    outputPaths.add(output.fileName)
+    outputs.set(output.fileName, output)
     for (const original of output.originalFileNames ?? []) {
       const source = path.resolve(root, original)
       const previous = bySource.get(source)
@@ -85,7 +85,17 @@ export function createTemplateImageRewriter(
     const templates = entries.flatMap(({ bundleFileName, output }) => {
       const fileName = output.fileName || bundleFileName
       const code = typeof output.source === 'string' ? output.source : Buffer.from(output.source).toString('utf8')
-      const references = findLocalImageReferences(code, fileName).filter(({ relative }) => !outputPaths.has(relative))
+      const references = findLocalImageReferences(code, fileName).filter(({ relative }) => {
+        const existing = outputs.get(relative)
+        if (!existing) {
+          return true
+        }
+        // 已匹配产物的路径无需改写，但显式命名仍可能把它放到不可访问的包内。
+        if (naming && existing.originalFileNames?.length) {
+          assertReferenceAccess(fileName, relative, scope)
+        }
+        return false
+      })
       if (!references.length) {
         return []
       }

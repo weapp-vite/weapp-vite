@@ -193,7 +193,12 @@ it.each([
         },
       },
       weapp: { srcRoot: 'src', vue: { enable: false }, autoRoutes: false, autoImport: false, autoImportComponents: false, npm: { enable: false } },
-      build: { assetsDir: '[subpackage]/assets', assetsInlineLimit: 0, minify: false },
+      build: {
+        assetsDir: '[subpackage]/assets',
+        assetsInlineLimit: 0,
+        minify: false,
+        ...(localOnly && !independent ? { rolldownOptions: { output: { chunkFileNames: 'chunks/[name]-[hash].js' } } } : {}),
+      },
     })
     const outputs = Array.isArray(result) ? result : [result]
     const chunks = outputs.flatMap(output => 'output' in output ? output.output : []).filter(output => output.type === 'chunk')
@@ -201,6 +206,9 @@ it.each([
       const sharedChunk = chunks.find(chunk => Object.keys(chunk.modules).some(module => path.normalize(module) === shared))
       expect(sharedChunk).toBeDefined()
       expect(sharedChunk?.isEntry).toBe(false)
+      if (localOnly) {
+        expect(sharedChunk?.fileName).toMatch(/^chunks\//)
+      }
       for (const route of imageRoutes) {
         expect(chunks.find(chunk => chunk.fileName === `${route}.js`)?.imports).toContain(sharedChunk?.fileName)
       }

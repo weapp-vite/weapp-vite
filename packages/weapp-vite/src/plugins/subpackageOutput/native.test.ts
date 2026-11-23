@@ -157,37 +157,97 @@ it.each(['assetsDir', 'assetFileNames (string)', 'assetFileNames (function)'] as
   }
 })
 
-it('rejects an explicit asset template that puts a shared image in the wrong package', async () => {
+it.each([
+  { name: 'placeholder naming', consumers: 'mixed', usePlaceholder: true, useCallback: false },
+  { name: 'explicit string without a placeholder', consumers: 'js', usePlaceholder: false, useCallback: false },
+  { name: 'explicit callback without a placeholder', consumers: 'wxss', usePlaceholder: false, useCallback: true },
+  { name: 'WXML-only with explicit naming', consumers: 'wxml', usePlaceholder: false, useCallback: false },
+] as const)('checks unreachable asset paths with $name', async ({ consumers, usePlaceholder, useCallback }) => {
   const fixture = await createSubpackageOutputFixture()
   try {
-    const compile = (shared: boolean) => build({
+    const [mainRoute] = fixture.routes
+    for (const route of fixture.routes) {
+      if (consumers === 'js' || consumers === 'wxml') {
+        await writeFile(path.join(fixture.root, 'src', `${route}.wxss`), '')
+      }
+      if (consumers === 'wxss') {
+        await writeFile(path.join(fixture.root, 'src', `${route}.js`), 'Page({})')
+        await writeFile(path.join(fixture.root, 'src', `${route}.wxml`), '<view class="page"/>')
+      }
+      if (consumers === 'wxml') {
+        await writeFile(path.join(fixture.root, 'src', `${route}.js`), 'Page({})')
+        await writeFile(path.join(fixture.root, 'src', `${route}.wxml`), '<image src="/packages/feature/image.png"/>')
+      }
+    }
+    const compile = (directory: string) => build({
       root: fixture.root,
       configFile: false,
       logLevel: 'silent',
       plugins: [weapp()],
       weapp: { srcRoot: 'src', vue: { enable: false }, autoRoutes: false, autoImport: false, autoImportComponents: false, npm: { enable: false } },
       build: {
-        assetsDir: '[subpackage]/assets',
+        ...(usePlaceholder ? { assetsDir: '[subpackage]/assets' } : {}),
         assetsInlineLimit: 0,
         minify: false,
-        rolldownOptions: { output: { assetFileNames: shared
-          ? 'assets/[name]-[hash][extname]'
-          : '[subpackage]/packages/feature/assets/[name]-[hash][extname]' } },
+        rolldownOptions: {
+          output: {
+            assetFileNames: useCallback ? () => `${directory}/[name]-[hash][extname]` : `${directory}/[name]-[hash][extname]`,
+          },
+        },
       },
     })
-    await expect(compile(false)).rejects.toThrow('跨分包资源')
-    await compile(true)
+    const extension = consumers === 'mixed' ? '(?:js|wxss)' : consumers
+    await expect(compile(`${usePlaceholder ? '[subpackage]/' : ''}packages/feature/assets`))
+      .rejects
+      .toThrow(new RegExp(`跨分包资源 "packages/feature/assets/image-[^/]+\\.png" 无法由 "${mainRoute}\\.${extension}" 访问`))
+    await compile('assets')
     const files = (await readdir(path.join(fixture.root, 'dist'), { recursive: true })).map(file => path.normalize(file))
     for (const route of fixture.routes) {
       for (const extension of ['js', 'json', 'wxml', 'wxss']) {
         expect(files).toContain(`${route}.${extension}`)
       }
-      const css = await readFile(path.join(fixture.root, 'dist', `${route}.wxss`), 'utf8')
-      const url = css.match(/url\(["']?([^"')]+)["']?\)/)![1]!
-      const target = url.startsWith('/') ? url.slice(1) : path.normalize(path.join(path.dirname(route), url))
-      expect(target).toMatch(/^assets\//)
-      expect(files).toContain(target)
+      if (consumers === 'wxml') {
+        const template = await readFile(path.join(fixture.root, 'dist', `${route}.wxml`), 'utf8')
+        const target = template.match(/src="\/([^"]+)"/)![1]!
+        expect(target).toMatch(/^assets\//)
+        expect(files).toContain(target)
+      }
+      else if (consumers !== 'js') {
+        const css = await readFile(path.join(fixture.root, 'dist', `${route}.wxss`), 'utf8')
+        const url = css.match(/url\(["']?([^"')]+)["']?\)/)![1]!
+        const target = url.startsWith('/') ? url.slice(1) : path.normalize(path.join(path.dirname(route), url))
+        expect(target).toMatch(/^assets\//)
+        expect(files).toContain(target)
+      }
     }
+    expect(files.filter(file => file.endsWith('.png'))).toEqual([expect.stringMatching(/^assets\/image-[^/]+\.png$/)])
+  }
+  finally {
+    await fixture.close()
+  }
+})
+
+it('checks WXML access even when an emitted image name already matches the source path', async () => {
+  const fixture = await createSubpackageOutputFixture()
+  try {
+    const [main] = fixture.routes
+    for (const route of fixture.routes) {
+      await writeFile(path.join(fixture.root, 'src', `${route}.wxss`), '')
+    }
+    await writeFile(path.join(fixture.root, 'src', `${main}.js`), 'Page({})')
+    await writeFile(path.join(fixture.root, 'src', `${main}.wxml`), '<image src="/packages/feature/image.png"/>')
+    await expect(build({
+      root: fixture.root,
+      configFile: false,
+      logLevel: 'silent',
+      plugins: [weapp()],
+      weapp: { srcRoot: 'src', vue: { enable: false }, autoRoutes: false, autoImport: false, autoImportComponents: false, npm: { enable: false } },
+      build: {
+        write: false,
+        assetsInlineLimit: 0,
+        rolldownOptions: { output: { assetFileNames: 'packages/feature/[name][extname]' } },
+      },
+    }).then(() => undefined)).rejects.toThrow(`跨分包资源 "packages/feature/image.png" 无法由 "${main}.wxml" 访问`)
   }
   finally {
     await fixture.close()

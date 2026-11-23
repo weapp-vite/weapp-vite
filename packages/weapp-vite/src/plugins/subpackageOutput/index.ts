@@ -4,14 +4,15 @@ import type { TemplateConsumers } from './deferredAssets'
 import type { SubpackageNamingContext } from './ownership'
 import { assertBundleAssetAccess } from './access'
 import { createDeferredAssets } from './deferredAssets'
-import { assertAssetPackageAccess, resolveAssetPackage, resolveChunkPackage } from './ownership'
+import { assertAssetPackageAccess, resolveAssetPackage, resolveAssetSourcePath, resolveChunkPackage } from './ownership'
 import { constrainIndependentAssetTemplate, expandSubpackageTemplate, hasSubpackagePlaceholder } from './template'
 
 /** 为占位符和独立分包适配原生命名，保留 bundler 的 hash、引用及写出所有权。 */
 export function createSubpackageOutputPlugin(context: SubpackageNamingContext, templates?: TemplateConsumers): Plugin {
   const deferred = templates && createDeferredAssets(context, templates)
   const wrapped = new WeakSet<object>()
-  let usesAssetPlaceholder = false
+  const placeholderSources = new Set<string>()
+  let checkConfiguredAssetPaths = false
   let base = '/'
 
   function wrapOutput(output: OutputOptions) {
@@ -36,10 +37,12 @@ export function createSubpackageOutputPlugin(context: SubpackageNamingContext, t
       const wrapper: Exclude<OutputOptions['assetFileNames'], string | undefined> = function (this: unknown, asset) {
         const template = typeof original === 'function' ? original.call(this, asset) : original!
         if (hasSubpackagePlaceholder(template)) {
-          usesAssetPlaceholder = true
           const expanded = expandSubpackageTemplate(template, () => resolveAssetPackage(asset, context))
           if (context.independentRoot && !expanded.startsWith(`${context.independentRoot}/`)) {
             throw new Error('[weapp-vite] 独立分包的 assetFileNames 使用 [subpackage] 时，必须将其放在第一个目录段。')
+          }
+          for (const source of asset.originalFileNames) {
+            placeholderSources.add(resolveAssetSourcePath(source, context))
           }
           return expanded
         }
@@ -54,7 +57,7 @@ export function createSubpackageOutputPlugin(context: SubpackageNamingContext, t
     name: 'weapp-vite:subpackage-output',
     enforce: 'post',
     buildStart() {
-      usesAssetPlaceholder = false
+      placeholderSources.clear()
       deferred?.buildStart()
     },
     config: {
@@ -84,6 +87,8 @@ export function createSubpackageOutputPlugin(context: SubpackageNamingContext, t
       const outputs = Array.isArray(build.rolldownOptions.output)
         ? build.rolldownOptions.output
         : [build.rolldownOptions.output ?? (build.rolldownOptions.output = {})]
+      checkConfiguredAssetPaths = config.command === 'build' && !build.lib && !build.ssr
+        && (build.assetsDir !== '.' || outputs.some(output => output.assetFileNames !== undefined))
       for (const output of outputs) {
         // CSS 在 outputOptions 之前读取资源命名函数，提前建立同一个解析入口。
         if (!build.lib && hasSubpackagePlaceholder(build.assetsDir)) {
@@ -95,7 +100,7 @@ export function createSubpackageOutputPlugin(context: SubpackageNamingContext, t
     outputOptions: {
       order: 'post',
       handler(output) {
-        usesAssetPlaceholder = false
+        placeholderSources.clear()
         // Vite 在配置解析后才生成默认 entry/chunk 模板，此时再展开默认 assetsDir。
         wrapOutput(output)
         return output
@@ -111,10 +116,12 @@ export function createSubpackageOutputPlugin(context: SubpackageNamingContext, t
       order: 'post',
       handler(_options, bundle) {
         deferred?.cleanBundle(bundle)
-        if (usesAssetPlaceholder) {
+        if (placeholderSources.size || checkConfiguredAssetPaths) {
           assertBundleAssetAccess(bundle, context, base)
+        }
+        if (placeholderSources.size) {
           for (const item of Object.values(bundle)) {
-            if (item.type === 'asset') {
+            if (item.type === 'asset' && item.originalFileNames.some(source => placeholderSources.has(resolveAssetSourcePath(source, context)))) {
               assertAssetPackageAccess(item, context)
             }
           }

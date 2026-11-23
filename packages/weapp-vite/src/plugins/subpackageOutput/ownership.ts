@@ -66,8 +66,12 @@ export function resolveChunkPackage(chunk: PreRenderedChunk, context: Subpackage
   return facadeRoot ?? (roots.has('') ? '' : packages[0] ?? '')
 }
 
+export function resolveAssetSourcePath(id: string, context: SubpackageNamingContext) {
+  return path.resolve(context.root ?? context.srcRoot, normalizeFsResolvedId(id))
+}
+
 function consumerPackage(id: string, context: SubpackageNamingContext) {
-  return context.consumerAssetPackages?.get(path.resolve(context.root ?? context.srcRoot, normalizeFsResolvedId(id)))
+  return context.consumerAssetPackages?.get(resolveAssetSourcePath(id, context))
 }
 
 export function resolveAssetPackage(asset: { originalFileNames: string[] }, context: SubpackageNamingContext) {

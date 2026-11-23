@@ -116,16 +116,46 @@ describe('subpackage naming through Vite', () => {
     })
   })
 
+  it('checks placeholder source ownership only for assets that use the placeholder', async () => {
+    await fixture(async (root) => {
+      const emitter: Plugin = {
+        name: 'mixed-naming-fixture',
+        buildStart() {
+          this.emitFile({ type: 'asset', name: 'manual.txt', originalFileName: 'src/manual.txt', source: 'custom resource' })
+        },
+      }
+      const result = await compile(root, {
+        assetsDir: '[subpackage]/assets',
+        rolldownOptions: {
+          output: {
+            assetFileNames: asset => asset.names.includes('manual.txt')
+              ? 'packages/feature/manual/[name][extname]'
+              : '[subpackage]/assets/[name]-[hash][extname]',
+          },
+        },
+      }, [emitter])
+      expect(result.output.some(item => /^packages\/feature\/assets\/image-[^/]+\.svg$/.test(item.fileName))).toBe(true)
+      expect(await readFile(path.join(root, 'dist/packages/feature/manual/manual.txt'), 'utf8')).toBe('custom resource')
+    })
+  })
+
   it('leaves public files and explicit resource paths unchanged', async () => {
     await fixture(async (root) => {
       await mkdir(path.join(root, 'public'))
       await writeFile(path.join(root, 'public/keep.txt'), 'public-content')
+      const emitter: Plugin = {
+        name: 'fixed-filename-fixture',
+        buildStart() {
+          this.emitFile({ type: 'asset', fileName: 'packages/feature/fixed.txt', source: 'fixed-content' })
+        },
+      }
       const result = await compile(root, {
         assetsDir: '[subpackage]/assets',
         rolldownOptions: { output: { assetFileNames: 'custom/[name]-[hash][extname]' } },
-      })
+      }, [emitter])
       expect(result.output.some(item => /^custom\/image-.*\.svg$/.test(item.fileName))).toBe(true)
       expect(await readFile(path.join(root, 'dist/keep.txt'), 'utf8')).toBe('public-content')
+      expect(await readFile(path.join(root, 'dist/packages/feature/fixed.txt'), 'utf8')).toBe('fixed-content')
     })
   })
 
