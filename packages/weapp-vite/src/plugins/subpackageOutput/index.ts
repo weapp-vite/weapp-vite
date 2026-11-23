@@ -3,9 +3,9 @@ import type { Plugin } from 'vite'
 import type { SubpackageNamingContext } from './ownership'
 import { assertBundleAssetAccess } from './access'
 import { assertAssetPackageAccess, resolveAssetPackage, resolveChunkPackage } from './ownership'
-import { expandSubpackageTemplate, hasSubpackagePlaceholder } from './template'
+import { constrainIndependentAssetTemplate, expandSubpackageTemplate, hasSubpackagePlaceholder } from './template'
 
-/** 仅在用户选择分包占位符时适配原生命名，保留 bundler 的 hash、引用及写出所有权。 */
+/** 为占位符和独立分包适配原生命名，保留 bundler 的 hash、引用及写出所有权。 */
 export function createSubpackageOutputPlugin(context: SubpackageNamingContext): Plugin {
   const wrapped = new WeakSet<object>()
   let usesAssetPlaceholder = false
@@ -28,15 +28,19 @@ export function createSubpackageOutputPlugin(context: SubpackageNamingContext): 
       output[key] = wrapper
     }
     const original = output.assetFileNames
-    if ((hasSubpackagePlaceholder(original) || typeof original === 'function')
+    if ((hasSubpackagePlaceholder(original) || typeof original === 'function' || (context.independentRoot && typeof original === 'string'))
       && !(typeof original === 'function' && wrapped.has(original))) {
       const wrapper: Exclude<OutputOptions['assetFileNames'], string | undefined> = function (this: unknown, asset) {
         const template = typeof original === 'function' ? original.call(this, asset) : original!
         if (hasSubpackagePlaceholder(template)) {
           usesAssetPlaceholder = true
-          return expandSubpackageTemplate(template, () => resolveAssetPackage(asset, context))
+          const expanded = expandSubpackageTemplate(template, () => resolveAssetPackage(asset, context))
+          if (context.independentRoot && !expanded.startsWith(`${context.independentRoot}/`)) {
+            throw new Error('[weapp-vite] 独立分包的 assetFileNames 使用 [subpackage] 时，必须将其放在第一个目录段。')
+          }
+          return expanded
         }
-        return template
+        return context.independentRoot ? constrainIndependentAssetTemplate(template, context.independentRoot) : template
       }
       wrapped.add(wrapper)
       output.assetFileNames = wrapper

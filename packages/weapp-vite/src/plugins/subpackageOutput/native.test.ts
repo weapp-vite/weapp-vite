@@ -5,7 +5,17 @@ import { expect, it } from 'vitest'
 import { weapp } from '../../vite'
 import { createSubpackageOutputFixture } from './nativeFixture'
 
-it.each(['js', 'wxss', 'wxml'] as const)('emits an independent subpackage image referenced in %s only once in its own asset directory', async (extension) => {
+it.each([
+  { extension: 'js', naming: 'assetsDir' },
+  { extension: 'wxss', naming: 'assetsDir' },
+  { extension: 'wxml', naming: 'assetsDir' },
+  { extension: 'js', naming: 'string' },
+  { extension: 'wxss', naming: 'string' },
+  { extension: 'wxml', naming: 'string' },
+  { extension: 'js', naming: 'callback' },
+  { extension: 'wxml', naming: 'function' },
+  { extension: 'wxss', naming: 'plain assetsDir' },
+] as const)('emits an independent image from $extension only once with $naming naming', async ({ extension, naming }) => {
   const fixture = await createSubpackageOutputFixture()
   try {
     const [mainRoute, childRoute] = fixture.routes
@@ -27,18 +37,31 @@ it.each(['js', 'wxss', 'wxml'] as const)('emits an independent subpackage image 
       wxml: '<image src="../../image.png"/>',
     }
     await writeFile(source(`${childRoute}.${extension}`), references[extension])
+    const template = 'images/[name]-[hash][extname]'
+    const assetFileNames = {
+      'assetsDir': undefined,
+      'plain assetsDir': undefined,
+      'string': template,
+      'callback': () => template,
+      'function': () => `${packageRoot}/${template}`,
+    }[naming]
     await build({
       root: fixture.root,
       configFile: false,
       logLevel: 'silent',
       plugins: [weapp()],
       weapp: { srcRoot: 'src', vue: { enable: false }, autoRoutes: false, autoImport: false, autoImportComponents: false, npm: { enable: false } },
-      build: { assetsDir: '[subpackage]/assets', assetsInlineLimit: 0 },
+      build: {
+        assetsDir: naming === 'plain assetsDir' ? 'images' : '[subpackage]/assets',
+        assetsInlineLimit: 0,
+        rolldownOptions: { output: assetFileNames ? { assetFileNames } : {} },
+      },
     })
     const dist = path.join(fixture.root, 'dist')
     const files = (await readdir(dist, { recursive: true })).map(file => path.normalize(file))
     const images = files.filter(file => /(?:^|\/)image(?:-[^/]+)?\.png$/.test(file))
-    expect(images).toEqual([expect.stringMatching(/^packages\/feature\/assets\/image-[^/]+\.png$/)])
+    expect(images).toHaveLength(1)
+    expect(path.dirname(images[0]!)).toBe(`${packageRoot}/${naming === 'assetsDir' ? 'assets' : 'images'}`)
     expect(files).toContain(`${packageRoot}/runtime.png`)
     expect(await readFile(path.join(dist, `${childRoute}.${extension}`), 'utf8')).toContain(`/${images[0]}`)
   }
