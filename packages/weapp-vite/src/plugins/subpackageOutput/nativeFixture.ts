@@ -5,9 +5,12 @@ import os from 'node:os'
 import { runInNewContext } from 'node:vm'
 import path from 'pathe'
 
-/** 执行生成的页面和同步依赖，读取 Page 注册时的图片 URL。 */
+/** 执行生成的页面或组件及其同步依赖，读取注册时的图片 URL。 */
 export function readPageImage(dist: string, route: string) {
   let image: string | undefined
+  function register(config: { data: { image: string } }) {
+    image = config.data.image
+  }
   const modules = new Map<string, { exports: unknown }>()
   function load(file: string) {
     const existing = modules.get(file)
@@ -20,9 +23,8 @@ export function readPageImage(dist: string, route: string) {
       module,
       exports: module.exports,
       require: (specifier: string) => load(path.resolve(path.dirname(file), specifier)),
-      Page: (config: { data: { image: string } }) => {
-        image = config.data.image
-      },
+      Page: register,
+      Component: register,
     }, { filename: file })
     return module.exports
   }

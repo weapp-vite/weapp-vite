@@ -115,6 +115,55 @@ it.each([
   }
 })
 
+it.each([false, true])('places dependency images used by a native subpackage component: shared=%s', async (shared) => {
+  const fixture = await createSubpackageOutputFixture()
+  try {
+    const [main, feature] = fixture.routes
+    const component = 'packages/feature/components/brand/index'
+    const source = (entry: string, ext: string) => path.join(fixture.root, 'src', `${entry}.${ext}`)
+    const dependency = path.join(fixture.root, 'node_modules/fixture-images')
+    const bytes = await readFile(path.join(fixture.root, 'src/packages/feature/image.png'))
+    await mkdir(dependency)
+    await writeFile(path.join(dependency, 'package.json'), JSON.stringify({ name: 'fixture-images', exports: { './logo.png': './logo.png' } }))
+    await writeFile(path.join(dependency, 'logo.png'), bytes)
+    for (const route of fixture.routes) {
+      await writeFile(source(route, 'js'), 'Page({})')
+      await writeFile(source(route, 'wxss'), '')
+    }
+    await writeFile(source(main, 'wxml'), shared ? '<image src="/node_modules/fixture-images/logo.png"/>' : '<view/>')
+    await writeFile(source(feature, 'wxml'), '<brand/>')
+    await writeFile(source(feature, 'json'), JSON.stringify({ usingComponents: { brand: '/packages/feature/components/brand/index' } }))
+    await mkdir(path.dirname(source(component, 'js')), { recursive: true })
+    await writeFile(source(component, 'js'), 'import image from "fixture-images/logo.png"; Component({ data: { image } })')
+    await writeFile(source(component, 'json'), JSON.stringify({ component: true }))
+    await writeFile(source(component, 'wxml'), '<image src="{{image}}"/>')
+    await build({
+      root: fixture.root,
+      configFile: false,
+      logLevel: 'silent',
+      plugins: [weapp()],
+      weapp: { srcRoot: 'src', vue: { enable: false }, autoRoutes: false, autoImport: false, autoImportComponents: false, npm: { enable: false } },
+      build: { assetsDir: 'assets', assetsInlineLimit: 0 },
+    })
+    const dist = path.join(fixture.root, 'dist')
+    const files = (await readdir(dist, { recursive: true })).map(file => path.normalize(file))
+    const logos = files.filter(file => /(?:^|\/)logo-[^/]+\.png$/.test(file))
+    expect(logos).toHaveLength(1)
+    const [logo] = logos
+    expect(path.dirname(logo!)).toBe(shared ? 'assets' : 'packages/feature/assets')
+    expect(await readFile(path.join(dist, logo!))).toEqual(bytes)
+    expect(readPageImage(dist, component)).toBe(`/${logo}`)
+    expect(JSON.parse(await readFile(path.join(dist, `${feature}.json`), 'utf8')) as unknown)
+      .toMatchObject({ usingComponents: { brand: '/packages/feature/components/brand/index' } })
+    if (shared) {
+      expect(await readFile(path.join(dist, `${main}.wxml`), 'utf8')).toContain(`src="/${logo}"`)
+    }
+  }
+  finally {
+    await fixture.close()
+  }
+})
+
 it('moves the dependency image bytes out of the main package when the subpackage is the only consumer', async () => {
   const fixture = await createSubpackageOutputFixture()
   try {
