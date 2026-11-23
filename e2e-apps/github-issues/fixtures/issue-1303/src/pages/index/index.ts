@@ -24,4 +24,36 @@ Page({
     this.setData({ status: 'queried', value: String(value), engine, count: this.data.count + 1 })
     return { value, engine }
   },
+  async runQueryWithDeviceRuntimeRestrictions() {
+    const originalGetFileSystemManager = wx.getFileSystemManager
+    const globalScope = globalThis as unknown as { TextDecoder?: unknown }
+    const hadOwnTextDecoder = Object.hasOwn(globalScope, 'TextDecoder')
+    const originalTextDecoder = globalScope.TextDecoder
+    try {
+      globalScope.TextDecoder = undefined
+      wx.getFileSystemManager = () => {
+        const manager = originalGetFileSystemManager()
+        const originalReadFile = manager.readFile
+        manager.readFile = (option) => {
+          if (option.filePath.endsWith('.wasm')) {
+            option.fail?.({ errMsg: 'readFile:fail code package files are not readable on device' })
+            option.complete?.()
+            return
+          }
+          return originalReadFile.call(manager, option)
+        }
+        return manager
+      }
+      return await this.runQuery()
+    }
+    finally {
+      if (hadOwnTextDecoder) {
+        globalScope.TextDecoder = originalTextDecoder
+      }
+      else {
+        delete globalScope.TextDecoder
+      }
+      wx.getFileSystemManager = originalGetFileSystemManager
+    }
+  },
 })
