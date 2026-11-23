@@ -103,7 +103,7 @@ export function vitePluginWeapp(
       independentRoot: subPackageMeta?.subPackage.independent ? subPackageMeta.subPackage.root : undefined,
       roots: () => ctx.scanService.subPackageMap.keys(),
       templateAssetPackages,
-    }, !ctx.configService.isDev && !subPackageMeta && !libModeEnabled)],
+    }, !ctx.configService.isDev && !subPackageMeta && !libModeEnabled ? () => ctx.runtimeState.wxml.emittedCode : undefined)],
     preflight(ctx),
     uniAppCompatibility(ctx),
     createReactPlugin(ctx),

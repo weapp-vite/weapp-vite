@@ -11,7 +11,7 @@ import { assertReferenceAccess, outputPackage } from '../subpackageOutput/access
 
 const scripts = new Set(getScriptModuleTagNames('weapp'))
 
-function findLocalImageReferences(code: string, fileName: string) {
+export function findLocalImageReferences(code: string, fileName: string) {
   if (!/<image\s/.test(code)) {
     return []
   }

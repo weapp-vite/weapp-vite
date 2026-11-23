@@ -157,7 +157,7 @@ it.each(['assetsDir', 'assetFileNames (string)', 'assetFileNames (function)'] as
   }
 })
 
-it('rejects inaccessible physical assets in a native host and preserves public output references', async () => {
+it('rejects an explicit asset template that puts a shared image in the wrong package', async () => {
   const fixture = await createSubpackageOutputFixture()
   try {
     const compile = (shared: boolean) => build({
@@ -170,7 +170,9 @@ it('rejects inaccessible physical assets in a native host and preserves public o
         assetsDir: '[subpackage]/assets',
         assetsInlineLimit: 0,
         minify: false,
-        rolldownOptions: { output: shared ? { assetFileNames: 'assets/[name]-[hash][extname]' } : {} },
+        rolldownOptions: { output: { assetFileNames: shared
+          ? 'assets/[name]-[hash][extname]'
+          : '[subpackage]/packages/feature/assets/[name]-[hash][extname]' } },
       },
     })
     await expect(compile(false)).rejects.toThrow('跨分包资源')

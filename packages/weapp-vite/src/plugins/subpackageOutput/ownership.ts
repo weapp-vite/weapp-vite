@@ -12,7 +12,7 @@ export interface SubpackageNamingContext {
   srcRoot: string
   roots: () => Iterable<string>
   templateAssetPackages?: ReadonlyMap<string, string>
-  dependencyAssetPackages?: ReadonlyMap<string, string>
+  consumerAssetPackages?: ReadonlyMap<string, string>
 }
 
 function pathIdentity(file: string, context: SubpackageNamingContext): string {
@@ -66,8 +66,8 @@ export function resolveChunkPackage(chunk: PreRenderedChunk, context: Subpackage
   return facadeRoot ?? (roots.has('') ? '' : packages[0] ?? '')
 }
 
-function dependencyPackage(id: string, context: SubpackageNamingContext) {
-  return context.dependencyAssetPackages?.get(path.resolve(context.root ?? context.srcRoot, normalizeFsResolvedId(id)))
+function consumerPackage(id: string, context: SubpackageNamingContext) {
+  return context.consumerAssetPackages?.get(path.resolve(context.root ?? context.srcRoot, normalizeFsResolvedId(id)))
 }
 
 export function resolveAssetPackage(asset: { originalFileNames: string[] }, context: SubpackageNamingContext) {
@@ -76,7 +76,7 @@ export function resolveAssetPackage(asset: { originalFileNames: string[] }, cont
   }
   const roots = new Set(asset.originalFileNames.map((id) => {
     const templatePackage = context.templateAssetPackages?.get(path.resolve(context.root ?? context.srcRoot, id))
-    return templatePackage ?? dependencyPackage(id, context) ?? resolveSourcePackage(id, context)
+    return templatePackage ?? consumerPackage(id, context) ?? resolveSourcePackage(id, context)
   }))
   if (roots.has(undefined)) {
     throw new Error('[weapp-vite] [subpackage] 资源来源为未知虚拟模块，无法确定归属。')
@@ -96,7 +96,7 @@ export function assertAssetPackageAccess(asset: { fileName: string, originalFile
     .sort((left, right) => right.length - left.length)
     .find(root => asset.fileName.startsWith(`${root}/`))
   if (destination && destination !== context.independentRoot
-    && asset.originalFileNames.some(id => (dependencyPackage(id, context) ?? resolveSourcePackage(id, context)) !== destination)) {
+    && asset.originalFileNames.some(id => (consumerPackage(id, context) ?? resolveSourcePackage(id, context)) !== destination)) {
     throw new Error(`[weapp-vite] [subpackage] 跨分包资源 "${asset.fileName}" 无法独立访问；请为共享资源设置不含占位符的主包 assetFileNames。`)
   }
 }
