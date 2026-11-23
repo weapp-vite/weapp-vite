@@ -253,7 +253,8 @@ export function createOutputFinalizerPlugin(
     configResolved(config) {
       // 原生引擎发布完整模块注册图；classic 按源事件裁剪会破坏其重载输出。
       preserveCompleteBundle = config.experimental?.bundledDev === true
-      const output = config.build.rolldownOptions.output
+      // 与 experimental 一致：未解析或手写配置可能省略 rolldownOptions，缺失时按默认命名处理。
+      const output = config.build.rolldownOptions?.output
       const hasAssetFileNames = (Array.isArray(output) ? output : [output]).some(item => item?.assetFileNames !== undefined)
       if (!config.build.lib && (config.build.assetsDir !== '.' || hasAssetFileNames)) {
         imageNaming = config
