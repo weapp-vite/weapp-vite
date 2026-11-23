@@ -12,6 +12,7 @@ export interface SubpackageNamingContext {
   srcRoot: string
   roots: () => Iterable<string>
   templateAssetPackages?: ReadonlyMap<string, string>
+  dependencyAssetPackages?: ReadonlyMap<string, string>
 }
 
 function pathIdentity(file: string, context: SubpackageNamingContext): string {
@@ -27,7 +28,7 @@ function pathIdentity(file: string, context: SubpackageNamingContext): string {
   }
 }
 
-function packageRoot(id: string, context: SubpackageNamingContext) {
+export function resolveSourcePackage(id: string, context: SubpackageNamingContext) {
   const owner = resolveGraphOutputOwner(id)
     ?? parseLogicalEntryId(id)?.sourceId
     ?? parseSidecarModuleId(id)?.ownerId
@@ -46,8 +47,8 @@ function packageRoot(id: string, context: SubpackageNamingContext) {
 }
 
 export function resolveChunkPackage(chunk: PreRenderedChunk, context: SubpackageNamingContext) {
-  const roots = new Set(chunk.moduleIds.map(id => packageRoot(id, context)).filter(root => root !== undefined))
-  const facadeRoot = chunk.facadeModuleId ? packageRoot(chunk.facadeModuleId, context) : undefined
+  const roots = new Set(chunk.moduleIds.map(id => resolveSourcePackage(id, context)).filter(root => root !== undefined))
+  const facadeRoot = chunk.facadeModuleId ? resolveSourcePackage(chunk.facadeModuleId, context) : undefined
   if (facadeRoot !== undefined) {
     roots.add(facadeRoot)
   }
@@ -65,13 +66,17 @@ export function resolveChunkPackage(chunk: PreRenderedChunk, context: Subpackage
   return facadeRoot ?? (roots.has('') ? '' : packages[0] ?? '')
 }
 
+function dependencyPackage(id: string, context: SubpackageNamingContext) {
+  return context.dependencyAssetPackages?.get(path.resolve(context.root ?? context.srcRoot, normalizeFsResolvedId(id)))
+}
+
 export function resolveAssetPackage(asset: { originalFileNames: string[] }, context: SubpackageNamingContext) {
   if (!asset.originalFileNames.length) {
     throw new Error('[weapp-vite] [subpackage] 资源缺少 originalFileNames，无法确定归属；请提供源文件信息或显式设置资源输出路径。')
   }
   const roots = new Set(asset.originalFileNames.map((id) => {
     const templatePackage = context.templateAssetPackages?.get(path.resolve(context.root ?? context.srcRoot, id))
-    return templatePackage ?? packageRoot(id, context)
+    return templatePackage ?? dependencyPackage(id, context) ?? resolveSourcePackage(id, context)
   }))
   if (roots.has(undefined)) {
     throw new Error('[weapp-vite] [subpackage] 资源来源为未知虚拟模块，无法确定归属。')
@@ -90,7 +95,8 @@ export function assertAssetPackageAccess(asset: { fileName: string, originalFile
     .filter(Boolean)
     .sort((left, right) => right.length - left.length)
     .find(root => asset.fileName.startsWith(`${root}/`))
-  if (destination && destination !== context.independentRoot && asset.originalFileNames.some(id => packageRoot(id, context) !== destination)) {
+  if (destination && destination !== context.independentRoot
+    && asset.originalFileNames.some(id => (dependencyPackage(id, context) ?? resolveSourcePackage(id, context)) !== destination)) {
     throw new Error(`[weapp-vite] [subpackage] 跨分包资源 "${asset.fileName}" 无法独立访问；请为共享资源设置不含占位符的主包 assetFileNames。`)
   }
 }

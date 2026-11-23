@@ -2,11 +2,13 @@ import type { OutputOptions } from 'rolldown'
 import type { Plugin } from 'vite'
 import type { SubpackageNamingContext } from './ownership'
 import { assertBundleAssetAccess } from './access'
+import { createDeferredDependencyAssets } from './deferredAssets'
 import { assertAssetPackageAccess, resolveAssetPackage, resolveChunkPackage } from './ownership'
 import { constrainIndependentAssetTemplate, expandSubpackageTemplate, hasSubpackagePlaceholder } from './template'
 
 /** 为占位符和独立分包适配原生命名，保留 bundler 的 hash、引用及写出所有权。 */
-export function createSubpackageOutputPlugin(context: SubpackageNamingContext): Plugin {
+export function createSubpackageOutputPlugin(context: SubpackageNamingContext, enableDependencyPlacement = false): Plugin {
+  const deferred = enableDependencyPlacement ? createDeferredDependencyAssets(context) : undefined
   const wrapped = new WeakSet<object>()
   let usesAssetPlaceholder = false
   let base = '/'
@@ -52,6 +54,7 @@ export function createSubpackageOutputPlugin(context: SubpackageNamingContext): 
     enforce: 'post',
     buildStart() {
       usesAssetPlaceholder = false
+      deferred?.buildStart()
     },
     config: {
       order: 'post',
@@ -74,7 +77,8 @@ export function createSubpackageOutputPlugin(context: SubpackageNamingContext): 
     },
     configResolved(config) {
       base = config.base
-      context = { ...context, root: config.root, preserveSymlinks: config.resolve.preserveSymlinks }
+      context = { ...context, root: config.root, preserveSymlinks: config.resolve.preserveSymlinks, dependencyAssetPackages: deferred?.packages }
+      deferred?.configure(config)
       const build = config.build
       const outputs = Array.isArray(build.rolldownOptions.output)
         ? build.rolldownOptions.output
@@ -96,9 +100,11 @@ export function createSubpackageOutputPlugin(context: SubpackageNamingContext): 
         return output
       },
     },
+    renderStart: deferred?.renderStart,
     generateBundle: {
       order: 'post',
       handler(_options, bundle) {
+        deferred?.cleanBundle(bundle)
         if (usesAssetPlaceholder) {
           assertBundleAssetAccess(bundle, context, base)
           for (const item of Object.values(bundle)) {
