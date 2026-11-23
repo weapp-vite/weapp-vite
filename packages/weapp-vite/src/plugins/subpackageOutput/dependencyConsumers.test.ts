@@ -57,7 +57,13 @@ it.each([
     expect(logos).toEqual([expect.stringMatching(`^${directory}/logo-`)])
     expect(await readFile(path.join(dist, logos[0]!))).toEqual(await readFile(image))
     expect(await readFile(path.join(dist, `${featureRoute}.${via}`), 'utf8')).toContain(`/${logos[0]}`)
-    expect(await readFile(path.join(dist, '.vite/manifest.json'), 'utf8')).not.toContain('weapp-vite-asset-references')
+    const manifest = JSON.parse(await readFile(path.join(dist, '.vite/manifest.json'), 'utf8')) as Record<string, {
+      file: string
+      assets?: string[]
+    }>
+    const referencedFiles = Object.values(manifest).flatMap(item => [item.file, ...item.assets ?? []])
+    expect(referencedFiles).toContain(logos[0])
+    expect(JSON.stringify(manifest)).not.toContain('weapp-vite-asset-references')
     expect(files.some(file => file.startsWith('weapp-vite-asset-references'))).toBe(false)
     if ('mainLogo' in options) {
       expect(await readFile(path.join(dist, `${mainRoute}.js`), 'utf8')).toContain(`/${logos[0]}`)
