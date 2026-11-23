@@ -48,6 +48,7 @@
     "@devframes/agentic": "catalog:",
     "@devframes/hub": "catalog:",
     "@devframes/hub-ui": "catalog:",
+    "@devframes/json-render": "catalog:",
     "devframe": "catalog:",
     "echarts": "catalog:",
     "monaco-editor": "^0.57.0",

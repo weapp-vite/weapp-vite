@@ -46,7 +46,7 @@
     "glass-easel-miniprogram-adapter": "^1.2.0"
   },
   "dependencies": {
-    "glass-easel-template-compiler": "1.2.1"
+    "glass-easel-template-compiler": "1.2.2"
   },
   "devDependencies": {
     "playwright": "1.65.1",
