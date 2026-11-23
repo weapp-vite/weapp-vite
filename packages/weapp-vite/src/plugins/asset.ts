@@ -400,12 +400,14 @@ function createAssetCollector(state: AssetPluginState): [Plugin, Plugin] {
     },
 
     buildStart() {
-      if (!state.resolvedConfig) {
+      const config = state.resolvedConfig
+      // Stateful 原生图可能只刷新一部分入口；静态复制由完整资产快照统一决定。
+      if (!config || (config.command === 'serve' && config.experimental.bundledDev)) {
         state.pendingAssets = Promise.resolve([])
         return
       }
 
-      state.pendingAssets = createAssetSourcePlan(configService, state.resolvedConfig.build.outDir, state.buildTarget).scan()
+      state.pendingAssets = createAssetSourcePlan(configService, config.build.outDir, state.buildTarget).scan()
     },
 
     async generateBundle(_options, bundle) {

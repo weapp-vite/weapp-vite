@@ -119,17 +119,21 @@ it.each(['classic', 'stateful-experimental'] as const)('updates independent asse
   }
 }, 30_000)
 
-it('refreshes both copies of a shared image and retires old outputs in classic development', async () => {
+it.each(['classic', 'stateful-experimental'] as const)('refreshes both copies of a shared image and retires old outputs in %s development', async (runtime) => {
   const { config, read, edit } = await fixture()
   const main = 'pages/home/index'
   const independent = 'standalone/pages/home/index'
   const image = 'standalone/logo.png'
+  const copied = 'standalone/runtime.png'
+  config.weapp!.hmr = { runtime }
   config.build = { ...config.build, assetsDir: '[subpackage]/assets', assetsInlineLimit: 0 }
   await edit(image, 'first image')
+  await edit(copied, 'unbundled image')
   await edit(`${main}.wxml`, `<image src="/${image}"/>`)
   await edit(`${independent}.wxml`, `<image src="/${image}"/>`)
   const server = await createServer(config)
   try {
+    expect(server.config.experimental.bundledDev).toBe(runtime === 'stateful-experimental')
     const imagePath = async (route: string) => /<image\s+src="\/([^"]+)"/.exec(await read(`${route}.wxml`))?.[1] ?? ''
     const routes = [main, independent]
     const before = await Promise.all(routes.map(imagePath))
@@ -138,6 +142,8 @@ it('refreshes both copies of a shared image and retires old outputs in classic d
       expect.stringMatching(/^standalone\/assets\/logo-[^/]+\.png$/),
     ])
     await expect(Promise.all(before.map(read))).resolves.toEqual(['first image', 'first image'])
+    await expect(read(image)).rejects.toMatchObject({ code: 'ENOENT' })
+    expect(await read(copied)).toBe('unbundled image')
     await edit(image, 'second image')
     await expect.poll(async () => {
       const after = await Promise.all(routes.map(imagePath))
@@ -147,8 +153,12 @@ it('refreshes both copies of a shared image and retires old outputs in classic d
     const after = await Promise.all(routes.map(imagePath))
     expect(after.map(file => file.slice(0, file.lastIndexOf('/')))).toEqual(['assets', 'standalone/assets'])
     for (const old of [...before, image]) {
-      await expect.poll(() => read(old).catch(error => error.code), { timeout: 10_000 }).toBe('ENOENT')
+      await expect.poll(() => read(old).catch(error => error.code), { timeout: 10_000, message: old }).toBe('ENOENT')
     }
+    expect(await read(copied)).toBe('unbundled image')
+    await edit(copied, 'updated unbundled image')
+    await expect.poll(() => read(copied), { timeout: 10_000 }).toBe('updated unbundled image')
+    expect(server.config.experimental.bundledDev).toBe(runtime === 'stateful-experimental')
   }
   finally {
     await server.close()

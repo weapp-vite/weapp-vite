@@ -44,6 +44,38 @@ async function compile(root: string, options: NonNullable<UserConfig['build']> =
 }
 
 describe('subpackage naming through Vite', () => {
+  it('rewrites Vite HTML and CSS to the same packaged image while preserving external, inline and public URLs', async () => {
+    await fixture(async (root) => {
+      const feature = 'src/packages/feature'
+      const htmlFile = `${feature}/index.html`
+      const inline = 'data:image/svg+xml,%3Csvg%2F%3E'
+      const remote = 'https://example.invalid/image.svg'
+      await mkdir(path.join(root, 'public'))
+      await writeFile(path.join(root, 'public/public.svg'), '<svg xmlns="http://www.w3.org/2000/svg"/>')
+      await writeFile(path.join(root, htmlFile), `<!doctype html><html><head><link rel="stylesheet" href="./style.css"></head><body>
+        <img src="./image.svg">
+        <img src="${remote}">
+        <img src="${inline}">
+        <img src="/public.svg">
+      </body></html>`)
+      const result = await compile(root, {
+        assetsDir: '[subpackage]/assets',
+        rolldownOptions: { input: path.join(root, htmlFile) },
+      })
+      const read = (file: string) => readFile(path.join(root, 'dist', file), 'utf8')
+      const html = await read(htmlFile)
+      const sources = [...html.matchAll(/<img\s+src="([^"]+)"/g)].map(match => match[1]!)
+      const pictures = result.output.filter(item => item.fileName.endsWith('.svg'))
+      expect(pictures.map(item => item.fileName)).toEqual([expect.stringMatching(/^packages\/feature\/assets\/image-[^/]+\.svg$/)])
+      const target = pictures[0]!.fileName
+      expect(sources).toEqual([path.relative(feature, target), remote, inline, path.relative(feature, 'public.svg')])
+      expect(await read('public.svg')).toBe('<svg xmlns="http://www.w3.org/2000/svg"/>')
+      const css = result.output.find(item => item.fileName.endsWith('.css'))!.fileName
+      const url = /url\(["']?([^"')]+)["']?\)/.exec(await read(css))?.[1]
+      expect(url && path.join(path.dirname(css), url)).toBe(target)
+    })
+  })
+
   it.each([false, true])('resolves CSS URLs with explicit assetFileNames only, function=%s', async (callback) => {
     await fixture(async (root) => {
       const template = '[subpackage]/assets/[name]-[hash][extname]'
