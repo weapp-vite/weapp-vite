@@ -1,6 +1,7 @@
 import type { OutputBundle, OutputChunk } from 'rolldown'
 import type { Plugin, ResolvedConfig } from 'vite'
 import type { BuildTarget, CompilerContext } from '../context'
+import type { TemplateImageSources } from './outputFinalizer/templateImages'
 import { Buffer } from 'node:buffer'
 import path from 'node:path'
 import {
@@ -27,7 +28,7 @@ interface AssetPluginState {
   buildTarget: BuildTarget
   resolvedConfig?: ResolvedConfig
   pendingAssets?: Promise<string[]>
-  rewrittenTemplateImageSources?: ReadonlySet<string>
+  rewrittenTemplateImageSources?: TemplateImageSources
 }
 
 function stripQueryAndHash(value: string) {
@@ -424,10 +425,16 @@ function createAssetCollector(state: AssetPluginState): [Plugin, Plugin] {
         const independent = state.buildTarget === 'app'
           ? collectIndependentLocalAssets(ctx, state.resolvedConfig?.root ?? configService.cwd)
           : undefined
-        const candidates = independent?.sources.size || state.rewrittenTemplateImageSources?.size
+        const rewrittenSources = new Set<string>()
+        for (const sources of state.rewrittenTemplateImageSources?.values() ?? []) {
+          for (const source of sources) {
+            rewrittenSources.add(source)
+          }
+        }
+        const candidates = independent?.sources.size || rewrittenSources.size
           ? deferredFiles.filter((file) => {
               const source = normalizePath(file)
-              return !independent?.sources.has(source) && !state.rewrittenTemplateImageSources?.has(source)
+              return !independent?.sources.has(source) && !rewrittenSources.has(source)
             })
           : deferredFiles
         const pending = resolvePendingAssetFiles(candidates, bundle as OutputBundle, () => this.getModuleIds(), state.resolvedConfig?.root)
@@ -451,7 +458,7 @@ function createAssetCollector(state: AssetPluginState): [Plugin, Plugin] {
   }]
 }
 
-export function asset(ctx: CompilerContext, rewrittenTemplateImageSources?: ReadonlySet<string>): [Plugin, Plugin] {
+export function asset(ctx: CompilerContext, rewrittenTemplateImageSources?: TemplateImageSources): [Plugin, Plugin] {
   const state: AssetPluginState = { ctx, buildTarget: ctx.currentBuildTarget ?? 'app', rewrittenTemplateImageSources }
   return createAssetCollector(state)
 }

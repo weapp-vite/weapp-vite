@@ -1,4 +1,5 @@
 import type { Plugin } from 'vite'
+import type { TemplateImageSources } from './outputFinalizer/templateImages'
 import type { CompilerContext } from '@/context'
 import type { SubPackageMetaValue, WeappVitePluginApi } from '@/types'
 import { wrapPlugin } from 'vite-plugin-performance'
@@ -101,7 +102,7 @@ export function vitePluginWeapp(
     ? createPreparedTemplates(ctx)
     : undefined
   const templateAssetPackages = new Map<string, string>()
-  const rewrittenTemplateImageSources = new Set<string>()
+  const rewrittenTemplateImageSources: TemplateImageSources = new Map()
   const groups: Plugin[][] = [
     [createContextPlugin(ctx), createPackageImportsQueryPlugin(), createSelectedRuntimeProviderPlugin(runtimeProvider, ctx.configService.isDev)],
     [createWasmPlugin(ctx, resolveWasmScope(ctx, subPackageMeta?.subPackage.independent ? subPackageMeta.subPackage.root : undefined)), createSubpackageOutputPlugin({
@@ -159,7 +160,7 @@ export function vitePluginWeapp(
   if (!subPackageMeta && usesBundlerNpmPublication(ctx)) {
     groups.push([createNpmPruningPlugin(ctx)])
   }
-  groups.push([createOutputPublicationPlugin(ctx, subPackageMeta)])
+  groups.push([createOutputPublicationPlugin(ctx, subPackageMeta, rewrittenTemplateImageSources)])
 
   const assembled = attachRuntimePlugins(ctx, flatten(groups))
   if (subPackageMeta) {

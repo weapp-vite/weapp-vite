@@ -12,6 +12,8 @@ import { assertReferenceAccess, outputPackage } from '../subpackageOutput/access
 
 const scripts = new Set(getScriptModuleTagNames('weapp'))
 
+export type TemplateImageSources = Map<string, Set<string>>
+
 export function findLocalImageReferences(code: string, fileName: string) {
   if (!/<image\s/.test(code)) {
     return []
@@ -58,7 +60,7 @@ export function createTemplateImageRewriter(
     publicDir: string | false
     assetsInclude: (file: string) => boolean
     useConsumerPackages: boolean
-    onRewrite?: (source: string) => void
+    onRewrite?: (source: string, target: string) => void
     emit: (asset: EmittedAsset & { originalFileName: string }, owner: string | undefined) => string
   },
 ) {
@@ -160,7 +162,7 @@ export function createTemplateImageRewriter(
           continue
         }
         assertReferenceAccess(fileName, target, scope)
-        naming?.onRewrite?.(path.resolve(srcRoot, relative))
+        naming?.onRewrite?.(path.resolve(srcRoot, relative), target)
         const encoded = target.split('/').map(segment => encodeURIComponent(segment).replaceAll('\'', '%27')).join('/')
         edits.push({ start, end, text: `/${encoded}${suffix}` })
       }

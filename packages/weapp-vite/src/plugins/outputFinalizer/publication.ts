@@ -4,6 +4,7 @@ import type { CompilerContext } from '../../context'
 import type { SubPackageMetaValue } from '../../types'
 import type { WxmlDependencyCommit } from '../../wxml/processing/dependencies'
 import type { NativeOutputPublicationApi, OutputPublicationScope } from './publicationObservation'
+import type { TemplateImageSources } from './templateImages'
 import { WEAPP_VITE_OUTPUT_PUBLICATION_PLUGIN_NAME } from '@weapp-core/constants'
 import path from 'pathe'
 import { resolveIdePrivateConfigPath } from '../../runtime/classicIdeConfig'
@@ -16,14 +17,18 @@ import { createPublicAssetPublication } from '../asset/publication'
 import { protectClassicHandoffEntries } from './classicEntryContract'
 import { prepareClassicOutputGeneration, shouldPublishClassicGeneration } from './classicGeneration'
 import { pruneUnchangedDevHmrOutputs } from './hmrPrune'
-import { captureIndependentOutputAssets, captureIndependentOutputFileNames, flushIndependentOutputs } from './independent'
+import { captureIndependentOutputAssets, captureIndependentOutputFileNames, flushIndependentOutputs, includeIndependentTemplateImageSources } from './independent'
 import { prepareOutputPublicationOwnership } from './ownership'
 import { createNativePublicationObservation } from './publicationObservation'
 
 export { pruneUnchangedDevHmrOutputs, pruneUneventedDevHmrChunks } from './hmrPrune'
 
 /** 编译器完成所有输出转换后，按最终内容裁剪本轮写入。 */
-export function createOutputPublicationPlugin(ctx: CompilerContext, subPackageMeta?: SubPackageMetaValue): Plugin<NativeOutputPublicationApi> {
+export function createOutputPublicationPlugin(
+  ctx: CompilerContext,
+  subPackageMeta?: SubPackageMetaValue,
+  templateImageSources?: TemplateImageSources,
+): Plugin<NativeOutputPublicationApi> {
   type PublicAssets = ReturnType<typeof createPublicAssetPublication>
   const scopes = new Map<string, OutputPublicationScope>()
   let preserveCompleteBundle = false
@@ -218,6 +223,9 @@ export function createOutputPublicationPlugin(ctx: CompilerContext, subPackageMe
         assertActive()
         const checkpoint = createHmrProfileCheckpoint(ctx.configService.isDev ? ctx.runtimeState?.build?.hmr?.profile : undefined)
         const outputBundle = bundle as unknown as OutputBundle
+        if (subPackageMeta?.subPackage.independent && templateImageSources?.size) {
+          includeIndependentTemplateImageSources(outputBundle, ctx.configService.cwd, templateImageSources)
+        }
         const partial = ctx.configService.isDev && !preserveCompleteBundle
           && ctx.runtimeState?.build?.hmr?.didEmitAllEntries !== true
           && ctx.runtimeState?.build?.hmr?.isRebuild === true

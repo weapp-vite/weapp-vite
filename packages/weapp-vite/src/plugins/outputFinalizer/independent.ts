@@ -1,6 +1,7 @@
-import type { EmittedAsset, OutputAsset, OutputChunk, RolldownOutput } from 'rolldown'
+import type { EmittedAsset, OutputAsset, OutputBundle, OutputChunk, RolldownOutput } from 'rolldown'
 import type { CompilerContext } from '../../context'
 import type { SubPackageMetaValue } from '../../types'
+import type { TemplateImageSources } from './templateImages'
 import path from 'pathe'
 import { isBundlerDiagnosticAsset } from '../../runtime/buildPlugin/outputBoundary'
 import { normalizePath } from '../../utils/path'
@@ -30,6 +31,21 @@ function toEmittedAsset(output: OutputAsset | OutputChunk): EmittedAsset {
 
 function getBundleOutputs(output: RolldownOutput) {
   return Array.isArray(output.output) ? output.output : []
+}
+
+/** 在子构建结束前补全同内容图片的已重写来源，供主构建跳过静态复制。 */
+export function includeIndependentTemplateImageSources(bundle: OutputBundle, root: string, images: TemplateImageSources) {
+  for (const [target, sources] of images) {
+    const output = bundle[target]
+    if (output?.type !== 'asset') {
+      continue
+    }
+    const originals = new Set(output.originalFileNames.map(source => path.resolve(root, source)))
+    const added = [...sources].filter(source => !originals.has(source))
+    if (added.length) {
+      output.originalFileNames = [...output.originalFileNames, ...added]
+    }
+  }
 }
 
 /** 只交接独立包内由子构建发射的本地资源；公共源码仍由主构建独立决定。 */

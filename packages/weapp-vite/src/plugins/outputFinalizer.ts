@@ -3,6 +3,7 @@ import type { Plugin, ResolvedConfig } from 'vite'
 import type { CompilerContext } from '../context'
 import type { SubPackageMetaValue } from '../types'
 import type { RewriteWevuInternalRuntimeImportsOptions } from './core/helpers'
+import type { TemplateImageSources } from './outputFinalizer/templateImages'
 import type { OutputAssetEntry, PreparedTemplates } from './outputFinalizer/templates'
 import { analyzeGlassEaselBundle } from '../analyze/glassEasel'
 import { notifyDevModuleGraphHost } from '../moduleGraph/host'
@@ -192,7 +193,7 @@ export function createOutputFinalizerPlugin(
   ctx: CompilerContext,
   subPackageMeta?: SubPackageMetaValue,
   templateAssetPackages?: Map<string, string>,
-  rewrittenTemplateImageSources?: Set<string>,
+  rewrittenTemplateImageSources?: TemplateImageSources,
   preparedTemplates?: PreparedTemplates,
 ): Plugin {
   let preserveCompleteBundle = false
@@ -304,7 +305,13 @@ export function createOutputFinalizerPlugin(
                 publicDir: imageNaming.publicDir,
                 assetsInclude: imageNaming.assetsInclude,
                 useConsumerPackages: Boolean(templateAssetPackages && !subPackageMeta && !ctx.configService.isDev),
-                onRewrite: source => rewrittenTemplateImageSources?.add(source),
+                onRewrite: (source, target) => {
+                  if (rewrittenTemplateImageSources) {
+                    const sources = rewrittenTemplateImageSources.get(target) ?? new Set<string>()
+                    sources.add(source)
+                    rewrittenTemplateImageSources.set(target, sources)
+                  }
+                },
                 emit: (asset, owner) => {
                   this.addWatchFile(asset.originalFileName)
                   if (owner !== undefined) {
