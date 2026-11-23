@@ -87,3 +87,51 @@ it.each([
     await fixture.close()
   }
 })
+
+it('does not copy an independent-only WXML image from a shared source directory into the main package', async () => {
+  const fixture = await createSubpackageOutputFixture()
+  try {
+    const [main] = fixture.routes
+    const independentRoot = 'packages/standalone'
+    const independent = `${independentRoot}/pages/index/index`
+    const source = (file: string) => path.join(fixture.root, 'src', file)
+    const shared = 'common/shared.png'
+    const bytes = await readFile(source('packages/feature/image.png'))
+
+    await rm(source('packages/feature/image.png'))
+    await mkdir(path.dirname(source(shared)), { recursive: true })
+    await writeFile(source(shared), bytes)
+    await writeFile(source('app.json'), JSON.stringify({
+      pages: [main],
+      subPackages: [{ root: independentRoot, pages: ['pages/index/index'], independent: true }],
+    }))
+    await writeFile(source(`${main}.js`), 'Page({})')
+    await writeFile(source(`${main}.wxml`), '<view>main</view>')
+    await writeFile(source(`${main}.wxss`), '')
+    await mkdir(path.dirname(source(`${independent}.js`)), { recursive: true })
+    await writeFile(source(`${independent}.js`), 'Page({})')
+    await writeFile(source(`${independent}.json`), '{}')
+    await writeFile(source(`${independent}.wxml`), `<image src="/${shared}"/>`)
+    await writeFile(source(`${independent}.wxss`), '')
+
+    await build({
+      root: fixture.root,
+      configFile: false,
+      logLevel: 'silent',
+      plugins: [weapp()],
+      weapp: { srcRoot: 'src', vue: { enable: false }, autoRoutes: false, autoImport: false, autoImportComponents: false, npm: { enable: false } },
+      build: { assetsDir: '[subpackage]/assets', assetsInlineLimit: 0, minify: false },
+    })
+
+    const dist = path.join(fixture.root, 'dist')
+    const files = (await readdir(dist, { recursive: true })).map(file => path.normalize(file))
+    const images = files.filter(file => path.basename(file).startsWith('shared-') && file.endsWith('.png'))
+    expect(images).toHaveLength(1)
+    expect(path.dirname(images[0]!)).toBe(path.join(independentRoot, 'assets'))
+    expect(files).not.toContain(shared)
+    expect(await readFile(path.join(dist, `${independent}.wxml`), 'utf8')).toContain(`/${images[0]}`)
+  }
+  finally {
+    await fixture.close()
+  }
+})

@@ -70,8 +70,10 @@ function collectIndependentSources(ctx: CompilerContext, root: string) {
       }
       for (const original of item.originalFileNames ?? []) {
         const source = normalizePath(path.resolve(root, original))
+        // 独立构建已消费的来源不再由主构建静态复制，包含公共源码目录中的图片。
+        // 否则只有独立分包引用的公共图片会额外落一份到主包，违背按使用范围输出。
+        sources.add(source)
         if (source.startsWith(`${sourceRoot}/`)) {
-          sources.add(source)
           continue
         }
         // 子构建可能保留软链接，按包的物理根还原主构建扫描到的路径。
@@ -88,7 +90,7 @@ function collectIndependentSources(ctx: CompilerContext, root: string) {
   return { sources, outputNames }
 }
 
-/** 只交接独立包内由子构建发射的本地资源；公共源码仍由主构建独立决定。 */
+/** 交接独立构建消费的全部来源，避免主构建再静态复制这些资源。 */
 export function collectIndependentLocalAssets(ctx: CompilerContext, root: string) {
   return withRealpathScope(() => collectIndependentSources(ctx, root))
 }
