@@ -95,12 +95,14 @@ export function vitePluginWeapp(
   const reactEnabled = isReactEnabled(ctx)
   const vueRuntimeEnabled = vueEnabled && (!reactEnabled || hasWevuDependency(ctx))
   const runtimeProvider = resolveRuntimeProvider('miniprogram', vueRuntimeEnabled ? 'vue' : 'native')
+  const templateAssetPackages = new Map<string, string>()
   const groups: Plugin[][] = [
     [createContextPlugin(ctx), createPackageImportsQueryPlugin(), createSelectedRuntimeProviderPlugin(runtimeProvider, ctx.configService.isDev)],
     [createWasmPlugin(ctx, resolveWasmScope(ctx, subPackageMeta?.subPackage.independent ? subPackageMeta.subPackage.root : undefined)), createSubpackageOutputPlugin({
       srcRoot: ctx.configService.absoluteSrcRoot,
       independentRoot: subPackageMeta?.subPackage.independent ? subPackageMeta.subPackage.root : undefined,
       roots: () => ctx.scanService.subPackageMap.keys(),
+      templateAssetPackages,
     })],
     preflight(ctx),
     uniAppCompatibility(ctx),
@@ -134,7 +136,7 @@ export function vitePluginWeapp(
   if (!subPackageMeta && !libModeEnabled) {
     groups.push([createProjectConfigDirectoryPlugin(ctx), createAppBuilderPlugin(ctx), createWorkerOutputPlugin(ctx), createPluginProjectOutputPlugin(ctx)])
   }
-  groups.push([createOutputFinalizerPlugin(ctx, subPackageMeta)])
+  groups.push([createOutputFinalizerPlugin(ctx, subPackageMeta, templateAssetPackages)])
   if (assetPlugins) {
     groups.push([assetPlugins[1]])
   }

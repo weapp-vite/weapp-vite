@@ -11,6 +11,7 @@ export interface SubpackageNamingContext {
   independentRoot?: string
   srcRoot: string
   roots: () => Iterable<string>
+  templateAssetPackages?: ReadonlyMap<string, string>
 }
 
 function pathIdentity(file: string, context: SubpackageNamingContext): string {
@@ -68,7 +69,10 @@ export function resolveAssetPackage(asset: { originalFileNames: string[] }, cont
   if (!asset.originalFileNames.length) {
     throw new Error('[weapp-vite] [subpackage] 资源缺少 originalFileNames，无法确定归属；请提供源文件信息或显式设置资源输出路径。')
   }
-  const roots = new Set(asset.originalFileNames.map(id => packageRoot(id, context)))
+  const roots = new Set(asset.originalFileNames.map((id) => {
+    const templatePackage = context.templateAssetPackages?.get(path.resolve(context.root ?? context.srcRoot, id))
+    return templatePackage ?? packageRoot(id, context)
+  }))
   if (roots.has(undefined)) {
     throw new Error('[weapp-vite] [subpackage] 资源来源为未知虚拟模块，无法确定归属。')
   }

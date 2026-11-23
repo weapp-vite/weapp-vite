@@ -12,3 +12,5 @@ fix(weapp-vite): 修复独立分包引用依赖包资源时的输出路径。
 识别 bundler 以相对路径记录的资源来源，避免 WXSS 图片同时输出命名文件和额外的源码路径副本。
 
 主包和普通分包仅在 WXML 静态引用的本地图片也遵循 `build.assetsDir` 与 `build.rolldownOptions.output.assetFileNames`，不再额外复制到源码相对路径。
+
+正式构建中，仅由主包或普通分包 WXML 静态引用的本地图片按消费包命名；跨包共享时提升至主包，只发射一次。

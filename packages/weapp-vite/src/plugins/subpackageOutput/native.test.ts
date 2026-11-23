@@ -5,6 +5,36 @@ import { expect, it } from 'vitest'
 import { weapp } from '../../vite'
 import { createSubpackageOutputFixture } from './nativeFixture'
 
+it('promotes a WXML-only image shared with the main package and keeps one emitted file', async () => {
+  const fixture = await createSubpackageOutputFixture()
+  try {
+    const [mainRoute, featureRoute] = fixture.routes
+    for (const route of fixture.routes) {
+      await writeFile(path.join(fixture.root, 'src', `${route}.js`), 'Page({})')
+      await writeFile(path.join(fixture.root, 'src', `${route}.wxss`), '')
+      await writeFile(path.join(fixture.root, 'src', `${route}.wxml`), '<image src="/packages/feature/image.png"/>')
+    }
+    await build({
+      root: fixture.root,
+      configFile: false,
+      logLevel: 'silent',
+      plugins: [weapp()],
+      weapp: { srcRoot: 'src', vue: { enable: false }, autoRoutes: false, autoImport: false, autoImportComponents: false, npm: { enable: false } },
+      build: { assetsDir: '[subpackage]/assets', assetsInlineLimit: 0 },
+    })
+    const dist = path.join(fixture.root, 'dist')
+    const files = (await readdir(dist, { recursive: true })).map(file => path.normalize(file))
+    const images = files.filter(file => /(?:^|\/)image(?:-[^/]+)?\.png$/.test(file))
+    expect(images).toEqual([expect.stringMatching(/^assets\/image-/)])
+    for (const route of [mainRoute, featureRoute]) {
+      expect(await readFile(path.join(dist, `${route}.wxml`), 'utf8')).toContain(`src="/${images[0]}"`)
+    }
+  }
+  finally {
+    await fixture.close()
+  }
+})
+
 it.each(['assetsDir', 'assetFileNames (string)', 'assetFileNames (function)'] as const)('uses %s for images referenced only in WXML', async (option) => {
   const fixture = await createSubpackageOutputFixture()
   try {

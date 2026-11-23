@@ -87,7 +87,7 @@ export async function normalizeTemplateAssetEntries(
     addWatchFile: (file: string) => void
     warn: (message: string) => void
     partial: boolean
-    rewriteImages?: (code: string, fileName: string) => Promise<string>
+    rewriteImages?: (entries: OutputAssetEntry[]) => Promise<void>
   },
 ) {
   const { configService } = ctx
@@ -137,11 +137,11 @@ export async function normalizeTemplateAssetEntries(
         }, message => hooks?.warn(message), subPackageMeta?.subPackage.root)
       }
       const filtered = remove(custom, fileName, syntax)
-      const transformed = await hooks?.rewriteImages?.(filtered, fileName) ?? filtered
-      if (transformed !== code) {
-        output.source = transformed
+      if (filtered !== code) {
+        output.source = filtered
       }
     }
+    await hooks?.rewriteImages?.(entries)
   }
   catch (error) {
     dependencies?.fail()

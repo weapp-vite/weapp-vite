@@ -8,7 +8,7 @@ interface AssetConsumerChunk extends OutputChunk {
   referencedFiles?: string[]
 }
 
-function outputPackage(fileName: string, context: Pick<SubpackageNamingContext, 'roots'>) {
+export function outputPackage(fileName: string, context: Pick<SubpackageNamingContext, 'roots'>) {
   return Array.from(context.roots(), root => root.replaceAll('\\', '/').replace(/\/+$/, ''))
     .filter(Boolean)
     .sort((left, right) => right.length - left.length)

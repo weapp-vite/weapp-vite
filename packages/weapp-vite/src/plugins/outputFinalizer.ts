@@ -188,7 +188,7 @@ export async function normalizeTemplateAssets(
   await normalizeTemplateAssetEntries(ctx, collectOutputFinalizerAssetEntries(bundle).templateAssets)
 }
 
-export function createOutputFinalizerPlugin(ctx: CompilerContext, subPackageMeta?: SubPackageMetaValue): Plugin {
+export function createOutputFinalizerPlugin(ctx: CompilerContext, subPackageMeta?: SubPackageMetaValue, templateAssetPackages?: Map<string, string>): Plugin {
   let preserveCompleteBundle = false
   let imageNaming: Pick<ResolvedConfig, 'publicDir' | 'assetsInclude'> | undefined
   let unobserve: (() => Promise<void>) | undefined
@@ -292,9 +292,18 @@ export function createOutputFinalizerPlugin(ctx: CompilerContext, subPackageMeta
               }, imageNaming && {
                 publicDir: imageNaming.publicDir,
                 assetsInclude: imageNaming.assetsInclude,
-                emit: (asset) => {
+                useConsumerPackages: Boolean(templateAssetPackages && !ctx.configService.isDev),
+                emit: (asset, owner) => {
                   this.addWatchFile(asset.originalFileName)
-                  return this.getFileName(this.emitFile(asset))
+                  if (owner !== undefined) {
+                    templateAssetPackages?.set(asset.originalFileName, owner)
+                  }
+                  try {
+                    return this.getFileName(this.emitFile(asset))
+                  }
+                  finally {
+                    templateAssetPackages?.delete(asset.originalFileName)
+                  }
                 },
               })
             : undefined,
