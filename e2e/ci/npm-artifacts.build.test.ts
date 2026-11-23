@@ -24,6 +24,7 @@ describe('issues #1355 / #1356 npm artifact publication', () => {
       const next = await buildNpmArtifactFixture(project, `dist-${mode}`, mode)
       expect(next.observations).toEqual({ writeBundle: true, closeBundle: true })
       expect(await readFile(path.join(next.output, stylesheet), 'utf8')).toContain('artifact observer completed')
+      await access(path.join(next.output, 'miniprogram_npm/tslib/index.js'))
       expect(await readFile(path.join(first.output, stylesheet), 'utf8')).toBe(original)
       expect(await readFile(path.join(first.output, 'pages/index/index.js'), 'utf8')).toBe(originalPage)
       await expect(access(path.join(next.output, 'miniprogram_npm/mini-lib/unused'))).rejects.toMatchObject({ code: 'ENOENT' })
