@@ -51,7 +51,7 @@ export const TEMPLATE_CATALOG = {
   '@vue/reactivity': '^3.5.46',
   '@vue/runtime-core': '^3.5.46',
   '@vue/shared': '^3.5.46',
-  '@weapp-tailwindcss/engine': '0.1.9',
+  '@weapp-tailwindcss/engine': '0.1.8',
   '@wot-ui/ui': '2.4.0',
   'antd-mini': '^3.4.3',
   'bundle-require': '^5.1.0',
@@ -89,7 +89,7 @@ export const TEMPLATE_CATALOG = {
   'vue-eslint-parser': '^10.4.2',
   'vue-router': '5.5.1',
   'vue-tsc': '^3.3.14',
-  'weapp-tailwindcss': '^5.7.6',
+  'weapp-tailwindcss': '5.7.5',
   ai: '7.0.179',
   autoprefixer: '^10.7.0',
   axios: '^1.21.1',
@@ -141,7 +141,7 @@ export const TEMPLATE_NAMED_CATALOG = {
     'tdesign-miniprogram': '1.18.0'
   },
   'weapp-tailwindcss-fixed': {
-    'weapp-tailwindcss': '5.7.6'
+    'weapp-tailwindcss': '5.7.5'
   },
   fixed: {
     execa: '10.2.1',
