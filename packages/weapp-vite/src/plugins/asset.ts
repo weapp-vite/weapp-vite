@@ -18,6 +18,7 @@ import { applyOutputChunkTransform, replaceOutputChunkCode, resolveOutputChunkTr
 import { normalizePath, toPosixPath } from '../utils/path'
 import { normalizeEncodedSourceMapLike } from '../utils/sourcemap'
 import { pruneOwnedAssetFiles } from './asset/prune'
+import { excludeLinkedAssetCopies } from './asset/sourceIdentity'
 import { createAssetSourcePlan } from './asset/sources'
 import { collectIndependentLocalAssets } from './outputFinalizer/independent'
 import { emitAlipayGenericPlaceholderAssetsByBase, resolveWeappScopedSlotGenericPlaceholderBase } from './vue/transform/bundle/platform'
@@ -316,15 +317,19 @@ export function resolvePendingAssetFiles(
   bundle: OutputBundle,
   getModuleIds: () => Iterable<string>,
   root?: string,
+  matchLinkedAssets = false,
 ) {
   if (!files?.length) {
     return []
   }
 
   const bundledSources = collectBundledAssetSourcePaths(bundle, root)
-  const pendingAfterBundle = files.filter((file) => {
+  let pendingAfterBundle = files.filter((file) => {
     return !bundledSources.has(normalizePath(file))
   })
+  if (matchLinkedAssets && pendingAfterBundle.length) {
+    pendingAfterBundle = excludeLinkedAssetCopies(files, pendingAfterBundle, bundledSources)
+  }
   if (!pendingAfterBundle.length) {
     return []
   }
@@ -437,7 +442,13 @@ function createAssetCollector(state: AssetPluginState): [Plugin, Plugin] {
               return !independent?.sources.has(source) && !rewrittenSources.has(source)
             })
           : deferredFiles
-        const pending = resolvePendingAssetFiles(candidates, bundle as OutputBundle, () => this.getModuleIds(), state.resolvedConfig?.root)
+        const pending = resolvePendingAssetFiles(
+          candidates,
+          bundle as OutputBundle,
+          () => this.getModuleIds(),
+          state.resolvedConfig?.root,
+          state.resolvedConfig?.resolve.preserveSymlinks,
+        )
         await emitAssets(ctx, this, bundle as Record<string, any>, pending, 8)
         nextOwnedFiles = new Set([...earlyFiles, ...pending].map(file => configService.relativeOutputPath(file)))
         releasedFiles = [...committedOwnedFiles].filter(file => !nextOwnedFiles.has(file))

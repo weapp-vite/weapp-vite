@@ -5,6 +5,8 @@ import type { TemplateImageSources } from './templateImages'
 import path from 'pathe'
 import { isBundlerDiagnosticAsset } from '../../runtime/buildPlugin/outputBoundary'
 import { normalizePath } from '../../utils/path'
+import { withRealpathScope } from '../../utils/realpathScope'
+import { readAssetPhysicalPath } from '../asset/sourceIdentity'
 
 type EmitAsset = (asset: EmittedAsset) => void
 
@@ -48,8 +50,7 @@ export function includeIndependentTemplateImageSources(bundle: OutputBundle, roo
   }
 }
 
-/** 只交接独立包内由子构建发射的本地资源；公共源码仍由主构建独立决定。 */
-export function collectIndependentLocalAssets(ctx: CompilerContext, root: string) {
+function collectIndependentSources(ctx: CompilerContext, root: string) {
   const sources = new Set<string>()
   const outputNames = new Set<string>()
   for (const [packageRoot, result] of ctx.runtimeState?.build?.independent?.outputs ?? []) {
@@ -58,6 +59,7 @@ export function collectIndependentLocalAssets(ctx: CompilerContext, root: string
     }
     const prefix = `${packageRoot}/`
     const sourceRoot = path.resolve(ctx.configService.absoluteSrcRoot, packageRoot)
+    let physicalRoot: string | undefined
     for (const item of getBundleOutputs(result)) {
       if (isBundlerDiagnosticAsset(item) || !item.fileName.startsWith(prefix)) {
         continue
@@ -70,11 +72,25 @@ export function collectIndependentLocalAssets(ctx: CompilerContext, root: string
         const source = normalizePath(path.resolve(root, original))
         if (source.startsWith(`${sourceRoot}/`)) {
           sources.add(source)
+          continue
+        }
+        // 子构建可能保留软链接，按包的物理根还原主构建扫描到的路径。
+        const physical = readAssetPhysicalPath(source)
+        if (physical && physical !== source) {
+          physicalRoot ??= readAssetPhysicalPath(sourceRoot) ?? sourceRoot
+          if (physical.startsWith(`${physicalRoot}/`)) {
+            sources.add(path.join(sourceRoot, path.relative(physicalRoot, physical)))
+          }
         }
       }
     }
   }
   return { sources, outputNames }
+}
+
+/** 只交接独立包内由子构建发射的本地资源；公共源码仍由主构建独立决定。 */
+export function collectIndependentLocalAssets(ctx: CompilerContext, root: string) {
+  return withRealpathScope(() => collectIndependentSources(ctx, root))
 }
 
 export function collectIndependentOutputFileNames(ctx: CompilerContext) {
