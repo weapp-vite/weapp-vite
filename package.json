@@ -335,7 +335,7 @@
     "fast-sort": "^3.4.1",
     "fdir": "catalog:",
     "get-value": "catalog:",
-    "hono": "^4.13.20",
+    "hono": "^4.13.21",
     "htmlparser2": "catalog:",
     "importx": "^0.5.2",
     "is-reference": "^3.0.3",
