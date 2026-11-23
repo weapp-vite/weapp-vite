@@ -1,5 +1,8 @@
 {
   "name": "mini-lib",
   "version": "1.0.0",
-  "miniprogram": "dist"
+  "miniprogram": "dist",
+  "dependencies": {
+    "tslib": "file:../tslib"
+  }
 }

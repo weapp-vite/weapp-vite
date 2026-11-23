@@ -32,6 +32,9 @@ export function collectClosures(packages: Map<string, NpmPackage>, graph: Refere
     const state = graph.packages.get(target.root)
     if (state?.fallback) {
       addAllFiles(keptByRoot, entry)
+      for (const dependencies of state.edges.values()) {
+        pending.push(...dependencies.filter(dependency => !keptByRoot.get(dependency.root)?.has(dependency.relative)))
+      }
       continue
     }
     const matches = resolveCandidates(target.relative, entry.files)

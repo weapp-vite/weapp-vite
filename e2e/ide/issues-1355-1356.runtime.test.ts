@@ -10,16 +10,18 @@ import { attachRuntimeErrorCollector } from './runtimeErrors'
 
 const ROUTE = '/pages/index/index'
 
-describe('issues #1355 / #1356 emitted npm artifact runtime', () => {
+describe('issues #1355 / #1356 / #1370 emitted npm artifact runtime', () => {
   let project: string | undefined
   let host: Awaited<ReturnType<typeof launchAutomator>> | undefined
 
   beforeAll(async () => {
     project = await prepareNpmArtifactFixture()
-    const { output, observations } = await buildNpmArtifactFixture(project, 'dist-demo', 'runtime')
+    const { output, observations } = await buildNpmArtifactFixture(project, 'dist-runtime-prune', 'runtime-prune')
     expect(observations).toEqual({ writeBundle: true, closeBundle: true })
     const stylesheet = await readFile(path.join(output, 'miniprogram_npm/mini-lib/icon/index.wxss'), 'utf8')
     expect(stylesheet).toContain('artifact observer completed')
+    const tslib = await readFile(path.join(output, 'miniprogram_npm/tslib/index.js'), 'utf8')
+    expect(tslib).toContain('__rest')
     host = await launchAutomator({ projectPath: output, warmupRoute: ROUTE, warmupRootSelectors: ['#npm-artifact-page'] })
   }, 180_000)
 
@@ -34,7 +36,7 @@ describe('issues #1355 / #1356 emitted npm artifact runtime', () => {
   it('renders the npm component, handles events and remains correct on reentry', async (context) => {
     const nodes = [
       { selector: '#npm-artifact-page', count: 1 },
-      { selector: 'component', has: '#npm-artifact-icon', text: 'npm artifact ready' },
+      { selector: 'component', has: '#npm-artifact-icon', text: 'npm artifact readycross-package dependency retained' },
     ]
     const acceptance = createDomAcceptance(context, NPM_ARTIFACT_FIXTURE, [
       { id: 'initial', route: ROUTE, action: '检查第二份产物中的 npm 组件首次渲染', nodes: [...nodes, { selector: '#count', text: 'count: 0' }] },

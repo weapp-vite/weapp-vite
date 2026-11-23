@@ -1,4 +1,4 @@
-import { readFile, symlink } from 'node:fs/promises'
+import { mkdir, readFile, symlink } from 'node:fs/promises'
 import path from 'node:path'
 import process from 'node:process'
 // eslint-disable-next-line e18e/ban-dependencies -- 仓库 CLI 回归统一使用跨平台进程封装。
@@ -13,6 +13,8 @@ const CLI = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bin/wea
 export async function prepareNpmArtifactFixture() {
   const project = await prepareAuthorIssueFixture(NPM_ARTIFACT_FIXTURE)
   await symlink(path.join(project, 'mini-lib'), path.join(project, 'node_modules/mini-lib'), 'junction')
+  await mkdir(path.join(project, 'mini-lib/node_modules'), { recursive: true })
+  await symlink(path.join(project, 'tslib'), path.join(project, 'mini-lib/node_modules/tslib'), 'junction')
   return project
 }
 

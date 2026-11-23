@@ -151,6 +151,23 @@ describe('npm output pruning', () => {
     expect(outputNames(output)).not.toContain('miniprogram_npm/tslib/unused.js')
   })
 
+  it('keeps cross-package references from a package with an unresolved static edge', () => {
+    const output = createOutput({
+      'miniprogram_npm/ui/button/index.js': 'import "tslib"; import "./missing"; Component({})',
+      'miniprogram_npm/ui/button/package.json': '{}',
+      'miniprogram_npm/tslib/index.js': 'export const __rest = () => ({})',
+      'miniprogram_npm/tslib/unused.js': 'export const unused = true',
+    })
+    const bundle = createBundle({
+      'pages/index.json': JSON.stringify({ usingComponents: { button: 'ui/button' } }),
+    })
+
+    pruneNpmOutput(output, bundle, { enabled: true })
+
+    expect(outputNames(output)).toContain('miniprogram_npm/tslib/index.js')
+    expect(outputNames(output)).not.toContain('miniprogram_npm/tslib/unused.js')
+  })
+
   it('follows cross-package template and style references', () => {
     const output = createOutput({
       'miniprogram_npm/ui/button/index.js': 'Component({})',

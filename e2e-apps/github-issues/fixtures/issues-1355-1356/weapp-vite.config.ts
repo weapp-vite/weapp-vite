@@ -4,6 +4,8 @@ import path from 'node:path'
 import { defineConfig } from 'weapp-vite/config'
 
 export default defineConfig(({ mode }) => {
+  const isRuntime = mode.startsWith('runtime')
+  const pruneUnusedFiles = mode.includes('prune')
   let root = ''
   let outDir = ''
   const observations: Record<string, boolean> = {}
@@ -18,7 +20,7 @@ export default defineConfig(({ mode }) => {
       observations.writeBundle = await readFile(stylesheet(), 'utf8').then(() => true, () => false)
     },
     async generateBundle() {
-      if (mode === 'runtime') {
+      if (isRuntime) {
         const source = JSON.parse(await readFile(path.join(root, 'project.config.json'), 'utf8')) as Record<string, unknown>
         this.emitFile({
           type: 'asset',
@@ -42,7 +44,7 @@ export default defineConfig(({ mode }) => {
       platform: 'weapp',
       srcRoot: 'src',
       npm: {
-        pruneUnusedFiles: mode === 'prune',
+        pruneUnusedFiles,
         mainPackage: { dependencies: ['mini-lib'] },
         packageFiles: { 'mini-lib': { exclude: ['unused/**'] } },
       },
