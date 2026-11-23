@@ -4469,6 +4469,10 @@ create-weapp-vite@3.7.0:
     - npm-pruning
     - wevu-setup-initial-render-barrier-switch
     - wxml-watch-read-race
+create-weapp-vite@3.7.1:
+  dir: packages/create-weapp-vite
+  intents:
+    - curious-routes-prune
 rolldown-require@2.0.26:
   dir: packages/rolldown-require
   intents:
@@ -5046,6 +5050,10 @@ weapp-vite@7.12.0:
     - npm-pruning
     - wevu-setup-initial-render-barrier-switch
     - wxml-watch-read-race
+weapp-vite@7.12.1:
+  dir: packages/weapp-vite
+  intents:
+    - curious-routes-prune
 weapp-vite@7.2.0:
   dir: packages/weapp-vite
   intents:

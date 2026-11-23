@@ -1,7 +1,7 @@
 {
   "name": "wevu-json-render-demo",
   "type": "module",
-  "version": "0.0.10",
+  "version": "0.0.11",
   "private": true,
   "scripts": {
     "dev": "wv dev",

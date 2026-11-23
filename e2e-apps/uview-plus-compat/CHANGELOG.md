@@ -1,5 +1,12 @@
 # e2e-app-uview-plus-compat
 
+## 0.0.20
+
+### Patch Changes
+
+- Updated dependencies:
+  - wevu@7.12.1
+
 ## 0.0.19
 
 ### Patch Changes

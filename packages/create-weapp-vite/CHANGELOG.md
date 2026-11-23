@@ -1,5 +1,14 @@
 # create-weapp-vite
 
+## 3.7.1
+
+### Patch Changes
+
+- fix(weapp-vite): 修复自动路由误识别测试文件，并保留 npm 包根入口声明的跨包运行时依赖。
+
+- Updated dependencies:
+  - @weapp-vite/language-service@0.1.7
+
 ## 3.7.0
 
 ### Minor Changes

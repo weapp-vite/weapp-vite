@@ -1,5 +1,12 @@
 # weapp-vite-react-template
 
+## 0.0.15
+
+### Patch Changes
+
+- Updated dependencies:
+  - wevu@7.12.1
+
 ## 0.0.14
 
 ### Patch Changes

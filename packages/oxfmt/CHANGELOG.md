@@ -1,5 +1,12 @@
 # @weapp-vite/oxfmt
 
+## 0.1.7
+
+### Patch Changes
+
+- Updated dependencies:
+  - @weapp-vite/language-service@0.1.7
+
 ## 0.1.6
 
 ### Patch Changes

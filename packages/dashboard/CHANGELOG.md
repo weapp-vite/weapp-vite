@@ -1,5 +1,7 @@
 # @weapp-vite/dashboard
 
+## 7.12.1
+
 ## 7.12.0
 
 ### Patch Changes
