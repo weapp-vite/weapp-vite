@@ -8,8 +8,8 @@ import { createSubpackageOutputFixture } from './nativeFixture'
 
 it.each([
   { assetDirectory: undefined, expectedDirectory: '.' },
-  { assetDirectory: 'assets', expectedDirectory: 'assets' },
-])('keeps ordinary assetsDir and fixed page entries compatible: $expectedDirectory', async ({ assetDirectory, expectedDirectory }) => {
+  { assetDirectory: 'assets', expectedDirectory: 'packages/feature/assets' },
+])('applies assetsDir to owned files and preserves fixed page entries: $expectedDirectory', async ({ assetDirectory, expectedDirectory }) => {
   const fixture = await createSubpackageOutputFixture()
   try {
     const [main, feature] = fixture.routes
@@ -40,7 +40,7 @@ it.each([
     expect(await read(`${feature}.js`)).toContain(`/${image}`)
     expect(await read(`${feature}.wxss`)).toContain(`/${image}`)
     const [ordinary] = files.filter(file => /(?:^|\/)ordinary-[^/]+\.txt$/.test(file))
-    expect(path.dirname(ordinary!)).toBe(expectedDirectory)
+    expect(path.dirname(ordinary!)).toBe(assetDirectory ?? '.')
     expect(await read(ordinary!)).toBe('plugin asset')
     expect(JSON.parse(await read('app.json')) as unknown).toMatchObject({
       pages: [main],
