@@ -4,7 +4,7 @@ import type { metadata, NativeFrame } from './model'
 import { createHash } from 'node:crypto'
 import path from 'node:path'
 import { frameAbsoluteEvidence, processAbsoluteEvidence } from './absoluteEvidence'
-import { insideInstallation } from './model'
+import { insideInstallation, sameNativeIdentity } from './model'
 import { sameCredentials } from './postAnchorBirth'
 
 /** 报告保留映像等价性和安装内相对路径，不扩大披露其他应用或临时目录。 */
@@ -53,7 +53,7 @@ export function nativeFrameEvidence(frame: NativeFrame, installationRoot: string
       gaps: [...entry.gaps],
       ...(entry.absolute ? { absolute: processAbsoluteEvidence(entry.absolute) } : {}),
       credentials: {
-        mainStable: sameCredentials(entry.before.identity, entry.task.identity) && sameCredentials(entry.before.identity, entry.after.identity),
+        mainStable: sameNativeIdentity(entry.before.identity, entry.task.identity) && sameCredentials(entry.before.identity, entry.after.identity),
         enumerationMatchesMain: sameCredentials(entry.enumeratedIdentity, entry.before.identity),
       },
       ...(entry.confirmation === undefined

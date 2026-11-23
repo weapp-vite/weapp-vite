@@ -18,16 +18,11 @@ const mutations: Record<string, Mutation> = {
   'enumeration-start': (_frames, rows) => { rows[0]!.enumeratedIdentity.startedMicroseconds = '654321' },
   'enumeration-parent': (_frames, rows) => { rows[0]!.enumeratedIdentity.parentPid = 77 },
   'enumeration-zombie': (_frames, rows) => { rows[0]!.enumeratedIdentity.zombie = true },
-  'enumeration-to-task': (_frames, rows) => {
-    rows[0]!.enumeratedIdentity.uid = 502
-    rows[0]!.task.identity!.uid = 503
-  },
   'enumeration-to-after': (_frames, rows) => {
     rows[0]!.enumeratedIdentity.uid = 502
     rows[0]!.after.identity!.uid = 503
   },
   'main-uid': (_frames, rows) => { rows[0]!.after.identity!.uid = 503 },
-  'task-uid': (_frames, rows) => { rows[0]!.task.identity!.uid = 503 },
   'cross-frame-main-uid': (_frames, rows) => { setRowIdentity(rows[2]!, { uid: 503 }) },
   'repeated-enumeration-uid': (_frames, rows) => {
     rows[2]!.enumeratedIdentity.uid = 501

@@ -181,7 +181,7 @@ export function parseDarwinProcessFrame(line: string, requestId: number, phase: 
     }
   }
   const own = rows.find(row => row.pid === ready.pid)
-  if (!own || own.gaps.length || !own.before.identity || !own.after.identity || !own.task.identity || !sameDarwinIdentity(own.before.identity, ready.identity) || !sameDarwinIdentity(own.after.identity, ready.identity) || !sameDarwinIdentity(own.task.identity, ready.identity) || own.pathBefore.executable !== ready.executable || own.pathAfter.executable !== ready.executable) {
+  if (!own || own.gaps.length || !own.before.identity || !own.after.identity || !own.task.identity || !sameDarwinIdentity(own.before.identity, ready.identity) || !sameDarwinIdentity(own.after.identity, ready.identity) || !sameDarwinGeneration(own.task.identity, ready.identity) || own.pathBefore.executable !== ready.executable || own.pathAfter.executable !== ready.executable) {
     return invalid('helper ownership changed')
   }
   return { protocol: 1, requestId, phase, startedAtNanoseconds, endedAtNanoseconds, enumeration: { startedAtNanoseconds: enumerationStarted, endedAtNanoseconds: enumerationEnded, complete: true, bytes, recordSize: ready.abi.recordSize, pidCount: count, pids, zeroPidCount }, rows, ownedHelper: { pid: ready.pid, identity: ready.identity, executable: ready.executable, row: own }, ...(absolute ? { absolute } : {}) }

@@ -25,7 +25,7 @@ function completeLegacyRow(row: NativeRow, installationRoot: string) {
     && pathBefore.executable === pathAfter.executable && row.imageSource === 'kernel-path'
     && row.images?.length === 1 && row.images[0] === pathBefore.executable && !insideInstallation(installationRoot, row.images[0])
   const taskVerified = task.count > 0 && task.errno === 0 && sameNativeIdentity(row.identity, task.identity)
-    && row.identity?.uid === task.identity?.uid && row.rssBytes !== null
+    && row.rssBytes !== null
   const taskPermissionDenied = task.count === 0 && task.errno === 1 && task.identity === null && task.rssBytes === null
   return completeIdentities && completeImages && !row.identityChanged && !row.imageChanged && !row.identity?.zombie
     && sameNativeIdentity(row.identity, row.finalIdentity) && (taskVerified || taskPermissionDenied)
@@ -36,9 +36,9 @@ function completeLegacyRow(row: NativeRow, installationRoot: string) {
 function completeCredentialRow(row: NativeRow, installationRoot: string, first: boolean) {
   const { enumeratedIdentity, before, after, pathBefore, pathAfter, gaps, task } = row.entry
   const changed = !sameCredentials(enumeratedIdentity, before.identity)
-  const completeCredentials = [enumeratedIdentity.uid, before.identity?.uid, task.identity?.uid, after.identity?.uid]
+  const completeCredentials = [enumeratedIdentity.uid, before.identity?.uid, after.identity?.uid]
     .every(validNativeUid)
-  return completeCredentials && completePostAnchorRow(row) && sameCredentials(before.identity, task.identity)
+  return completeCredentials && completePostAnchorRow(row) && sameNativeIdentity(before.identity, task.identity)
     && sameCredentials(before.identity, row.entry.after.identity) && Number.isSafeInteger(Number(task.rssBytes))
     && foreignPaths(row.entry, installationRoot) && pathBefore.executable === pathAfter.executable
     && (first

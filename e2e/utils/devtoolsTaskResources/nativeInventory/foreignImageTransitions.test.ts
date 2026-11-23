@@ -77,6 +77,18 @@ describe('four-frame foreign image transitions are diagnostics outside selected 
     expect(report.verifiedForeignImageTransitions?.map(value => [value.from.phase, value.to.phase])).toEqual([['prepare', 'anchor'], ['anchor', 'closure1']])
   })
 
+  it('ignores task UID drift while preserving a cross-frame external image transition', async () => {
+    const values = rows()
+    for (const [index, frameRows] of values.entries()) {
+      const foreign = frameRows[1]!
+      foreign.task.identity!.uid = 500 + index
+    }
+    const report = await sample(values)
+
+    expect(report).toMatchObject({ installationRssBytes: { status: 'observed', value: 1000 }, verifiedForeignImageTransitionCount: 1 })
+    expect(report.verifiedForeignImageTransitions).toHaveLength(1)
+  })
+
   it('keeps foreign task EPERM separate from complete image and sysctl identity proofs', async () => {
     const values = rows()
     values[0]![1] = entry(22, { rssBytes: null })
@@ -117,7 +129,7 @@ describe('four-frame foreign image transitions are diagnostics outside selected 
     expect(report.verifiedForeignImageTransitions?.[0]?.ancestry).toEqual([expect.objectContaining({ pid: 33, parentPid: 1, started: '1792800000.123456' })])
   })
 
-  it.each(['selected', 'descendant', 'unknown', 'missing', 'identity', 'before-after-uid', 'task-uid', 'before-identity', 'after-identity', 'same-frame', 'partial', 'fallback'] as const)('rejects a %s proof ancestor', async (kind) => {
+  it.each(['selected', 'descendant', 'unknown', 'missing', 'identity', 'before-after-uid', 'before-identity', 'after-identity', 'same-frame', 'partial', 'fallback'] as const)('rejects a %s proof ancestor', async (kind) => {
     const values = rows().map(value => [entry(11), entry(22, { executable: value[1]!.pathBefore.executable, parentPid: 33 }), entry(33)])
     if (kind === 'missing') {
       values[2]!.pop()
@@ -140,9 +152,6 @@ describe('four-frame foreign image transitions are diagnostics outside selected 
       else if (kind === 'before-after-uid') {
         ancestor.after.identity!.uid = 502
       }
-      else if (kind === 'task-uid') {
-        ancestor.task.identity!.uid = 502
-      }
       else if (kind === 'before-identity' || kind === 'after-identity') {
         ancestor[kind === 'before-identity' ? 'before' : 'after'] = { result: 0, length: 0, errno: 0, identity: null }
       }
@@ -159,7 +168,7 @@ describe('four-frame foreign image transitions are diagnostics outside selected 
     await blocked(values)
   })
 
-  it.each(['start', 'parent', 'zombie', 'task', 'before-after-uid', 'task-uid', 'before-identity', 'after-identity', 'absent-return', 'same-frame', 'partial', 'unknown', 'selected', 'descendant', 'fallback'] as const)('keeps a %s process gap blocking', async (kind) => {
+  it.each(['start', 'parent', 'zombie', 'task', 'before-after-uid', 'before-identity', 'after-identity', 'absent-return', 'same-frame', 'partial', 'unknown', 'selected', 'descendant', 'fallback'] as const)('keeps a %s process gap blocking', async (kind) => {
     const values = rows()
     const changed = values[2]![1]!
     if (kind === 'absent-return') {
@@ -188,9 +197,6 @@ describe('four-frame foreign image transitions are diagnostics outside selected 
     }
     else if (kind === 'before-after-uid') {
       changed.after.identity!.uid = 502
-    }
-    else if (kind === 'task-uid') {
-      changed.task.identity!.uid = 502
     }
     else {
       for (const identity of [changed.before.identity, changed.after.identity, changed.task.identity]) {

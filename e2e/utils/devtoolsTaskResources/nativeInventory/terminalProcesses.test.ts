@@ -226,15 +226,10 @@ describe('strict native terminal process evidence', () => {
     expect(report.identityChangedProcesses).toEqual([expect.objectContaining({ pid: 33, reasons: expect.arrayContaining(['returned-after-absence']) })])
   })
 
-  it.each(['uid', 'start'] as const)('rejects a preterminal task-record %s mismatch even after kernel termination', async (kind) => {
+  it('rejects a preterminal task-record generation mismatch even after kernel termination', async () => {
     const live = entry(33, { parentPid: 22 })
     const inconsistent = structuredClone(live)
-    if (kind === 'uid') {
-      inconsistent.task.identity!.uid = 502
-    }
-    else {
-      inconsistent.task.identity!.startedMicroseconds = '123457'
-    }
+    inconsistent.task.identity!.startedMicroseconds = '123457'
     await rejected([live], [inconsistent], [zombie()], [zombie()])
   })
 

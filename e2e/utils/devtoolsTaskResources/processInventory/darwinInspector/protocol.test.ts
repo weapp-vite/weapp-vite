@@ -50,6 +50,12 @@ describe('Darwin native frame protocol', () => {
     expect(row.task.rssBytes).toBe('200')
     expect(row.task.identity!.uid).not.toBe(row.before.identity!.uid)
   })
+  it('accepts an owned helper task UID observation that differs from sysctl credential readings', () => {
+    const frame = fixtureFrame()
+    frame.rows[0]!.task.identity!.uid++
+
+    expect(parse(frame).ownedHelper.pid).toBe(fixtureReady.pid)
+  })
   it('keeps zombie transitions distinct from ordinary status changes', () => {
     const frame = fixtureFrame()
     frame.rows[1]!.after.identity!.status = fixtureReady.abi.zombieStatus

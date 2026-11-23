@@ -2,6 +2,7 @@ import type { VerifiedPostAnchorForeignProcess } from '../types'
 import type { NativeInventory } from './closure'
 import { imageEvidence } from './evidence'
 import { completeForeignConfirmation, completeForeignProofFrames, foreignAncestry, foreignPaths } from './foreignProof'
+import { sameNativeIdentity } from './model'
 import { absoluteTicks, absoluteWithin, completePostAnchorRow, postAnchorBirth, sameCredentials } from './postAnchorBirth'
 
 /** 出生严格晚于整个 RSS 锚点；最终独立确认只证明闭合归属，绝不补采 RSS。 */
@@ -33,7 +34,7 @@ export function verifiedPostAnchorForeignProcesses(inventory: NativeInventory, i
     for (const [index, row] of rows.entries()) {
       const finalRow = index === rows.length - 1
       if (!row || !first || !completePostAnchorRow(row) || !sameCredentials(row.entry.before.identity, row.entry.after.identity)
-        || (finalRow && !sameCredentials(row.entry.before.identity, row.entry.task.identity)) || !sameCredentials(first.identity, row.identity)
+        || (finalRow && !sameNativeIdentity(row.entry.before.identity, row.entry.task.identity)) || !sameCredentials(first.identity, row.identity)
         || !foreignPaths(row.entry, installationRoot) || !absoluteWithin(row.entry.absolute, frames[firstIndex + index]!.wire.absolute)
         || (previousImage !== null && previousImage !== row.entry.pathBefore.executable)) {
         valid = false

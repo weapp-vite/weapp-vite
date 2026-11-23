@@ -9,7 +9,7 @@ beforeEach(() => vi.spyOn(Date, 'now').mockReturnValue(0))
 afterEach(() => vi.restoreAllMocks())
 
 describe('post-anchor proof never infers foreign ownership from an incomplete ancestor', () => {
-  it.each(['late', 'absence', 'selected', 'cycle', 'unknown-parent', 'uid', 'task-uid', 'start', 'parent', 'path-error', 'permission', 'extra-gap', 'text-conflict'] as const)('rejects ancestor %s', (kind) => {
+  it.each(['late', 'absence', 'selected', 'cycle', 'unknown-parent', 'uid', 'start', 'parent', 'path-error', 'permission', 'extra-gap', 'text-conflict'] as const)('rejects ancestor %s', (kind) => {
     const frames = postAnchorFrames('closure2', 33)
     const rows = frames.map(frame => frame.rows.find(row => row.pid === 33)!)
     if (kind === 'late' || kind === 'absence') {
@@ -30,9 +30,6 @@ describe('post-anchor proof never infers foreign ownership from an incomplete an
     }
     else if (kind === 'uid' || kind === 'start' || kind === 'parent') {
       setRowIdentity(rows[3]!, kind === 'uid' ? { uid: 502 } : kind === 'start' ? { startedMicroseconds: '654321' } : { parentPid: 77 })
-    }
-    else if (kind === 'task-uid') {
-      rows[0]!.task.identity!.uid++
     }
     else if (kind === 'permission') {
       rows[0]!.task = { count: 0, errno: 1, identity: null, rssBytes: null }

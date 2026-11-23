@@ -3,13 +3,14 @@ import type { NativeInventory } from './closure'
 import type { NativeRow } from './model'
 import { imageEvidence } from './evidence'
 import { completeForeignConfirmation, completeForeignProofFrames, foreignAncestry, foreignPaths } from './foreignProof'
+import { sameNativeIdentity } from './model'
 import { absoluteTicks, absoluteWithin, completePostAnchorRow, postAnchorBirth, sameCredentials } from './postAnchorBirth'
 
 /** 枚举凭据可在逐行采样前改变；实际 RSS 读取两侧的身份、凭据与映像必须完整稳定。 */
 function completeAnchorForeignBracket(row: NativeRow, installationRoot: string) {
   const { before, enumeratedIdentity, gaps, pathBefore, pathAfter } = row.entry
   const credentialsChanged = enumeratedIdentity.uid !== before.identity?.uid
-  return completePostAnchorRow(row) && sameCredentials(before.identity, row.entry.task.identity)
+  return completePostAnchorRow(row) && sameNativeIdentity(before.identity, row.entry.task.identity)
     && sameCredentials(before.identity, row.entry.after.identity) && foreignPaths(row.entry, installationRoot)
     && pathBefore.executable === pathAfter.executable
     && (credentialsChanged ? gaps.length === 1 && gaps[0] === 'enumeration-identity-changed' : gaps.length === 0)

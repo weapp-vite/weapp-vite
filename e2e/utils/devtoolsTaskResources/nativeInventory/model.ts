@@ -97,7 +97,7 @@ export function completeNativeLiveRow(row: NativeRow) {
   return [before, after].every(read => read.result === 0 && read.length > 0 && read.errno === 0)
     && [pathBefore, pathAfter].every(read => read.count > 0 && read.errno === 0)
     && task.count > 0 && task.errno === 0 && row.rssBytes !== null
-    && sameDarwinIdentity(before.identity!, task.identity!) && sameDarwinIdentity(before.identity!, after.identity!)
+    && sameNativeIdentity(before.identity!, task.identity!) && sameDarwinIdentity(before.identity!, after.identity!)
     && row.imageSource === 'kernel-path' && row.images?.length === 1 && row.entry.gaps.length === 0
 }
 
@@ -128,7 +128,9 @@ export function normalizeNativeFrame(wire: DarwinProcessFrame): NativeFrame {
   for (const entry of wire.rows) {
     const before = entry.before.identity
     const positions = ['before', 'task', 'after'] as const
-    const changedPosition = positions.find(position => entry[position].identity !== null && !sameDarwinIdentity(entry.enumeratedIdentity, entry[position].identity))
+    const changedPosition = positions.find(position => entry[position].identity !== null && (position === 'task'
+      ? !sameNativeIdentity(entry.enumeratedIdentity, entry[position].identity)
+      : !sameDarwinIdentity(entry.enumeratedIdentity, entry[position].identity)))
     const enumerationIdentityChange = changedPosition
       ? { from: entry.enumeratedIdentity, to: entry[changedPosition].identity!, position: changedPosition }
       : null
@@ -158,7 +160,7 @@ export function normalizeNativeFrame(wire: DarwinProcessFrame): NativeFrame {
   const owned = rows.get(wire.ownedHelper.pid)
   if (!owned || owned.identityChanged || owned.imageChanged || !sameDarwinIdentity(owned.identity!, wire.ownedHelper.identity)
     || !sameDarwinIdentity(owned.finalIdentity!, wire.ownedHelper.identity)
-    || !sameDarwinIdentity(owned.entry.enumeratedIdentity, wire.ownedHelper.identity) || !sameDarwinIdentity(owned.entry.task.identity!, wire.ownedHelper.identity)
+    || !sameDarwinIdentity(owned.entry.enumeratedIdentity, wire.ownedHelper.identity) || !sameNativeIdentity(owned.entry.task.identity!, wire.ownedHelper.identity)
     || owned.entry.pathBefore.executable !== wire.ownedHelper.executable || owned.entry.pathAfter.executable !== wire.ownedHelper.executable) {
     throw new Error('Resource sampling cannot verify its exact owned native inspector.')
   }

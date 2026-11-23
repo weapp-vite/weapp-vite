@@ -77,7 +77,6 @@ describe('original anchor foreign brackets after complete preparation', () => {
     'enumeration-parent',
     'enumeration-zombie',
     'main-uid',
-    'task-uid',
     'main-start',
     'task-denied',
     'identity-error',
@@ -137,8 +136,8 @@ describe('original anchor foreign brackets after complete preparation', () => {
     else if (kind === 'enumeration-start' || kind === 'enumeration-parent' || kind === 'enumeration-zombie') {
       Object.assign(anchor.enumeratedIdentity, kind === 'enumeration-start' ? { startedMicroseconds: '654321' } : kind === 'enumeration-parent' ? { parentPid: 77 } : { zombie: true })
     }
-    else if (kind === 'main-uid' || kind === 'task-uid' || kind === 'main-start') {
-      Object.assign(anchor[kind === 'task-uid' ? 'task' : 'after'].identity!, kind === 'main-start' ? { startedMicroseconds: '654321' } : { uid: 503 })
+    else if (kind === 'main-uid' || kind === 'main-start') {
+      Object.assign(anchor.after.identity!, kind === 'main-start' ? { startedMicroseconds: '654321' } : { uid: 503 })
     }
     else if (kind === 'task-denied') {
       anchor.task = { count: 0, errno: 1, identity: null, rssBytes: null }

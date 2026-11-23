@@ -6,7 +6,7 @@ import { normalizeNativeFrame } from './model'
 import { summarizeNativeInventory } from './summary'
 
 const phases = ['prepare', 'anchor', 'closure1', 'closure2'] as const
-const uidCases = [11, 22].flatMap(pid => (['before', 'task', 'after'] as const).map(field => ({ pid, field })))
+const uidCases = [11, 22].flatMap(pid => (['before', 'after'] as const).map(field => ({ pid, field })))
 
 beforeEach(() => vi.spyOn(Date, 'now').mockReturnValue(0))
 afterEach(() => vi.restoreAllMocks())
@@ -48,7 +48,7 @@ describe('native process generation and credentials are observed separately', ()
       .toEqual(field === 'before' ? ['enumeration-identity-changed'] : [])
   })
 
-  it.each(['before', 'task', 'after', 'claimed-owner'] as const)('rejects an owned helper with a different %s UID', (field) => {
+  it.each(['before', 'after', 'claimed-owner'] as const)('rejects an owned helper with a different sysctl %s UID', (field) => {
     const wire = frame('anchor')
     wire.ownedHelper.identity = { ...wire.ownedHelper.identity }
     if (field === 'claimed-owner') {
@@ -73,6 +73,16 @@ describe('native process generation and credentials are observed separately', ()
 
     expect(anchor).toMatchObject({ identityChanged: false, rssBytes: 1000, imageSource: 'kernel-path' })
     expect(anchor.images).toHaveLength(1)
+    expect(summarize(frames)).toMatchObject({ installationRssBytes: { status: 'observed', value: 1000 }, identityChangedProcesses: [] })
+  })
+
+  it.each([11, 22])('keeps task UID observations separate from sysctl credentials for PID %s', (pid) => {
+    const row = entry(pid)
+    row.task.identity!.uid++
+    const normalized = normalizeNativeFrame(frame('anchor', [row])).rows.get(pid)!
+    const frames = phases.map(phase => frame(phase, [phase === 'anchor' ? row : entry(pid), entry(pid === 11 ? 22 : 11)]))
+
+    expect(normalized).toMatchObject({ identityChanged: false, rssBytes: 1000, imageSource: 'kernel-path', enumerationIdentityChange: null })
     expect(summarize(frames)).toMatchObject({ installationRssBytes: { status: 'observed', value: 1000 }, identityChangedProcesses: [] })
   })
 

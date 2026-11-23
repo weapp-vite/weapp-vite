@@ -154,10 +154,10 @@ describe('prepared foreign live identity becomes kernel terminal at the RSS anch
     }
   })
 
-  it.each(['prepare-before', 'prepare-after', 'prepare-task', 'terminal-after'] as const)('rejects same-frame UID disagreement in %s', (kind) => {
+  it.each(['prepare-before', 'prepare-after', 'terminal-after'] as const)('rejects same-frame sysctl UID disagreement in %s', (kind) => {
     const values = rows()
     const [phase, field] = kind.split('-')
-    values[phase === 'prepare' ? 0 : 1]![2]![field as 'before' | 'after' | 'task'].identity!.uid = 502
+    values[phase === 'prepare' ? 0 : 1]![2]![field as 'before' | 'after'].identity!.uid = 502
     reject(values)
   })
 

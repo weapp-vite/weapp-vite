@@ -110,7 +110,6 @@ describe('new foreign native exec has an explicit complete bracket proof', () =>
     'anchor-seen',
     'confirmation-exec',
     'confirmation-revert',
-    'task-uid',
     'cross-frame-uid',
     'cross-frame-start',
     'cross-frame-parent',
@@ -120,7 +119,6 @@ describe('new foreign native exec has an explicit complete bracket proof', () =>
     'extra-gap',
     'identity-before-error',
     'identity-after-error',
-    'confirmation-task-uid',
     'confirmation-gap',
   ] as const)('rejects %s without changing the original exec evidence', (kind) => {
     const values = newExecRows()
@@ -138,10 +136,6 @@ describe('new foreign native exec has an explicit complete bracket proof', () =>
     }
     else if (kind === 'confirmation-revert') {
       final.pathBefore.executable = final.pathAfter.executable = foreignBootstrap
-    }
-    else if (kind === 'task-uid' || kind === 'confirmation-task-uid') {
-      const row = kind === 'task-uid' ? first : final
-      row.task.identity!.uid++
     }
     else if (kind === 'cross-frame-uid') {
       setIdentity(final, { uid: 502 })
@@ -184,7 +178,6 @@ describe('new foreign native exec has an explicit complete bracket proof', () =>
     'cycle',
     'text-conflict',
     'uid',
-    'task-uid',
     'start',
     'parent',
     'permission',
@@ -212,9 +205,6 @@ describe('new foreign native exec has an explicit complete bracket proof', () =>
     }
     else if (kind === 'uid' || kind === 'start' || kind === 'parent') {
       setIdentity(ancestors[3]!, kind === 'uid' ? { uid: 502 } : kind === 'start' ? { startedMicroseconds: '654321' } : { parentPid: 77 })
-    }
-    else if (kind === 'task-uid') {
-      ancestors[0]!.task.identity!.uid++
     }
     else if (kind === 'permission') {
       ancestors[0]!.task = { count: 0, errno: 1, identity: null, rssBytes: null }

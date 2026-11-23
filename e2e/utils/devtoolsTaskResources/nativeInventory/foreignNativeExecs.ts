@@ -12,7 +12,7 @@ function completeForeignRow(row: NativeRow, installationRoot: string, transition
     && row.pid === before.identity?.pid && sameNativeIdentity(before.identity, after.identity)
     && before.identity?.uid === after.identity?.uid && !before.identity?.zombie && !row.identityChanged
   const completeTask = task.count > 0 && task.errno === 0 && task.identity !== null && row.rssBytes !== null
-    && sameNativeIdentity(before.identity, task.identity) && before.identity?.uid === task.identity?.uid
+    && sameNativeIdentity(before.identity, task.identity)
   const completeImages = [pathBefore, pathAfter].every(read => read.count > 0 && read.errno === 0
     && validNativeImage(read.executable) && !insideInstallation(installationRoot, read.executable))
   const imageBracket = transition

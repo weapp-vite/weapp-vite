@@ -209,18 +209,24 @@ describe('complete native exit at the RSS anchor', () => {
     await rejected([live], [exited()], [], [])
   })
 
-  it.each(['uid', 'start', 'pid'] as const)('rejects a prepare task %s mismatch', async (kind) => {
+  it.each(['start', 'pid'] as const)('rejects a prepare task %s mismatch', async (kind) => {
     const live = entry(33)
-    if (kind === 'uid') {
-      live.task.identity!.uid = 502
-    }
-    else if (kind === 'start') {
+    if (kind === 'start') {
       live.task.identity!.startedMicroseconds = '123457'
     }
     else {
       live.task.identity!.pid = 34
     }
     await rejected([live], [exited()], [], [])
+  })
+
+  it('keeps a prepared foreign process eligible when only the task UID differs', async () => {
+    const live = entry(33, { parentPid: 22 })
+    live.task.identity!.uid = 502
+    frames([entry(11, { rssBytes: '7000' }), live], [exited(33, 22)], [], [])
+    const report = await sample()
+
+    expect(report).toMatchObject({ installationRssBytes: { status: 'observed', value: 1000 }, verifiedTerminalProcessCount: 1 })
   })
 
   it('rejects disagreeing prepare UID credentials', async () => {

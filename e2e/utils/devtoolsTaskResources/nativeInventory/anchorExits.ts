@@ -8,7 +8,7 @@ import { completeNativeLiveRow, hasNativeExitEvidence, insideInstallation, metad
 function completePreparedForeignRow(row: NativeRow) {
   const { before, after, pathBefore, pathAfter, task, gaps } = row.entry
   if (completeNativeLiveRow(row)) {
-    return row.identity?.uid === task.identity?.uid && sameNativeIdentity(row.identity, task.identity)
+    return sameNativeIdentity(row.identity, task.identity)
   }
   return [before, after].every(read => read.result === 0 && read.length > 0 && read.errno === 0)
     && [pathBefore, pathAfter].every(read => read.count > 0 && read.errno === 0)

@@ -59,16 +59,23 @@ describe('enumeration identity cannot be joined to another native row identity',
     expect(rows).toEqual(original)
   })
 
-  it.each(['before', 'task', 'after'] as const)('keeps same-frame %s credentials separate from process generation', (position) => {
+  it.each(['before', 'after'] as const)('keeps same-frame %s credentials separate from process generation', (position) => {
     const changed = entry(22)
     changed[position].identity!.uid++
     const row = normalizeNativeFrame(frame('anchor', [entry(11), changed])).rows.get(22)!
     expect(row).toMatchObject({ identityChanged: false, rssBytes: 1000, imageSource: 'kernel-path' })
     expect(row.images).toHaveLength(1)
     expect(row.enumerationIdentityChange).toMatchObject({ from: expect.objectContaining({ uid: 501 }), to: expect.objectContaining({ uid: 502 }), position })
+  })
+
+  it('keeps task credentials separate from sysctl credentials and accepts task UID drift for the helper', () => {
+    const changed = entry(22)
+    changed.task.identity!.uid++
+    const row = normalizeNativeFrame(frame('anchor', [entry(11), changed])).rows.get(22)!
+    expect(row).toMatchObject({ identityChanged: false, rssBytes: 1000, imageSource: 'kernel-path', enumerationIdentityChange: null })
     const helper = frame('anchor')
-    helper.ownedHelper.row.enumeratedIdentity.uid++
-    expect(() => normalizeNativeFrame(helper)).toThrow(/owned native inspector/)
+    helper.ownedHelper.row.task.identity!.uid++
+    expect(normalizeNativeFrame(helper).rows.size).toBe(2)
   })
 
   it('closes a new foreign process whose credentials change during one RSS observation', () => {
@@ -92,11 +99,11 @@ describe('enumeration identity cannot be joined to another native row identity',
       uninspectedNewProcessCount: 0,
       verifiedNewForeignProcessCount: 1,
       newProcesses: [{ pid: 22, classification: 'verified-foreign' }],
-      identityChangedProcesses: [{ pid: 22, reasons: ['credentials-changed'] }],
+      identityChangedProcesses: [],
       newProcesses: [{ pid: 22, classification: 'verified-foreign' }],
     })
     expect(report.nativeFrames![2]!.rows.find(row => row.pid === 22)).toMatchObject({
-      credentials: { mainStable: false, enumerationMatchesMain: true },
+      credentials: { mainStable: true, enumerationMatchesMain: true },
       rss: { bytes: '1000' },
       gaps: [],
     })

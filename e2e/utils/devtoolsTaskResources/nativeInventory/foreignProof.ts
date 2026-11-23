@@ -41,7 +41,7 @@ export function completeForeignConfirmation(row: NativeRow, identity: DarwinProc
     && postAnchorBirth(confirmation, boundary, birth) !== null
     && [confirmation.before, confirmation.after].every(read => read.result === 0 && read.errno === 0 && read.length > 0)
     && sameCredentials(identity, confirmation.before.identity) && sameCredentials(identity, confirmation.after.identity)
-    && sameCredentials(identity, row.entry.task.identity)
+    && sameNativeIdentity(identity, row.entry.task.identity)
     && sameNativeIdentity(row.entry.enumeratedIdentity, confirmation.before.identity)
     && foreignPaths(confirmation, installationRoot) && confirmation.pathBefore.executable === confirmation.pathAfter.executable
     && confirmation.pathBefore.executable === row.entry.pathAfter.executable)
@@ -60,7 +60,7 @@ export function foreignAncestry(inventory: NativeInventory, installationRoot: st
   }
   const rows = inventory.frames.slice(firstIndex).map(frame => frame.rows.get(pid))
   const first = rows[0]
-  if (!first || rows.some(row => !row || !completePostAnchorRow(row) || !sameCredentials(row.entry.before.identity, row.entry.task.identity)
+  if (!first || rows.some(row => !row || !completePostAnchorRow(row) || !sameNativeIdentity(row.entry.before.identity, row.entry.task.identity)
     || !sameCredentials(row.entry.before.identity, row.entry.after.identity) || row.entry.gaps.length || row.identityChanged
     || !sameCredentials(first.identity, row.identity) || !foreignPaths(row.entry, installationRoot)
     || row.entry.pathBefore.executable !== row.entry.pathAfter.executable || row.entry.pathBefore.executable !== first.entry.pathBefore.executable)) {

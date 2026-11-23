@@ -76,7 +76,6 @@ describe('post-anchor foreign process requires birth and final independent nativ
     'enumeration-parent',
     'enumeration-zombie',
     'main-uid',
-    'task-uid',
     'main-start',
     'task-denied',
     'identity-error',
@@ -134,8 +133,8 @@ describe('post-anchor foreign process requires birth and final independent nativ
     else if (kind === 'enumeration-start' || kind === 'enumeration-parent' || kind === 'enumeration-zombie') {
       Object.assign(row.enumeratedIdentity, kind === 'enumeration-start' ? { startedMicroseconds: '654321' } : kind === 'enumeration-parent' ? { parentPid: 77 } : { zombie: true })
     }
-    else if (kind === 'main-uid' || kind === 'task-uid' || kind === 'main-start') {
-      Object.assign(row[kind === 'task-uid' ? 'task' : 'after'].identity!, kind === 'main-start' ? { startedMicroseconds: '654321' } : { uid: 503 })
+    else if (kind === 'main-uid' || kind === 'main-start') {
+      Object.assign(row.after.identity!, kind === 'main-start' ? { startedMicroseconds: '654321' } : { uid: 503 })
     }
     else if (kind === 'task-denied') {
       row.task = { count: 0, errno: 1, identity: null, rssBytes: null }
