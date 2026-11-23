@@ -83,7 +83,12 @@ export async function normalizeTemplateAssetEntries(
   ctx: CompilerContext,
   entries: OutputAssetEntry[],
   subPackageMeta?: SubPackageMetaValue,
-  hooks?: { addWatchFile: (file: string) => void, warn: (message: string) => void, partial: boolean },
+  hooks?: {
+    addWatchFile: (file: string) => void
+    warn: (message: string) => void
+    partial: boolean
+    rewriteImages?: (code: string, fileName: string) => string
+  },
 ) {
   const { configService } = ctx
   const wxml = configService?.weappViteConfig?.wxml
@@ -131,7 +136,8 @@ export async function normalizeTemplateAssetEntries(
           hooks?.addWatchFile(resolved)
         }, message => hooks?.warn(message), subPackageMeta?.subPackage.root)
       }
-      const transformed = remove(custom, fileName, syntax)
+      const filtered = remove(custom, fileName, syntax)
+      const transformed = hooks?.rewriteImages?.(filtered, fileName) ?? filtered
       if (transformed !== code) {
         output.source = transformed
       }

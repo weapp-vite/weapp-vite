@@ -273,7 +273,7 @@ export function patchScopedSlotHostAssetsInBundle(
   }
 }
 
-export function collectBundledAssetSourcePaths(bundle: OutputBundle | Record<string, any>) {
+export function collectBundledAssetSourcePaths(bundle: OutputBundle | Record<string, any>, root?: string) {
   const sources = new Set<string>()
 
   for (const output of Object.values(bundle)) {
@@ -283,7 +283,10 @@ export function collectBundledAssetSourcePaths(bundle: OutputBundle | Record<str
 
     for (const originalFile of output.originalFileNames ?? []) {
       if (typeof originalFile === 'string' && originalFile) {
-        sources.add(normalizePath(originalFile))
+        const source = normalizePath(originalFile)
+        sources.add(root && !path.posix.isAbsolute(source) && !path.win32.isAbsolute(source)
+          ? normalizePath(path.resolve(root, source))
+          : source)
       }
     }
   }
@@ -309,12 +312,13 @@ export function resolvePendingAssetFiles(
   files: string[] | undefined,
   bundle: OutputBundle,
   getModuleIds: () => Iterable<string>,
+  root?: string,
 ) {
   if (!files?.length) {
     return []
   }
 
-  const bundledSources = collectBundledAssetSourcePaths(bundle)
+  const bundledSources = collectBundledAssetSourcePaths(bundle, root)
   const pendingAfterBundle = files.filter((file) => {
     return !bundledSources.has(normalizePath(file))
   })
@@ -395,7 +399,7 @@ function createAssetCollector(state: AssetPluginState): Plugin {
     async generateBundle(_options, bundle) {
       patchScopedSlotHostAssetsInBundle(ctx, this, bundle as Record<string, any>)
       const files = await state.pendingAssets
-      const pending = resolvePendingAssetFiles(files, bundle as OutputBundle, () => this.getModuleIds())
+      const pending = resolvePendingAssetFiles(files, bundle as OutputBundle, () => this.getModuleIds(), state.resolvedConfig?.root)
       await emitAssets(ctx, this, bundle as Record<string, any>, pending, 8)
       nextOwnedFiles = new Set(pending.map(file => configService.relativeOutputPath(file)))
       removedFiles = [...committedOwnedFiles].filter(file => !nextOwnedFiles.has(file) && !bundle[file])

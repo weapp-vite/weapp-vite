@@ -60,6 +60,8 @@ export default defineConfig({
 
 独立分包单独构建。对于参与 `[subpackage]` 资产命名的图片、字体等资源，独立分包构建会将占位符展开为自己的分包 `root`，即使资源来自 `node_modules` 或公共源码。若主包也引用同一资源，两次构建各自生成可访问的文件。普通分包仍按来源归属命名。
 
+微信小程序 WXML 中，若相对 `<image src>` 的原路径不再输出，而同一图片已由 JS 或 CSS 唯一发射，构建会将该静态引用改为发射后的路径。仅被 WXML 使用而按原路径复制的图片、动态绑定和外部 URL 保持原样。
+
 ## `weapp.styles` {#weapp-styles}
 
 - **类型**：`StyleConfigEntry | StyleConfigEntry[]`

@@ -82,3 +82,52 @@ it('keeps an imported dependency image in each build that consumes it', async ()
     await fixture.close()
   }
 })
+
+it.each(['script', 'style'])('keeps native image references valid when a local image is also used by %s', async (kind) => {
+  const fixture = await createSubpackageOutputFixture()
+  try {
+    const [mainRoute, featureRoute] = fixture.routes
+    const source = (route: string, extension: string) => path.join(fixture.root, 'src', `${route}.${extension}`)
+    await writeFile(source(mainRoute, 'js'), 'Page({})')
+    await writeFile(source(mainRoute, 'wxss'), '')
+    if (kind === 'style') {
+      await writeFile(source(featureRoute, 'js'), 'Page({})')
+    }
+    else {
+      await writeFile(source(featureRoute, 'wxss'), '')
+    }
+    await writeFile(source(featureRoute, 'wxml'), [
+      '<image src="../../image.png?version=1#icon"/>',
+      '<image src="{{image}}"/>',
+      '<image src="https://example.test/image.png"/>',
+      '<image src="../../copied.png"/>',
+    ].join('\n'))
+    await copyFile(path.join(fixture.root, 'src/packages/feature/image.png'), path.join(fixture.root, 'src/packages/feature/copied.png'))
+    await build({
+      root: fixture.root,
+      configFile: false,
+      logLevel: 'silent',
+      plugins: [weapp()],
+      weapp: { srcRoot: 'src', vue: { enable: false }, autoRoutes: false, autoImport: false, autoImportComponents: false, npm: { enable: false } },
+      build: { assetsDir: '[subpackage]/assets', assetsInlineLimit: 0, minify: false },
+    })
+
+    const dist = path.join(fixture.root, 'dist')
+    const files = (await readdir(dist, { recursive: true })).map(file => path.normalize(file))
+    const emitted = files.find(file => /^packages\/feature\/assets\/image-[^/]+\.png$/.test(file))
+    expect(emitted).toBeDefined()
+    expect(files).not.toContain('packages/feature/image.png')
+    expect(files).toContain('packages/feature/copied.png')
+    const wxml = await readFile(path.join(dist, `${featureRoute}.wxml`), 'utf8')
+    expect(wxml).toContain(`src="/${emitted}?version=1#icon"`)
+    expect(wxml).toContain('src="{{image}}"')
+    expect(wxml).toContain('src="https://example.test/image.png"')
+    expect(wxml).toContain('src="../../copied.png"')
+    if (kind === 'style') {
+      expect(await readFile(path.join(dist, `${featureRoute}.wxss`), 'utf8')).toContain(`/${emitted}`)
+    }
+  }
+  finally {
+    await fixture.close()
+  }
+})

@@ -19,6 +19,7 @@ import { consumePendingOwnerStyleSources } from './css'
 import { createOutputAssetTransaction } from './outputFinalizer/assets'
 import { restoreNativePageLayoutOutputs } from './outputFinalizer/pageLayout'
 import { normalizeClassScopedAssets } from './outputFinalizer/scopedStyles'
+import { createTemplateImageRewriter } from './outputFinalizer/templateImages'
 import { normalizeTemplateAssetEntries } from './outputFinalizer/templates'
 
 export { createOutputPublicationPlugin, pruneUnchangedDevHmrOutputs, pruneUneventedDevHmrChunks } from './outputFinalizer/publication'
@@ -278,6 +279,12 @@ export function createOutputFinalizerPlugin(ctx: CompilerContext, subPackageMeta
           addWatchFile: file => this.addWatchFile?.(file),
           warn: message => this.warn(message),
           partial,
+          rewriteImages: ctx.configService.platform === 'weapp' && assetEntries.templateAssets.length
+            ? createTemplateImageRewriter(outputBundle, ctx.configService.cwd, ctx.configService.absoluteSrcRoot, {
+                roots: () => ctx.scanService.subPackageMap.keys(),
+                independentRoot: subPackageMeta?.subPackage.independent ? subPackageMeta.subPackage.root : undefined,
+              })
+            : undefined,
         })
         checkpoint('finalizeTemplateMs')
         deferWxmlDependencyCommit(ctx, commitDependencies)

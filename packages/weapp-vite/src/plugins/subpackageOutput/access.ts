@@ -8,14 +8,14 @@ interface AssetConsumerChunk extends OutputChunk {
   referencedFiles?: string[]
 }
 
-function outputPackage(fileName: string, context: SubpackageNamingContext) {
+function outputPackage(fileName: string, context: Pick<SubpackageNamingContext, 'roots'>) {
   return Array.from(context.roots(), root => root.replaceAll('\\', '/').replace(/\/+$/, ''))
     .filter(Boolean)
     .sort((left, right) => right.length - left.length)
     .find(root => fileName.startsWith(`${root}/`)) ?? ''
 }
 
-function assertReferenceAccess(consumer: string, target: string, context: SubpackageNamingContext) {
+export function assertReferenceAccess(consumer: string, target: string, context: Pick<SubpackageNamingContext, 'roots' | 'independentRoot'>) {
   const destination = outputPackage(target, context)
   const owner = outputPackage(consumer, context)
   if ((destination && destination !== owner)
