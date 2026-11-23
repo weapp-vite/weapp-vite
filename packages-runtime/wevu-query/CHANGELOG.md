@@ -1,5 +1,12 @@
 # @wevu/query
 
+## 0.1.8
+
+### Patch Changes
+
+- Updated dependencies:
+  - wevu@7.12.1
+
 ## 0.1.7
 
 ### Patch Changes

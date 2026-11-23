@@ -1,5 +1,14 @@
 # wevu-json-render-demo
 
+## 0.0.11
+
+### Patch Changes
+
+- Updated dependencies:
+  - @wevu/json-render@0.2.8
+  - @wevu/json-render-components@0.2.8
+  - wevu@7.12.1
+
 ## 0.0.10
 
 ### Patch Changes
