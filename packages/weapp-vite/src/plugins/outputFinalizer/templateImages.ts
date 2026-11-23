@@ -52,6 +52,19 @@ export function findLocalImageReferences(code: string, fileName: string) {
 
 type ImageReference = ReturnType<typeof findLocalImageReferences>[number]
 
+/** 部分 Node 22 版本即使传入 throwIfNoEntry 仍会抛 ENOENT，这里统一收敛为布尔判断。 */
+async function isFile(file: string) {
+  try {
+    return (await stat(file)).isFile()
+  }
+  catch (error) {
+    if (error && typeof error === 'object' && 'code' in error && error.code === 'ENOENT') {
+      return false
+    }
+    throw error
+  }
+}
+
 /** 模板路径相对源码目录；允许显式引用项目依赖目录，其他目录越界路径不参与资源构建。 */
 async function resolveTemplateImageSource(
   { relative, absoluteUrl }: ImageReference,
@@ -64,10 +77,10 @@ async function resolveTemplateImageSource(
   if (escapesSource) {
     return !absoluteUrl && path.relative(root, source).startsWith('node_modules/') ? source : undefined
   }
-  if (publicDir && (await stat(path.join(publicDir, relative), { throwIfNoEntry: false }))?.isFile()) {
+  if (publicDir && await isFile(path.join(publicDir, relative))) {
     return undefined
   }
-  if (absoluteUrl && relative.startsWith('node_modules/') && !(await stat(source, { throwIfNoEntry: false }))?.isFile()) {
+  if (absoluteUrl && relative.startsWith('node_modules/') && !(await isFile(source))) {
     return path.resolve(root, relative)
   }
   return source
@@ -147,7 +160,7 @@ export function createTemplateImageRewriter(
       if (target !== undefined || !naming?.assetsInclude(original)) {
         return target
       }
-      if (!(await stat(original, { throwIfNoEntry: false }))?.isFile()) {
+      if (!(await isFile(original))) {
         return null
       }
       return {
