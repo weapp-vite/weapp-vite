@@ -16,6 +16,7 @@ import { css } from './css'
 import { i18n } from './i18n'
 import { createLibDtsPlugin } from './libDts'
 import { createOutputFinalizerPlugin, createOutputPublicationPlugin } from './outputFinalizer'
+import { createPreparedTemplates } from './outputFinalizer/templates'
 import { markOwnedPlugin } from './ownedInstances'
 import { createPackageImportsQueryPlugin } from './packageImports'
 import { createPluginProjectOutputPlugin } from './pluginProjectOutput'
@@ -96,6 +97,9 @@ export function vitePluginWeapp(
   const reactEnabled = isReactEnabled(ctx)
   const vueRuntimeEnabled = vueEnabled && (!reactEnabled || hasWevuDependency(ctx))
   const runtimeProvider = resolveRuntimeProvider('miniprogram', vueRuntimeEnabled ? 'vue' : 'native')
+  const preparedTemplates = !ctx.configService.isDev && !subPackageMeta && !libModeEnabled
+    ? createPreparedTemplates(ctx)
+    : undefined
   const templateAssetPackages = new Map<string, string>()
   const rewrittenTemplateImageSources = new Set<string>()
   const groups: Plugin[][] = [
@@ -105,7 +109,7 @@ export function vitePluginWeapp(
       independentRoot: subPackageMeta?.subPackage.independent ? subPackageMeta.subPackage.root : undefined,
       roots: () => ctx.scanService.subPackageMap.keys(),
       templateAssetPackages,
-    }, !ctx.configService.isDev && !subPackageMeta && !libModeEnabled ? plugin => collectTemplateConsumers(ctx, plugin) : undefined)],
+    }, preparedTemplates ? plugin => collectTemplateConsumers(ctx, plugin, preparedTemplates) : undefined)],
     preflight(ctx),
     uniAppCompatibility(ctx),
     createReactPlugin(ctx),
@@ -138,7 +142,7 @@ export function vitePluginWeapp(
   if (!subPackageMeta && !libModeEnabled) {
     groups.push([createProjectConfigDirectoryPlugin(ctx), createAppBuilderPlugin(ctx), createWorkerOutputPlugin(ctx), createPluginProjectOutputPlugin(ctx)])
   }
-  groups.push([createOutputFinalizerPlugin(ctx, subPackageMeta, templateAssetPackages, rewrittenTemplateImageSources)])
+  groups.push([createOutputFinalizerPlugin(ctx, subPackageMeta, templateAssetPackages, rewrittenTemplateImageSources, preparedTemplates)])
   if (assetPlugins) {
     groups.push([assetPlugins[1]])
   }

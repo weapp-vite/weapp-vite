@@ -5,6 +5,7 @@ import { build } from 'vite'
 import { expect, it } from 'vitest'
 import { weapp } from '../../vite'
 import { createSubpackageOutputFixture } from './nativeFixture'
+import { waitForAssetBuild } from './watchFixture'
 
 it('moves a watched image as consumers change and removes stale outputs', async () => {
   const fixture = await createSubpackageOutputFixture()
@@ -31,48 +32,6 @@ it('moves a watched image as consumers change and removes stale outputs', async 
       throw new Error('Expected a watch build')
     }
     try {
-      const waitForBuild = (verify: () => Promise<boolean>, change?: () => Promise<void>) => new Promise<void>((resolve, reject) => {
-        let timeout: ReturnType<typeof setTimeout>
-        const onEvent: Parameters<typeof watcher.on<'event'>>[1] = async function (event) {
-          function finish(error?: unknown) {
-            clearTimeout(timeout)
-            if (error) {
-              reject(error)
-            }
-            else {
-              resolve()
-            }
-          }
-          if (event.code === 'ERROR') {
-            watcher.off('event', onEvent)
-            finish(event.error)
-          }
-          if (event.code === 'BUNDLE_END') {
-            try {
-              if (await verify()) {
-                watcher.off('event', onEvent)
-                finish()
-              }
-            }
-            catch (error) {
-              watcher.off('event', onEvent)
-              finish(error)
-            }
-          }
-        }
-        timeout = setTimeout(() => {
-          watcher.off('event', onEvent)
-          reject(new Error('Timed out waiting for the requested watch generation'))
-        }, 8_000)
-        watcher.on('event', onEvent)
-        if (change) {
-          void change().catch((error: unknown) => {
-            clearTimeout(timeout)
-            watcher.off('event', onEvent)
-            reject(error)
-          })
-        }
-      })
       const read = (file: string) => readFile(path.join(dist, file), 'utf8')
       const files = async () => (await readdir(dist, { recursive: true })).map(file => path.normalize(file))
       const emitted = async () => (await files()).filter(file => /\/image-[^/]+\.png$/.test(file))
@@ -85,27 +44,27 @@ it('moves a watched image as consumers change and removes stale outputs', async 
         return images[0]!
       }
       const phase = (value: string) => async () => (await read(`${main}.js`)).includes(value)
-      await waitForBuild(phase('initial'))
+      await waitForAssetBuild(watcher, phase('initial'))
       const original = await expectLocation('packages/feature/assets')
 
-      await waitForBuild(phase('shared'), () => writeFile(source(`${main}.js`), mainPage('shared', true)))
+      await waitForAssetBuild(watcher, phase('shared'), () => writeFile(source(`${main}.js`), mainPage('shared', true)))
       const shared = await expectLocation('assets')
       expect(await read(`${main}.js`)).toContain(`/${shared}`)
       expect((await files()).includes(original)).toBe(false)
 
-      await waitForBuild(phase('local-again'), () => writeFile(source(`${main}.js`), mainPage('local-again')))
+      await waitForAssetBuild(watcher, phase('local-again'), () => writeFile(source(`${main}.js`), mainPage('local-again')))
       expect(await expectLocation('packages/feature/assets')).toBe(original)
       expect((await files()).includes(shared)).toBe(false)
 
       const image = source('packages/feature/image.png')
       const changedImage = Buffer.concat([await readFile(image), Buffer.from('changed')])
-      await waitForBuild(async () => (await emitted()).some(file => file !== original), () => writeFile(image, changedImage))
+      await waitForAssetBuild(watcher, async () => (await emitted()).some(file => file !== original), () => writeFile(image, changedImage))
       const updated = await expectLocation('packages/feature/assets')
       expect(updated).not.toBe(original)
       expect(await readFile(path.join(dist, updated))).toEqual(changedImage)
       expect((await files()).includes(original)).toBe(false)
 
-      await waitForBuild(async () => !(await read(`${feature}.wxss`)).includes('image-'), () => writeFile(source(`${feature}.wxss`), '.page { color: red; }'))
+      await waitForAssetBuild(watcher, async () => !(await read(`${feature}.wxss`)).includes('image-'), () => writeFile(source(`${feature}.wxss`), '.page { color: red; }'))
       expect(await emitted()).toEqual([])
     }
     finally {

@@ -33,7 +33,7 @@ export default defineConfig({
 })
 ```
 
-参与默认命名的主包资源输出到 `assets/`，分包专属资源输出到 `packages/feature/assets/`。JS、CSS、图片和字体继续由 Vite/Rolldown 发射并维护引用与 hash。页面、组件等固定文件名入口及 `publicDir` 原样复制文件保持原有路径。
+小程序构建的默认值仍为 `.`。显式启用此配置后，参与默认命名的主包资源输出到 `assets/`，分包专属资源输出到 `packages/feature/assets/`。JS、CSS、图片和字体继续由 Vite/Rolldown 发射并维护引用与 hash。页面、组件等固定文件名入口及 `publicDir` 原样复制文件保持原有路径。
 
 需要单独指定 JS chunk 路径时，可以设置：
 
@@ -50,7 +50,7 @@ export default defineConfig({
 })
 ```
 
-显式 `chunkFileNames` 完整覆盖默认 chunk 模板，不再拼接 `assetsDir`；函数返回的模板也支持占位符。不使用 `[subpackage]` 时，保持普通的 `outDir` 相对路径语义，不自动添加分包前缀。`[name]`、`[hash]` 等原生占位符仍由 bundler 展开。
+显式的 `assetFileNames` 和 `chunkFileNames` 分别覆盖对应的默认资源和 chunk 模板，不再拼接 `assetsDir`；函数返回的模板也支持占位符。不使用 `[subpackage]` 时，保持普通的 `outDir` 相对路径语义，不自动添加分包前缀。`[name]`、`[hash]` 等原生占位符仍由 bundler 展开。
 
 占位符必须作为完整目录段且最多出现一次。对跨多个分包的混合 chunk 或缺少来源信息的资源，使用占位符时会给出明确诊断；可拆分分组、为插件资源提供 `originalFileName`，或显式采用不含占位符的命名模板。
 
@@ -60,7 +60,7 @@ export default defineConfig({
 
 独立分包单独构建。参与资产命名的图片、字体等资源保留在自己的分包内，即使资源来自 `node_modules` 或公共源码。独立分包会给不含占位符的资产模板补上自身的 `root`，例如 `images/[name][extname]` 会输出到 `packages/feature/images/`；模板已包含本包根目录时不会重复添加。使用 `[subpackage]` 时，将它放在第一个目录段。若主包也引用同一资源，两次构建各自生成可访问的文件。
 
-微信小程序 WXML 的本地静态 `<image src>` 会复用由 JS 或 CSS 唯一发射的图片。配置资源命名后，仅由 WXML 引用的本地图片也遵循 `assetsDir` 或优先级更高的显式 `assetFileNames`，构建会同步更新引用。正式构建时，仅由主包和普通分包 WXML 跨包共享的图片会输出到主包，独立分包的图片则留在自己的包内。动态绑定、内联资源、外部 URL 和 `publicDir` 资源保持原样。
+微信小程序 WXML 的本地静态 `<image src>` 会复用由 JS 或 CSS 唯一发射的图片。配置资源命名后，仅由 WXML 引用的本地图片也遵循 `assetsDir` 或优先级更高的显式 `assetFileNames`，构建会同步更新引用。正式构建时，仅由主包和普通分包 WXML 跨包共享的图片会输出到主包，独立分包的图片则留在自己的包内。构建也会考虑原生页面通过 `weapp.wxml.transform` 新增或移除的静态引用。普通动态绑定、内联资源、外部 URL 和 `publicDir` 资源保持原样。
 
 ## `weapp.styles` {#weapp-styles}
 

@@ -3,7 +3,7 @@ import type { Plugin, ResolvedConfig } from 'vite'
 import type { CompilerContext } from '../context'
 import type { SubPackageMetaValue } from '../types'
 import type { RewriteWevuInternalRuntimeImportsOptions } from './core/helpers'
-import type { OutputAssetEntry } from './outputFinalizer/templates'
+import type { OutputAssetEntry, PreparedTemplates } from './outputFinalizer/templates'
 import { analyzeGlassEaselBundle } from '../analyze/glassEasel'
 import { notifyDevModuleGraphHost } from '../moduleGraph/host'
 import { parseGraphOutputModuleId, resolveGraphOutputOwner } from '../moduleGraph/outputMetadata'
@@ -193,6 +193,7 @@ export function createOutputFinalizerPlugin(
   subPackageMeta?: SubPackageMetaValue,
   templateAssetPackages?: Map<string, string>,
   rewrittenTemplateImageSources?: Set<string>,
+  preparedTemplates?: PreparedTemplates,
 ): Plugin {
   let preserveCompleteBundle = false
   let imageNaming: Pick<ResolvedConfig, 'publicDir' | 'assetsInclude'> | undefined
@@ -224,6 +225,9 @@ export function createOutputFinalizerPlugin(
 
   return {
     name: 'weapp-vite:output-finalizer',
+    buildStart() {
+      preparedTemplates?.clear()
+    },
     enforce: 'post',
     async configureServer(server) {
       const subscription = bindWxmlDependencyWatch(ctx, server, change => notifyDevModuleGraphHost(ctx, change))
@@ -291,6 +295,7 @@ export function createOutputFinalizerPlugin(
           addWatchFile: file => this.addWatchFile?.(file),
           warn: message => this.warn(message),
           partial,
+          preparedTemplates,
           rewriteImages: ctx.configService.platform === 'weapp' && assetEntries.templateAssets.length
             ? createTemplateImageRewriter(outputBundle, ctx.configService.cwd, ctx.configService.absoluteSrcRoot, {
                 roots: () => ctx.scanService.subPackageMap.keys(),

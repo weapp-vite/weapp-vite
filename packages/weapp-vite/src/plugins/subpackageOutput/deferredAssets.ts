@@ -17,7 +17,7 @@ interface PendingAsset {
   placeholder: string
 }
 
-export type TemplateConsumers = (plugin: PluginContext) => Iterable<[string, string]>
+export type TemplateConsumers = (plugin: PluginContext) => AsyncIterable<[string, string]> | Iterable<[string, string]>
 
 function findEntryPackages(ctx: PluginContext, modules: Iterable<string>, entryPackage: (id: string) => string | undefined) {
   const queue = [...modules]
@@ -61,7 +61,7 @@ export function createDeferredAssets(context: SubpackageNamingContext, templates
 
   async function collectTemplatePackages(plugin: PluginContext, keys: Map<string, string>, groups: Map<string, Set<string>>) {
     const referenced = new Map<string, { source: string, owners: Set<string> }>()
-    for (const [fileName, code] of templates(plugin)) {
+    for await (const [fileName, code] of templates(plugin)) {
       let owner: string | undefined
       for (const { relative } of findLocalImageReferences(code, fileName)) {
         const source = sourcePath(path.join(context.srcRoot, relative))
