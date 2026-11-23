@@ -1,5 +1,5 @@
 import { Buffer } from 'node:buffer'
-import { readdir, readFile, writeFile } from 'node:fs/promises'
+import { mkdir, readdir, readFile, writeFile } from 'node:fs/promises'
 import path from 'pathe'
 import { build } from 'vite'
 import { expect, it } from 'vitest'
@@ -66,6 +66,66 @@ it('moves a watched image as consumers change and removes stale outputs', async 
 
       await waitForAssetBuild(watcher, async () => !(await read(`${feature}.wxss`)).includes('image-'), () => writeFile(source(`${feature}.wxss`), '.page { color: red; }'))
       expect(await emitted()).toEqual([])
+    }
+    finally {
+      await watcher.close()
+    }
+  }
+  finally {
+    await fixture.close()
+  }
+}, 30_000)
+
+it.each([false, true])('refreshes WXML-only dependency images in watch mode: independent=%s', async (independent) => {
+  const fixture = await createSubpackageOutputFixture()
+  try {
+    const [main, feature] = fixture.routes
+    const src = path.join(fixture.root, 'src')
+    const dist = path.join(fixture.root, 'dist')
+    const image = path.join(fixture.root, 'node_modules/fixture-images/logo.svg')
+    const imageBytes = (color: string) => `<svg xmlns="http://www.w3.org/2000/svg"><rect width="1" height="1" fill="${color}"/></svg>`
+    await mkdir(path.dirname(image))
+    await writeFile(image, imageBytes('red'))
+    await writeFile(path.join(src, 'app.json'), JSON.stringify({
+      pages: [main],
+      subPackages: [{ root: 'packages/feature', pages: ['pages/index/index'], independent }],
+    }))
+    for (const route of fixture.routes) {
+      await writeFile(path.join(src, `${route}.js`), 'Page({})')
+      await writeFile(path.join(src, `${route}.wxss`), '')
+    }
+    const featureTemplate = path.join(src, `${feature}.wxml`)
+    await writeFile(featureTemplate, '<image src="/node_modules/fixture-images/logo.svg"/>')
+    const watcher = await build({
+      root: fixture.root,
+      configFile: false,
+      logLevel: 'silent',
+      plugins: [weapp()],
+      weapp: { srcRoot: 'src', vue: { enable: false }, autoRoutes: false, autoImport: false, autoImportComponents: false, npm: { enable: false } },
+      build: { watch: {}, assetsDir: '[subpackage]/assets', assetsInlineLimit: 0 },
+    })
+    if (!('on' in watcher)) {
+      throw new Error('Expected a watch build')
+    }
+    try {
+      const files = async () => (await readdir(dist, { recursive: true })).map(file => path.normalize(file))
+      const template = () => readFile(path.join(dist, `${feature}.wxml`), 'utf8')
+      const published = async (color: string) => {
+        const candidates = (await files()).filter(file => /(?:^|\/)logo-[^/]+\.svg$/.test(file))
+        if (candidates.length !== 1) {
+          return false
+        }
+        const [file] = candidates
+        return path.dirname(file!) === 'packages/feature/assets'
+          && (await readFile(path.join(dist, file!), 'utf8')) === imageBytes(color)
+          && (await template()).includes(`src="/${file}"`)
+      }
+      await waitForAssetBuild(watcher, () => published('red'))
+      const original = (await files()).find(file => /(?:^|\/)logo-[^/]+\.svg$/.test(file))
+      await waitForAssetBuild(watcher, () => published('blue'), () => writeFile(image, imageBytes('blue')))
+      expect(await files()).not.toContain(original)
+      await waitForAssetBuild(watcher, async () => (await template()).includes('no-image'), () => writeFile(featureTemplate, '<view>no-image</view>'))
+      expect((await files()).filter(file => /(?:^|\/)logo-[^/]+\.svg$/.test(file))).toEqual([])
     }
     finally {
       await watcher.close()

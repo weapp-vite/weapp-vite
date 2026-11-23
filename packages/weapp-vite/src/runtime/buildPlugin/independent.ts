@@ -2,11 +2,13 @@ import type { RolldownOutput } from 'rolldown'
 import type { ResolvedConfig } from 'vite'
 import type { MutableCompilerContext } from '../../context'
 import type { SubPackageMetaValue } from '../../types'
+import path from 'pathe'
 import { build } from 'vite'
 import { createCompilerContextInstance } from '../../context/createCompilerContextInstance'
 import { logger } from '../../context/shared'
 import { findAutoImportCandidates } from '../../plugins/autoImport'
 import { pickImportMetaEnvDefineEntries } from '../../utils/importMeta'
+import { normalizeFsResolvedId } from '../../utils/resolvedId'
 import { shareWxmlDependencies } from '../../wxml/processing/dependencies'
 import { getAutoImportConfig } from '../autoImport/config'
 import { attachHmrRuntimeSession, getHmrRuntimeSession } from '../hmrRuntimeSession'
@@ -160,7 +162,11 @@ export function createIndependentBuilder(
           if (!output) {
             throw new Error(`独立分包 ${root} 未产生输出`)
           }
-          watch.commit()
+          // 模板图片会通过 emitFile 发布；仅由模板使用时不会进入子构建的模块图。
+          const assetSources = output.output.flatMap(asset => asset.type === 'asset' ? asset.originalFileNames : [])
+            .map(source => normalizeFsResolvedId(source))
+            .filter(source => path.isAbsolute(source))
+          watch.commit(assetSources)
           storeIndependentOutput(root, output)
           return output
         }))
