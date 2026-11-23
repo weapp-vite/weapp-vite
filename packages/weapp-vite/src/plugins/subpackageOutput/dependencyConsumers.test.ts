@@ -8,16 +8,11 @@ import { createSubpackageOutputFixture, readPageImage } from './nativeFixture'
 
 it.each([
   { name: 'only by subpackage JS', via: 'js', location: 'subpackage' },
-  { name: 'only by subpackage JS with plain assetsDir', via: 'js', location: 'subpackage', plainAssetsDir: true },
   { name: 'only by subpackage WXSS', via: 'wxss', location: 'subpackage' },
-  { name: 'only by subpackage WXSS with plain assetsDir', via: 'wxss', location: 'subpackage', plainAssetsDir: true },
   { name: 'only by subpackage WXML', via: 'wxml', location: 'subpackage' },
-  { name: 'only by subpackage WXML with plain assetsDir', via: 'wxml', location: 'subpackage', plainAssetsDir: true },
   { name: 'only by independent subpackage WXML', via: 'wxml', location: 'subpackage', independent: true },
-  { name: 'only by independent subpackage WXML with plain assetsDir', via: 'wxml', location: 'subpackage', independent: true, plainAssetsDir: true },
   { name: 'from main WXML and subpackage JS', via: 'js', location: 'main', mainTemplate: true },
   { name: 'from main JS and subpackage JS', via: 'js', location: 'main', mainLogo: 'logo.png' },
-  { name: 'from main JS and subpackage JS with plain assetsDir', via: 'js', location: 'main', mainLogo: 'logo.png', plainAssetsDir: true },
   { name: 'from main JS and subpackage WXSS', via: 'wxss', location: 'main', mainLogo: 'logo.png' },
   { name: 'under separate paths with identical bytes', via: 'wxss', location: 'main', mainLogo: 'other/logo.png' },
   { name: 'with a Rolldown naming callback', via: 'js', location: 'subpackage', customNaming: true },
@@ -67,7 +62,7 @@ it.each([
       plugins: [weapp()],
       weapp: { srcRoot: 'src', vue: { enable: false }, autoRoutes: false, autoImport: false, autoImportComponents: false, npm: { enable: false } },
       build: {
-        assetsDir: customNaming ? 'fallback' : 'plainAssetsDir' in options ? 'assets' : '[subpackage]/assets',
+        assetsDir: customNaming ? 'fallback' : '[subpackage]/assets',
         assetsInlineLimit: 0,
         minify: false,
         manifest: true,
@@ -143,7 +138,7 @@ it.each([false, true])('places dependency images used by a native subpackage com
       logLevel: 'silent',
       plugins: [weapp()],
       weapp: { srcRoot: 'src', vue: { enable: false }, autoRoutes: false, autoImport: false, autoImportComponents: false, npm: { enable: false } },
-      build: { assetsDir: 'assets', assetsInlineLimit: 0 },
+      build: { assetsDir: '[subpackage]/assets', assetsInlineLimit: 0 },
     })
     const dist = path.join(fixture.root, 'dist')
     const files = (await readdir(dist, { recursive: true })).map(file => path.normalize(file))
@@ -181,19 +176,14 @@ it('moves the dependency image bytes out of the main package when the subpackage
     await writeFile(source(`${main}.wxss`), '')
     await writeFile(source(`${feature}.js`), 'import logo from "fixture-images/logo.svg"; Page({ data: { image: logo } })')
     await writeFile(source(`${feature}.wxss`), '')
-    const measure = async (expectedDirectory: string, publicOutput = false) => {
+    const measure = async (assetsDir: string, expectedDirectory: string) => {
       await build({
         root: fixture.root,
         configFile: false,
         logLevel: 'silent',
         plugins: [weapp()],
         weapp: { srcRoot: 'src', vue: { enable: false }, autoRoutes: false, autoImport: false, autoImportComponents: false, npm: { enable: false } },
-        build: {
-          assetsDir: 'assets',
-          assetsInlineLimit: 0,
-          emptyOutDir: true,
-          ...(publicOutput && { rolldownOptions: { output: { assetFileNames: 'assets/[name]-[hash][extname]' } } }),
-        },
+        build: { assetsDir, assetsInlineLimit: 0, emptyOutDir: true },
       })
       const entries = await readdir(dist, { recursive: true, withFileTypes: true })
       const files = entries.filter(entry => entry.isFile())
@@ -217,8 +207,8 @@ it('moves the dependency image bytes out of the main package when the subpackage
         return bytes
       }, { main: 0, feature: 0 })
     }
-    const ordinary = await measure('assets', true)
-    const owned = await measure(`${subpackage}/assets`)
+    const ordinary = await measure('assets', 'assets')
+    const owned = await measure('[subpackage]/assets', `${subpackage}/assets`)
     expect(ordinary.main - owned.main).toBeGreaterThanOrEqual(imageBytes - 1024)
     expect(owned.feature - ordinary.feature).toBeGreaterThanOrEqual(imageBytes)
   }

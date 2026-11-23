@@ -6,15 +6,6 @@ export function hasSubpackagePlaceholder(value: unknown): value is string {
   return typeof value === 'string' && value.includes(placeholder)
 }
 
-/** 小程序显式配置了资源目录时，默认资源命名可按包输出。 */
-export function plainSubpackageAssetsDir(build: BuildOptions | undefined) {
-  if (!build || build.lib || build.ssr || !build.assetsDir || build.assetsDir.includes(placeholder)) {
-    return
-  }
-  const directory = build.assetsDir.replaceAll('\\', '/').replace(/^(?:\.\/)+|\/+$/g, '')
-  return directory && directory !== '.' ? directory : undefined
-}
-
 /** 命名函数可能按单个资源返回占位符，也需要完整消费者图。 */
 export function mayUseSubpackageAssetNames(build: BuildOptions | undefined) {
   if (!build || build.lib || build.ssr) {
@@ -23,7 +14,6 @@ export function mayUseSubpackageAssetNames(build: BuildOptions | undefined) {
   const output = build.rolldownOptions?.output ?? build.rollupOptions?.output
   const outputs = Array.isArray(output) ? output : [output]
   return hasSubpackagePlaceholder(build.assetsDir)
-    || (Boolean(plainSubpackageAssetsDir(build)) && outputs.some(item => item?.assetFileNames === undefined))
     || outputs.some(item => hasSubpackagePlaceholder(item?.assetFileNames) || typeof item?.assetFileNames === 'function')
 }
 

@@ -193,7 +193,7 @@ it.each([
       weapp: { srcRoot: 'src', autoRoutes: false, vue: { enable: false }, hmr: { runtime } },
       build: mixed
         ? { assetsInlineLimit: 0, rolldownOptions: { output: { assetFileNames: () => '[subpackage]/assets/[name]-[hash][extname]' } } }
-        : { assetsDir: 'assets', assetsInlineLimit: 0 },
+        : { assetsDir: '[subpackage]/assets', assetsInlineLimit: 0 },
     }
   })
   expect(server.config.experimental.bundledDev).toBe(runtime === 'stateful-experimental')

@@ -25,15 +25,17 @@ keywords:
 
 `build.assetsDir`、`build.rolldownOptions.output.assetFileNames` 和 `build.rolldownOptions.output.chunkFileNames` 支持可选目录占位符 `[subpackage]`。它使用产物命名归属的完整分包 `root`，例如 `packages/feature`。主包展开为空，并移除空目录段的分隔符。
 
+对于希望将独占资源放入分包的小程序，推荐显式配置：
+
 ```ts
 export default defineConfig({
   build: {
-    assetsDir: 'assets',
+    assetsDir: '[subpackage]/assets',
   },
 })
 ```
 
-小程序构建的默认值仍为 `.`。与 Vite 中 `assetsDir` 通常相对 `outDir` 的通用含义不同，在 weapp-vite 小程序构建中，显式配置 `assetsDir: 'assets'` 会把有明确来源的资源按包归属输出：主包资源进入 `assets/`，分包资源进入 `packages/feature/assets/`。这是面向小程序分包输出的扩展，升级时请检查是否有脚本或工具依赖所有命名资源集中在主包 `assets/`。没有来源信息的插件资源仍可发射，主构建在 `assets/` 中输出。这个写法不会给普通分包的 JS chunk 路径加分包前缀；如需让默认 chunk 路径也按包展开，可以使用 `assetsDir: '[subpackage]/assets'`。页面、组件等固定文件名入口及 `publicDir` 原样复制文件保持原有路径。
+小程序构建的默认值仍为 `.`。显式启用此配置后，参与默认命名的主包资源输出到 `assets/`，分包专属资源输出到 `packages/feature/assets/`。JS、CSS、图片和字体继续由 Vite/Rolldown 发射并维护引用与 hash。页面、组件等固定文件名入口及 `publicDir` 原样复制文件保持原有路径。
 
 需要单独指定 JS chunk 路径时，可以设置：
 
@@ -50,13 +52,13 @@ export default defineConfig({
 })
 ```
 
-显式的 `assetFileNames` 和 `chunkFileNames` 分别覆盖对应的默认资源和 chunk 模板，不再拼接 `assetsDir`；函数返回的模板也支持占位符。对主包和普通分包，显式模板不含 `[subpackage]` 时，路径仍相对 `outDir`。`[name]`、`[hash]` 等原生占位符仍由 bundler 展开。
+显式的 `assetFileNames` 和 `chunkFileNames` 分别覆盖对应的默认资源和 chunk 模板，不再拼接 `assetsDir`；函数返回的模板也支持占位符。对主包和普通分包，不使用 `[subpackage]` 时，路径仍相对 `outDir`，不会自动添加分包前缀。`[name]`、`[hash]` 等原生占位符仍由 bundler 展开。
 
 占位符必须作为完整目录段且最多出现一次。对跨多个分包的混合 chunk 或缺少来源信息的资源，使用占位符时会给出明确诊断；可拆分分组、为插件资源提供 `originalFileName`，或显式采用不含占位符的命名模板。
 
-使用小程序 `build`（包括 `build --watch`）时，JS 导入、样式 URL 与原生 WXML、Vue 页面模板中的本地图片引用可共同决定资源归属。配置资源目录或使用占位符命名时，只被一个普通分包消费的图片（包括从 `node_modules` 导入的图片）输出到该分包；主包和分包、或多个普通分包共用时，在主包输出一份。同内容资源在可访问范围内由 bundler 去重。显式模板即使不含占位符，也会校验打包资源的包可见性。如果公共资源被放入其他消费者无法访问的分包，构建会报出引用位置和目标路径。可用不含占位符的 `assetFileNames` 指定主包公共目录。
+使用小程序 `build`（包括 `build --watch`）时，JS 导入、样式 URL 与原生 WXML、Vue 页面模板中的本地图片引用可共同决定资源归属。使用占位符时，只被一个普通分包消费的图片（包括从 `node_modules` 导入的图片）输出到该分包；主包和分包、或多个普通分包共用时，在主包输出一份。同内容资源在可访问范围内由 bundler 去重。显式模板即使不含占位符，也会校验打包资源的包可见性。如果公共资源被放入其他消费者无法访问的分包，构建会报出引用位置和目标路径。可用不含占位符的 `assetFileNames` 指定主包公共目录。
 
-微信小程序的经典开发服务器在按包命名资源时，会根据完整的消费者图重建。资源归属变化后，各页面引用随产物更新，过期文件在成功写出后清理。库模式沿用原有命名行为。
+微信小程序的经典开发服务器在使用占位符时，会根据完整的消费者图重建。资源归属变化后，各页面引用随产物更新，过期文件在成功写出后清理。库模式沿用原有命名行为。
 
 此能力只扩展命名，不改变动态导入模式、分块策略或宿主分包加载能力。
 

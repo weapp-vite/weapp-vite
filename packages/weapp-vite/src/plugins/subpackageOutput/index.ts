@@ -1,11 +1,11 @@
 import type { OutputOptions } from 'rolldown'
-import type { BuildOptions, Plugin } from 'vite'
+import type { Plugin } from 'vite'
 import type { TemplateConsumers } from './deferredAssets'
 import type { SubpackageNamingContext } from './ownership'
 import { assertBundleAssetAccess } from './access'
 import { createDeferredAssets } from './deferredAssets'
 import { assertAssetPackageAccess, resolveAssetPackage, resolveAssetSourcePath, resolveChunkPackage } from './ownership'
-import { constrainIndependentAssetTemplate, expandSubpackageTemplate, hasSubpackagePlaceholder, plainSubpackageAssetsDir } from './template'
+import { constrainIndependentAssetTemplate, expandSubpackageTemplate, hasSubpackagePlaceholder } from './template'
 
 /** 为占位符和独立分包适配原生命名，保留 bundler 的 hash、引用及写出所有权。 */
 export function createSubpackageOutputPlugin(context: SubpackageNamingContext, templates?: TemplateConsumers): Plugin {
@@ -15,7 +15,7 @@ export function createSubpackageOutputPlugin(context: SubpackageNamingContext, t
   let checkConfiguredAssetPaths = false
   let base = '/'
 
-  function wrapOutput(output: OutputOptions, build?: BuildOptions) {
+  function wrapOutput(output: OutputOptions) {
     for (const key of ['entryFileNames', 'chunkFileNames'] as const) {
       const original = output[key]
       if ((!hasSubpackagePlaceholder(original) && typeof original !== 'function')
@@ -31,18 +31,13 @@ export function createSubpackageOutputPlugin(context: SubpackageNamingContext, t
       wrapped.add(wrapper)
       output[key] = wrapper
     }
-    const implicitDirectory = templates && output.assetFileNames === undefined ? plainSubpackageAssetsDir(build) : undefined
-    const original = output.assetFileNames ?? (implicitDirectory
-      ? `[subpackage]/${implicitDirectory}/[name]-[hash][extname]`
-      : !build?.lib && hasSubpackagePlaceholder(build?.assetsDir) ? `${build.assetsDir}/[name]-[hash][extname]` : undefined)
+    const original = output.assetFileNames
     if ((hasSubpackagePlaceholder(original) || typeof original === 'function' || (context.independentRoot && typeof original === 'string'))
       && !(typeof original === 'function' && wrapped.has(original))) {
       const wrapper: Exclude<OutputOptions['assetFileNames'], string | undefined> = function (this: unknown, asset) {
         const template = typeof original === 'function' ? original.call(this, asset) : original!
         if (hasSubpackagePlaceholder(template)) {
-          const expanded = expandSubpackageTemplate(template, () => implicitDirectory && !asset.originalFileNames.length
-            ? context.independentRoot ?? ''
-            : resolveAssetPackage(asset, context))
+          const expanded = expandSubpackageTemplate(template, () => resolveAssetPackage(asset, context))
           if (context.independentRoot && !expanded.startsWith(`${context.independentRoot}/`)) {
             throw new Error('[weapp-vite] 独立分包的 assetFileNames 使用 [subpackage] 时，必须将其放在第一个目录段。')
           }
@@ -77,7 +72,10 @@ export function createSubpackageOutputPlugin(context: SubpackageNamingContext, t
           ? build.rolldownOptions.output
           : [build.rolldownOptions.output ?? (build.rolldownOptions.output = {})]
         for (const output of outputs) {
-          wrapOutput(output, build)
+          if (!build.lib && hasSubpackagePlaceholder(build.assetsDir)) {
+            output.assetFileNames ??= `${build.assetsDir}/[name]-[hash][extname]`
+          }
+          wrapOutput(output)
         }
       },
     },
@@ -93,7 +91,10 @@ export function createSubpackageOutputPlugin(context: SubpackageNamingContext, t
         && (build.assetsDir !== '.' || outputs.some(output => output.assetFileNames !== undefined))
       for (const output of outputs) {
         // CSS 在 outputOptions 之前读取资源命名函数，提前建立同一个解析入口。
-        wrapOutput(output, build)
+        if (!build.lib && hasSubpackagePlaceholder(build.assetsDir)) {
+          output.assetFileNames ??= `${build.assetsDir}/[name]-[hash][extname]`
+        }
+        wrapOutput(output)
       }
     },
     outputOptions: {

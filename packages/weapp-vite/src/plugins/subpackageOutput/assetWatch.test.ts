@@ -26,7 +26,7 @@ it('moves a watched image as consumers change and removes stale outputs', async 
       logLevel: 'silent',
       plugins: [weapp()],
       weapp: { srcRoot: 'src', vue: { enable: false }, autoRoutes: false, autoImport: false, autoImportComponents: false, npm: { enable: false } },
-      build: { watch: {}, assetsDir: 'assets', assetsInlineLimit: 0, minify: false },
+      build: { watch: {}, assetsDir: '[subpackage]/assets', assetsInlineLimit: 0, minify: false },
     })
     if (!('on' in watcher)) {
       throw new Error('Expected a watch build')
@@ -102,7 +102,7 @@ it.each([false, true])('refreshes WXML-only dependency images in watch mode: ind
       logLevel: 'silent',
       plugins: [weapp()],
       weapp: { srcRoot: 'src', vue: { enable: false }, autoRoutes: false, autoImport: false, autoImportComponents: false, npm: { enable: false } },
-      build: { watch: {}, assetsDir: 'assets', assetsInlineLimit: 0 },
+      build: { watch: {}, assetsDir: '[subpackage]/assets', assetsInlineLimit: 0 },
     })
     if (!('on' in watcher)) {
       throw new Error('Expected a watch build')
