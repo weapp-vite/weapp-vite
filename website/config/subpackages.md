@@ -64,6 +64,8 @@ export default defineConfig({
 
 微信小程序 WXML 的本地静态 `<image src>` 会复用由 JS 或 CSS 唯一发射的图片。配置资源命名后，仅由 WXML 引用的本地图片也遵循 `assetsDir` 或优先级更高的显式 `assetFileNames`，构建会同步更新引用。正式构建还会考虑原生页面通过 `weapp.wxml.transform` 新增或移除的静态引用。动态绑定本身不被改写；绑定值若来自 JS 导入，使用该导入得到的 URL。内联资源、外部 URL、`publicDir` 资源和插件显式指定 `fileName` 的产物保留原有路径规则。
 
+原生 WXML 可以通过 `/node_modules/包名/图片.png` 或指向项目 `node_modules` 的相对文件路径引用依赖图片；同路径已有 `publicDir` 文件时保留原样，项目绝对路径优先查找源码目录。如需按包名和 `exports` 解析，请在 JS 中导入图片，再将 URL 绑定到 `src`。
+
 ## `weapp.styles` {#weapp-styles}
 
 - **类型**：`StyleConfigEntry | StyleConfigEntry[]`

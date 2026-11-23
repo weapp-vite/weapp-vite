@@ -9,6 +9,9 @@ import { createSubpackageOutputFixture } from './nativeFixture'
 it.each([
   { name: 'only by subpackage JS', via: 'js', location: 'subpackage' },
   { name: 'only by subpackage WXSS', via: 'wxss', location: 'subpackage' },
+  { name: 'only by subpackage WXML', via: 'wxml', location: 'subpackage' },
+  { name: 'only by independent subpackage WXML', via: 'wxml', location: 'subpackage', independent: true },
+  { name: 'from main WXML and subpackage JS', via: 'js', location: 'main', mainTemplate: true },
   { name: 'from main JS and subpackage WXSS', via: 'wxss', location: 'main', mainLogo: 'logo.png' },
   { name: 'under separate paths with identical bytes', via: 'wxss', location: 'main', mainLogo: 'other/logo.png' },
   { name: 'with a Rolldown naming callback', via: 'js', location: 'subpackage', customNaming: true },
@@ -18,6 +21,13 @@ it.each([
     const [mainRoute, featureRoute] = fixture.routes
     const source = (route: string, ext: string) => path.join(fixture.root, 'src', `${route}.${ext}`)
     const dependency = path.join(fixture.root, 'node_modules/fixture-images')
+    const outsideURL = path.relative(path.dirname(source(featureRoute, 'wxml')), path.join(fixture.root, 'outside.png'))
+    if ('independent' in options) {
+      await writeFile(path.join(fixture.root, 'src/app.json'), JSON.stringify({
+        pages: [mainRoute],
+        subPackages: [{ root: 'packages/feature', pages: ['pages/index/index'], independent: true }],
+      }))
+    }
     await mkdir(dependency)
     const image = path.join(fixture.root, 'src/packages/feature/image.png')
     await mkdir(path.join(dependency, 'other'))
@@ -28,9 +38,18 @@ it.each([
       await writeFile(source(route, 'js'), 'Page({})')
       await writeFile(source(route, 'wxss'), '')
     }
-    await writeFile(source(featureRoute, via), via === 'js'
-      ? 'import image from "fixture-images/logo.png"; Page({ data: { image } })'
-      : '.page { background: url("fixture-images/logo.png"); }')
+    const featureSource = {
+      js: 'import image from "fixture-images/logo.png"; Page({ data: { image } })',
+      wxss: '.page { background: url("fixture-images/logo.png"); }',
+      wxml: `<image src="/node_modules/fixture-images/logo.png"/><image src="${outsideURL}"/>`,
+    }
+    if (via === 'wxml') {
+      await copyFile(image, path.join(fixture.root, 'outside.png'))
+    }
+    await writeFile(source(featureRoute, via), featureSource[via])
+    if ('mainTemplate' in options) {
+      await writeFile(source(mainRoute, 'wxml'), '<image src="../../../node_modules/fixture-images/logo.png"/>')
+    }
     if ('mainLogo' in options) {
       await writeFile(source(mainRoute, 'js'), `import image from "fixture-images/${options.mainLogo}"; Page({ data: { image } })`)
     }
@@ -57,17 +76,27 @@ it.each([
     const directory = `${location === 'subpackage' ? 'packages/feature/' : ''}${customNaming ? 'managed' : 'assets'}`
     expect(logos).toEqual([expect.stringMatching(`^${directory}/logo-`)])
     expect(await readFile(path.join(dist, logos[0]!))).toEqual(await readFile(image))
-    expect(await readFile(path.join(dist, `${featureRoute}.${via}`), 'utf8')).toContain(`/${logos[0]}`)
+    const featureOutput = await readFile(path.join(dist, `${featureRoute}.${via}`), 'utf8')
+    expect(featureOutput).toContain(`/${logos[0]}`)
+    if (via === 'wxml') {
+      expect(featureOutput).toContain(`src="${outsideURL}"`)
+      expect(files.some(file => /(?:^|\/)outside(?:-|\.)/.test(file))).toBe(false)
+    }
     const manifest = JSON.parse(await readFile(path.join(dist, '.vite/manifest.json'), 'utf8')) as Record<string, {
       file: string
       assets?: string[]
     }>
     const referencedFiles = Object.values(manifest).flatMap(item => [item.file, ...item.assets ?? []])
-    expect(referencedFiles).toContain(logos[0])
+    if (via !== 'wxml') {
+      expect(referencedFiles).toContain(logos[0])
+    }
     expect(JSON.stringify(manifest)).not.toContain('weapp-vite-asset-references')
     expect(files.some(file => file.startsWith('weapp-vite-asset-references'))).toBe(false)
     if ('mainLogo' in options) {
       expect(await readFile(path.join(dist, `${mainRoute}.js`), 'utf8')).toContain(`/${logos[0]}`)
+    }
+    if ('mainTemplate' in options) {
+      expect(await readFile(path.join(dist, `${mainRoute}.wxml`), 'utf8')).toContain(`src="/${logos[0]}"`)
     }
   }
   finally {

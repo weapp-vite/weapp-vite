@@ -5,7 +5,7 @@ import { createHash } from 'node:crypto'
 import { readFile, stat } from 'node:fs/promises'
 import path from 'pathe'
 import { normalizeFsResolvedId } from '../../utils/resolvedId'
-import { findLocalImageReferences } from '../outputFinalizer/templateImages'
+import { createTemplateImageSourceResolver, findLocalImageReferences } from '../outputFinalizer/templateImages'
 import { outputPackage } from './access'
 import { resolveSourcePackage } from './ownership'
 import { mayUseSubpackageAssetNames } from './template'
@@ -60,22 +60,20 @@ export function createDeferredAssets(context: SubpackageNamingContext, templates
   }
 
   async function collectTemplatePackages(plugin: PluginContext, keys: Map<string, string>, groups: Map<string, Set<string>>) {
-    const referenced = new Map<string, { source: string, owners: Set<string> }>()
+    const referenced = new Map<string, Set<string>>()
+    const resolveSource = createTemplateImageSourceResolver(root, context.srcRoot, publicDir)
     for await (const [fileName, code] of templates(plugin)) {
       let owner: string | undefined
-      for (const { relative } of findLocalImageReferences(code, fileName)) {
-        const source = sourcePath(path.join(context.srcRoot, relative))
-        if (assetsInclude(source)) {
-          const entry = referenced.get(relative) ?? { source, owners: new Set<string>() }
-          entry.owners.add(owner ??= outputPackage(fileName, context))
-          referenced.set(relative, entry)
+      for (const reference of findLocalImageReferences(code, fileName)) {
+        const source = await resolveSource(reference)
+        if (source && assetsInclude(source)) {
+          const owners = referenced.get(source) ?? new Set<string>()
+          owners.add(owner ??= outputPackage(fileName, context))
+          referenced.set(source, owners)
         }
       }
     }
-    for (const [relative, { source, owners }] of referenced) {
-      if (publicDir && (await stat(path.join(publicDir, relative), { throwIfNoEntry: false }))?.isFile()) {
-        continue
-      }
+    for (const [source, owners] of referenced) {
       let key = keys.get(source)
       if (key === undefined) {
         if (!(await stat(source, { throwIfNoEntry: false }))?.isFile()) {
