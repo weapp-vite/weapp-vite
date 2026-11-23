@@ -5,6 +5,48 @@ import { expect, it } from 'vitest'
 import { weapp } from '../../vite'
 import { createSubpackageOutputFixture } from './nativeFixture'
 
+it.each(['js', 'wxss', 'wxml'] as const)('emits an independent subpackage image referenced in %s only once in its own asset directory', async (extension) => {
+  const fixture = await createSubpackageOutputFixture()
+  try {
+    const [mainRoute, childRoute] = fixture.routes
+    const packageRoot = 'packages/feature'
+    const source = (file: string) => path.join(fixture.root, 'src', file)
+    await writeFile(source('app.json'), JSON.stringify({
+      pages: [mainRoute],
+      subPackages: [{ root: packageRoot, pages: ['pages/index/index'], independent: true }],
+    }))
+    await copyFile(source(`${packageRoot}/image.png`), source(`${packageRoot}/runtime.png`))
+    for (const route of fixture.routes) {
+      await writeFile(source(`${route}.js`), 'Page({})')
+      await writeFile(source(`${route}.wxss`), '')
+      await writeFile(source(`${route}.wxml`), '<view/>')
+    }
+    const references = {
+      js: 'import image from "../../image.png"; Page({ data: { image } })',
+      wxss: '.page { background: url("../../image.png"); }',
+      wxml: '<image src="../../image.png"/>',
+    }
+    await writeFile(source(`${childRoute}.${extension}`), references[extension])
+    await build({
+      root: fixture.root,
+      configFile: false,
+      logLevel: 'silent',
+      plugins: [weapp()],
+      weapp: { srcRoot: 'src', vue: { enable: false }, autoRoutes: false, autoImport: false, autoImportComponents: false, npm: { enable: false } },
+      build: { assetsDir: '[subpackage]/assets', assetsInlineLimit: 0 },
+    })
+    const dist = path.join(fixture.root, 'dist')
+    const files = (await readdir(dist, { recursive: true })).map(file => path.normalize(file))
+    const images = files.filter(file => /(?:^|\/)image(?:-[^/]+)?\.png$/.test(file))
+    expect(images).toEqual([expect.stringMatching(/^packages\/feature\/assets\/image-[^/]+\.png$/)])
+    expect(files).toContain(`${packageRoot}/runtime.png`)
+    expect(await readFile(path.join(dist, `${childRoute}.${extension}`), 'utf8')).toContain(`/${images[0]}`)
+  }
+  finally {
+    await fixture.close()
+  }
+})
+
 it('promotes a WXML-only image shared with the main package and keeps one emitted file', async () => {
   const fixture = await createSubpackageOutputFixture()
   try {

@@ -1,7 +1,9 @@
 import type { EmittedAsset, OutputAsset, OutputChunk, RolldownOutput } from 'rolldown'
 import type { CompilerContext } from '../../context'
 import type { SubPackageMetaValue } from '../../types'
+import path from 'pathe'
 import { isBundlerDiagnosticAsset } from '../../runtime/buildPlugin/outputBoundary'
+import { normalizePath } from '../../utils/path'
 
 type EmitAsset = (asset: EmittedAsset) => void
 
@@ -28,6 +30,35 @@ function toEmittedAsset(output: OutputAsset | OutputChunk): EmittedAsset {
 
 function getBundleOutputs(output: RolldownOutput) {
   return Array.isArray(output.output) ? output.output : []
+}
+
+/** 只交接独立包内由子构建发射的本地资源；公共源码仍由主构建独立决定。 */
+export function collectIndependentLocalAssets(ctx: CompilerContext, root: string) {
+  const sources = new Set<string>()
+  const outputNames = new Set<string>()
+  for (const [packageRoot, result] of ctx.runtimeState?.build?.independent?.outputs ?? []) {
+    if (!ctx.scanService?.independentSubPackageMap?.has(packageRoot)) {
+      continue
+    }
+    const prefix = `${packageRoot}/`
+    const sourceRoot = path.resolve(ctx.configService.absoluteSrcRoot, packageRoot)
+    for (const item of getBundleOutputs(result)) {
+      if (isBundlerDiagnosticAsset(item) || !item.fileName.startsWith(prefix)) {
+        continue
+      }
+      outputNames.add(item.fileName)
+      if (item.type !== 'asset') {
+        continue
+      }
+      for (const original of item.originalFileNames ?? []) {
+        const source = normalizePath(path.resolve(root, original))
+        if (source.startsWith(`${sourceRoot}/`)) {
+          sources.add(source)
+        }
+      }
+    }
+  }
+  return { sources, outputNames }
 }
 
 export function collectIndependentOutputFileNames(ctx: CompilerContext) {

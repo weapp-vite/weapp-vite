@@ -245,7 +245,7 @@ export function createOutputFinalizerPlugin(ctx: CompilerContext, subPackageMeta
       preserveCompleteBundle = config.experimental?.bundledDev === true
       const output = config.build.rolldownOptions.output
       const hasAssetFileNames = (Array.isArray(output) ? output : [output]).some(item => item?.assetFileNames !== undefined)
-      if (!subPackageMeta && !config.build.lib && (config.build.assetsDir !== '.' || hasAssetFileNames)) {
+      if (!config.build.lib && (config.build.assetsDir !== '.' || hasAssetFileNames)) {
         imageNaming = config
       }
     },
@@ -292,7 +292,7 @@ export function createOutputFinalizerPlugin(ctx: CompilerContext, subPackageMeta
               }, imageNaming && {
                 publicDir: imageNaming.publicDir,
                 assetsInclude: imageNaming.assetsInclude,
-                useConsumerPackages: Boolean(templateAssetPackages && !ctx.configService.isDev),
+                useConsumerPackages: Boolean(templateAssetPackages && !subPackageMeta && !ctx.configService.isDev),
                 emit: (asset, owner) => {
                   this.addWatchFile(asset.originalFileName)
                   if (owner !== undefined) {

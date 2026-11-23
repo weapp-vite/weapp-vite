@@ -23,7 +23,7 @@ keywords:
 
 ## 输出路径中的 `[subpackage]` {#subpackage-output-placeholder}
 
-`build.assetsDir` 和 `build.rolldownOptions.output.chunkFileNames` 支持可选目录占位符 `[subpackage]`。它使用产物命名归属的完整分包 `root`，例如 `packages/feature`，不使用分包可选的 `name`。主包展开为空，并移除空目录段的分隔符。
+`build.assetsDir`、`build.rolldownOptions.output.assetFileNames` 和 `build.rolldownOptions.output.chunkFileNames` 支持可选目录占位符 `[subpackage]`。它使用产物命名归属的完整分包 `root`，例如 `packages/feature`。主包展开为空，并移除空目录段的分隔符。
 
 ```ts
 export default defineConfig({
@@ -60,7 +60,7 @@ export default defineConfig({
 
 独立分包单独构建。对于参与 `[subpackage]` 资产命名的图片、字体等资源，独立分包构建会将占位符展开为自己的分包 `root`，即使资源来自 `node_modules` 或公共源码。若主包也引用同一资源，两次构建各自生成可访问的文件。普通分包仍按来源归属命名。
 
-微信小程序 WXML 中，若相对 `<image src>` 的原路径不再输出，而同一图片已由 JS 或 CSS 唯一发射，构建会将该静态引用改为发射后的路径。仅被 WXML 使用而按原路径复制的图片、动态绑定和外部 URL 保持原样。
+微信小程序 WXML 的本地静态 `<image src>` 会复用由 JS 或 CSS 唯一发射的图片。配置资源命名后，仅由 WXML 引用的本地图片也遵循 `assetsDir` 或优先级更高的显式 `assetFileNames`，构建会同步更新引用。正式构建时，仅由主包和普通分包 WXML 跨包共享的图片会输出到主包，独立分包的图片则留在自己的包内。动态绑定、内联资源、外部 URL 和 `publicDir` 资源保持原样。
 
 ## `weapp.styles` {#weapp-styles}
 

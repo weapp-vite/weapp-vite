@@ -18,6 +18,7 @@ import { normalizePath, toPosixPath } from '../utils/path'
 import { normalizeEncodedSourceMapLike } from '../utils/sourcemap'
 import { pruneOwnedAssetFiles } from './asset/prune'
 import { createAssetSourcePlan } from './asset/sources'
+import { collectIndependentLocalAssets } from './outputFinalizer/independent'
 import { emitAlipayGenericPlaceholderAssetsByBase, resolveWeappScopedSlotGenericPlaceholderBase } from './vue/transform/bundle/platform'
 import { injectNativeScopedSlotHostPropertiesInJs } from './vue/transform/injectNativeScopedSlotHostProperties'
 
@@ -419,11 +420,17 @@ function createAssetCollector(state: AssetPluginState): [Plugin, Plugin] {
       order: 'post',
       async handler(_options, bundle) {
         // 模板绑定先交给 bundler 发射；静态复制只接收没有被构建图消费的文件。
-        const pending = resolvePendingAssetFiles(deferredFiles, bundle as OutputBundle, () => this.getModuleIds(), state.resolvedConfig?.root)
+        const independent = state.buildTarget === 'app'
+          ? collectIndependentLocalAssets(ctx, state.resolvedConfig?.root ?? configService.cwd)
+          : undefined
+        const candidates = independent?.sources.size
+          ? deferredFiles.filter(file => !independent.sources.has(normalizePath(file)))
+          : deferredFiles
+        const pending = resolvePendingAssetFiles(candidates, bundle as OutputBundle, () => this.getModuleIds(), state.resolvedConfig?.root)
         await emitAssets(ctx, this, bundle as Record<string, any>, pending, 8)
         nextOwnedFiles = new Set([...earlyFiles, ...pending].map(file => configService.relativeOutputPath(file)))
         releasedFiles = [...committedOwnedFiles].filter(file => !nextOwnedFiles.has(file))
-        removedFiles = releasedFiles.filter(file => !bundle[file])
+        removedFiles = releasedFiles.filter(file => !bundle[file] && !independent?.outputNames.has(file))
       },
     },
 
