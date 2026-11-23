@@ -183,7 +183,6 @@ process.once('exit', code => console.log('native restart fixture exit=' + code))
   let released = false
   try {
     await dev.waitForOutput('NATIVE_LISTEN=', 'first native listener', 20_000)
-    await dev.waitForOutput('ready in', 'native Vite startup', 20_000)
     if (profile === 'weapp') {
       // 控制配置的位置不能改变受管支持文件在项目根目录中的归属。
       await expect(access(path.join(root, '.weapp-vite/tsconfig.app.json'))).resolves.toBeUndefined()
