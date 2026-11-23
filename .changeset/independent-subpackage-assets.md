@@ -10,3 +10,5 @@ fix(weapp-vite): 修复独立分包引用依赖包资源时的输出路径。
 同一张图片被 JS 导入与 WXML 静态引用时，若不再输出原始路径，WXML 会指向构建后的图片文件。
 
 识别 bundler 以相对路径记录的资源来源，避免 WXSS 图片同时输出命名文件和额外的源码路径副本。
+
+主包和普通分包仅在 WXML 静态引用的本地图片也遵循 `build.assetsDir` 与 `build.rolldownOptions.output.assetFileNames`，不再额外复制到源码相对路径。

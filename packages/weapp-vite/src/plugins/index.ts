@@ -111,9 +111,10 @@ export function vitePluginWeapp(
     groups.push(wevu(ctx))
   }
   const autoRoutesEnabled = resolveWeappAutoRoutesConfig(ctx.configService?.weappViteConfig?.autoRoutes).enabled
+  const assetPlugins = subPackageMeta ? undefined : asset(ctx)
 
-  if (!subPackageMeta) {
-    groups.push(asset(ctx))
+  if (assetPlugins) {
+    groups.push([assetPlugins[0]])
     if (autoRoutesEnabled && !libModeEnabled) {
       groups.push(autoRoutes(ctx))
     }
@@ -134,6 +135,9 @@ export function vitePluginWeapp(
     groups.push([createProjectConfigDirectoryPlugin(ctx), createAppBuilderPlugin(ctx), createWorkerOutputPlugin(ctx), createPluginProjectOutputPlugin(ctx)])
   }
   groups.push([createOutputFinalizerPlugin(ctx, subPackageMeta)])
+  if (assetPlugins) {
+    groups.push([assetPlugins[1]])
+  }
   if (tailwindcssPlugins.length > 1) {
     groups.push([tailwindcssPlugins[1]!])
   }

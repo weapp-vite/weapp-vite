@@ -372,14 +372,18 @@ async function emitAssets(
   )
 }
 
-function createAssetCollector(state: AssetPluginState): Plugin {
+function createAssetCollector(state: AssetPluginState): [Plugin, Plugin] {
   const { ctx } = state
   const { configService } = ctx
   let committedOwnedFiles = new Set<string>()
   let nextOwnedFiles = new Set<string>()
+  let releasedFiles: string[] = []
   let removedFiles: string[] = []
 
-  return {
+  let earlyFiles: string[] = []
+  let deferredFiles: string[] = []
+
+  return [{
     name: 'weapp-vite:asset',
     enforce: 'post',
 
@@ -399,10 +403,28 @@ function createAssetCollector(state: AssetPluginState): Plugin {
     async generateBundle(_options, bundle) {
       patchScopedSlotHostAssetsInBundle(ctx, this, bundle as Record<string, any>)
       const files = await state.pendingAssets
-      const pending = resolvePendingAssetFiles(files, bundle as OutputBundle, () => this.getModuleIds(), state.resolvedConfig?.root)
-      await emitAssets(ctx, this, bundle as Record<string, any>, pending, 8)
-      nextOwnedFiles = new Set(pending.map(file => configService.relativeOutputPath(file)))
-      removedFiles = [...committedOwnedFiles].filter(file => !nextOwnedFiles.has(file) && !bundle[file])
+      deferredFiles = []
+      earlyFiles = []
+      for (const file of files ?? []) {
+        const target = state.resolvedConfig?.assetsInclude(file) ? deferredFiles : earlyFiles
+        target.push(file)
+      }
+      earlyFiles = resolvePendingAssetFiles(earlyFiles, bundle as OutputBundle, () => this.getModuleIds(), state.resolvedConfig?.root)
+      await emitAssets(ctx, this, bundle as Record<string, any>, earlyFiles, 8)
+    },
+  }, {
+    name: 'weapp-vite:asset-copy',
+    enforce: 'post',
+    generateBundle: {
+      order: 'post',
+      async handler(_options, bundle) {
+        // 模板绑定先交给 bundler 发射；静态复制只接收没有被构建图消费的文件。
+        const pending = resolvePendingAssetFiles(deferredFiles, bundle as OutputBundle, () => this.getModuleIds(), state.resolvedConfig?.root)
+        await emitAssets(ctx, this, bundle as Record<string, any>, pending, 8)
+        nextOwnedFiles = new Set([...earlyFiles, ...pending].map(file => configService.relativeOutputPath(file)))
+        releasedFiles = [...committedOwnedFiles].filter(file => !nextOwnedFiles.has(file))
+        removedFiles = releasedFiles.filter(file => !bundle[file])
+      },
     },
 
     async writeBundle() {
@@ -410,12 +432,15 @@ function createAssetCollector(state: AssetPluginState): Plugin {
         return
       }
       await pruneOwnedAssetFiles(path.resolve(state.resolvedConfig.root, state.resolvedConfig.build.outDir), removedFiles)
+      for (const file of releasedFiles) {
+        ctx.runtimeState.asset.emittedBuffer.delete(file)
+      }
       committedOwnedFiles = nextOwnedFiles
     },
-  }
+  }]
 }
 
-export function asset(ctx: CompilerContext): Plugin[] {
+export function asset(ctx: CompilerContext): [Plugin, Plugin] {
   const state: AssetPluginState = { ctx, buildTarget: ctx.currentBuildTarget ?? 'app' }
-  return [createAssetCollector(state)]
+  return createAssetCollector(state)
 }

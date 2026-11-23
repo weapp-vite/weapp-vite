@@ -3,6 +3,7 @@ import type { EmittedAsset, OutputBundle } from 'rolldown'
 /** 在同一内存视图完成资源规范化与去重，再交还 bundler 发布。 */
 export function createOutputAssetTransaction(bundle: OutputBundle) {
   const normalized = { ...bundle }
+  const originalNames = Object.keys(bundle)
   const staged = new Map<string, EmittedAsset>()
   const stage = (asset: EmittedAsset) => {
     if (!asset.fileName || asset.source === undefined) {
@@ -18,7 +19,7 @@ export function createOutputAssetTransaction(bundle: OutputBundle) {
     } as OutputBundle[string]
   }
   const publish = (emit: (asset: EmittedAsset) => void) => {
-    for (const fileName of Object.keys(bundle)) {
+    for (const fileName of originalNames) {
       if (!normalized[fileName]) {
         delete bundle[fileName]
       }

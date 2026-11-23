@@ -5,6 +5,63 @@ import { expect, it } from 'vitest'
 import { weapp } from '../../vite'
 import { createSubpackageOutputFixture } from './nativeFixture'
 
+it.each(['assetsDir', 'assetFileNames (string)', 'assetFileNames (function)'] as const)('uses %s for images referenced only in WXML', async (option) => {
+  const fixture = await createSubpackageOutputFixture()
+  try {
+    const [mainRoute, featureRoute] = fixture.routes
+    for (const route of [mainRoute, featureRoute]) {
+      await writeFile(path.join(fixture.root, 'src', `${route}.js`), 'Page({})')
+      await writeFile(path.join(fixture.root, 'src', `${route}.wxss`), '')
+    }
+    await mkdir(path.join(fixture.root, 'public'))
+    await writeFile(path.join(fixture.root, 'public/icon.svg'), '<svg/>')
+    await writeFile(path.join(fixture.root, 'src/main.svg'), '<svg viewBox="0 0 1 1"/>')
+    await writeFile(path.join(fixture.root, 'src', `${mainRoute}.wxml`), '<image src="/main.svg"/>')
+    await writeFile(path.join(fixture.root, 'src', `${featureRoute}.wxml`), [
+      '<image src="../../image.png?version=1#icon"/>',
+      '<image src="/icon.svg"/>',
+      '<image src="data:image/svg+xml,%3Csvg/%3E"/>',
+      '<image src="//example.test/image.png"/>',
+      '<image src="/packages/feature/image.png"/>',
+    ].join('\n'))
+    const template = '[subpackage]/custom/[name][extname]'
+    await build({
+      root: fixture.root,
+      configFile: false,
+      logLevel: 'silent',
+      plugins: [weapp()],
+      weapp: { srcRoot: 'src', vue: { enable: false }, autoRoutes: false, autoImport: false, autoImportComponents: false, npm: { enable: false } },
+      build: option === 'assetsDir'
+        ? { assetsDir: '[subpackage]/assets' }
+        : { assetsDir: 'ignored', rolldownOptions: { output: { assetFileNames: option.endsWith('(function)') ? () => template : template } } },
+    })
+
+    const dist = path.join(fixture.root, 'dist')
+    const files = (await readdir(dist, { recursive: true })).map(file => path.normalize(file))
+    const emitted = option === 'assetsDir'
+      ? files.find(file => /^packages\/feature\/assets\/image-[^/]+\.png$/.test(file))
+      : 'packages/feature/custom/image.png'
+    expect(emitted).toBeDefined()
+    expect(files).toContain(emitted)
+    expect(files).not.toContain('packages/feature/image.png')
+    const wxml = await readFile(path.join(dist, `${featureRoute}.wxml`), 'utf8')
+    expect(wxml).toContain(`src="/${emitted}?version=1#icon"`)
+    expect(wxml).toContain(`src="/${emitted}"`)
+    expect(wxml).toContain('src="/icon.svg"')
+    expect(wxml).toContain('src="data:image/svg+xml,%3Csvg/%3E"')
+    expect(wxml).toContain('src="//example.test/image.png"')
+    expect(await readFile(path.join(dist, 'icon.svg'), 'utf8')).toBe('<svg/>')
+    const mainImage = option === 'assetsDir' ? files.find(file => /^assets\/main-[^/]+\.svg$/.test(file)) : 'custom/main.svg'
+    expect(mainImage).toBeDefined()
+    expect(files).toContain(mainImage)
+    expect(files).not.toContain('main.svg')
+    expect(await readFile(path.join(dist, `${mainRoute}.wxml`), 'utf8')).toContain(`src="/${mainImage}"`)
+  }
+  finally {
+    await fixture.close()
+  }
+})
+
 it('rejects inaccessible physical assets in a native host and preserves public output references', async () => {
   const fixture = await createSubpackageOutputFixture()
   try {
@@ -100,7 +157,6 @@ it.each(['script', 'style'])('keeps native image references valid when a local i
       '<image src="../../image.png?version=1#icon"/>',
       '<image src="{{image}}"/>',
       '<image src="https://example.test/image.png"/>',
-      '<image src="../../copied.png"/>',
     ].join('\n'))
     await copyFile(path.join(fixture.root, 'src/packages/feature/image.png'), path.join(fixture.root, 'src/packages/feature/copied.png'))
     await build({
@@ -122,7 +178,6 @@ it.each(['script', 'style'])('keeps native image references valid when a local i
     expect(wxml).toContain(`src="/${emitted}?version=1#icon"`)
     expect(wxml).toContain('src="{{image}}"')
     expect(wxml).toContain('src="https://example.test/image.png"')
-    expect(wxml).toContain('src="../../copied.png"')
     if (kind === 'style') {
       expect(await readFile(path.join(dist, `${featureRoute}.wxss`), 'utf8')).toContain(`/${emitted}`)
     }

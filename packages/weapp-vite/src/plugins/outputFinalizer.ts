@@ -1,5 +1,5 @@
 import type { EmittedAsset, OutputBundle } from 'rolldown'
-import type { Plugin } from 'vite'
+import type { Plugin, ResolvedConfig } from 'vite'
 import type { CompilerContext } from '../context'
 import type { SubPackageMetaValue } from '../types'
 import type { RewriteWevuInternalRuntimeImportsOptions } from './core/helpers'
@@ -190,6 +190,7 @@ export async function normalizeTemplateAssets(
 
 export function createOutputFinalizerPlugin(ctx: CompilerContext, subPackageMeta?: SubPackageMetaValue): Plugin {
   let preserveCompleteBundle = false
+  let imageNaming: Pick<ResolvedConfig, 'publicDir' | 'assetsInclude'> | undefined
   let unobserve: (() => Promise<void>) | undefined
   const wevuRuntimeRewriteOptions: RewriteWevuInternalRuntimeImportsOptions = {
     get runtimeFileName() {
@@ -242,6 +243,11 @@ export function createOutputFinalizerPlugin(ctx: CompilerContext, subPackageMeta
     configResolved(config) {
       // 原生引擎发布完整模块注册图；classic 按源事件裁剪会破坏其重载输出。
       preserveCompleteBundle = config.experimental?.bundledDev === true
+      const output = config.build.rolldownOptions.output
+      const hasAssetFileNames = (Array.isArray(output) ? output : [output]).some(item => item?.assetFileNames !== undefined)
+      if (!subPackageMeta && !config.build.lib && (config.build.assetsDir !== '.' || hasAssetFileNames)) {
+        imageNaming = config
+      }
     },
     generateBundle: {
       order: 'post',
@@ -283,6 +289,13 @@ export function createOutputFinalizerPlugin(ctx: CompilerContext, subPackageMeta
             ? createTemplateImageRewriter(outputBundle, ctx.configService.cwd, ctx.configService.absoluteSrcRoot, {
                 roots: () => ctx.scanService.subPackageMap.keys(),
                 independentRoot: subPackageMeta?.subPackage.independent ? subPackageMeta.subPackage.root : undefined,
+              }, imageNaming && {
+                publicDir: imageNaming.publicDir,
+                assetsInclude: imageNaming.assetsInclude,
+                emit: (asset) => {
+                  this.addWatchFile(asset.originalFileName)
+                  return this.getFileName(this.emitFile(asset))
+                },
               })
             : undefined,
         })

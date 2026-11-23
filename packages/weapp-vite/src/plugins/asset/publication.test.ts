@@ -85,3 +85,56 @@ it('keeps compiled outputs authoritative over public files across partial native
     await rm(root, { recursive: true, force: true })
   }
 })
+
+it('restores a copied image when the bundler no longer emits that source', async () => {
+  const root = await mkdtemp(path.join(os.tmpdir(), 'weapp-copy-handoff-'))
+  const src = path.join(root, 'src')
+  const outDir = path.join(root, 'dist')
+  const image = path.join(src, 'icon.svg')
+  const content = '<svg viewBox="0 0 1 1"/>'
+  const copied = path.join(outDir, 'icon.svg')
+  const ctx = {
+    runtimeState: createRuntimeState(),
+    configService: {
+      cwd: root,
+      isDev: true,
+      absoluteSrcRoot: src,
+      relativeOutputPath: (file: string) => path.relative(src, file).replaceAll('\\', '/'),
+    },
+  } as unknown as CompilerContext
+  const [collector, copy] = asset(ctx)
+  let managed = false
+  const run = () => build({
+    root,
+    configFile: false,
+    logLevel: 'silent',
+    plugins: [collector, {
+      name: 'fixture:image-handoff',
+      generateBundle: {
+        order: 'post',
+        handler() {
+          if (managed) {
+            this.emitFile({ type: 'asset', name: 'icon.svg', originalFileName: image, source: content })
+          }
+        },
+      },
+    }, copy],
+    build: { outDir, emptyOutDir: false, rolldownOptions: { input: path.join(src, 'entry.js') } },
+  })
+  try {
+    await mkdir(src)
+    await writeFile(path.join(src, 'entry.js'), 'globalThis.ready = true')
+    await writeFile(image, content)
+    await run()
+    expect(await readFile(copied, 'utf8')).toBe(content)
+    managed = true
+    await run()
+    await expect(readFile(copied)).rejects.toMatchObject({ code: 'ENOENT' })
+    managed = false
+    await run()
+    expect(await readFile(copied, 'utf8')).toBe(content)
+  }
+  finally {
+    await rm(root, { recursive: true, force: true })
+  }
+})

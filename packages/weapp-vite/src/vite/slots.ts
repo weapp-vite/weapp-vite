@@ -45,6 +45,7 @@ const descriptors: Array<[string, Plugin['enforce']?]> = [
   ['weapp-vite:worker-output'],
   ['weapp-vite:plugin-project-output'],
   ['weapp-vite:output-finalizer', 'post'],
+  ['weapp-vite:asset-copy', 'post'],
   ['weapp-vite:tailwindcss:output', 'post'],
   ['weapp-vite:compiler:output', 'post'],
   ['weapp-vite:lib-dts', 'post'],
