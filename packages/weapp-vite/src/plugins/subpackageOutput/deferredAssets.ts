@@ -84,7 +84,7 @@ export function createDeferredAssets(context: SubpackageNamingContext, templates
     configure(config: ResolvedConfig) {
       const output = config.build.rolldownOptions.output
       const outputs = Array.isArray(output) ? output : [output]
-      if (config.command !== 'build' || config.build.watch || config.build.lib || config.build.ssr
+      if (config.command !== 'build' || config.build.lib || config.build.ssr
         || (!hasSubpackagePlaceholder(config.build.assetsDir)
           && !outputs.some(item => hasSubpackagePlaceholder(item?.assetFileNames) || typeof item?.assetFileNames === 'function'))) {
         return
