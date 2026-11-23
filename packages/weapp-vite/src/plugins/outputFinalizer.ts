@@ -304,7 +304,7 @@ export function createOutputFinalizerPlugin(
               }, imageNaming && {
                 publicDir: imageNaming.publicDir,
                 assetsInclude: imageNaming.assetsInclude,
-                useConsumerPackages: Boolean(templateAssetPackages && !subPackageMeta && !ctx.configService.isDev),
+                useConsumerPackages: Boolean(templateAssetPackages && !subPackageMeta && !partial),
                 onRewrite: (source, target) => {
                   if (rewrittenTemplateImageSources) {
                     const sources = rewrittenTemplateImageSources.get(target) ?? new Set<string>()

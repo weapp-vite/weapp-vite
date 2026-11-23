@@ -98,7 +98,7 @@ export function vitePluginWeapp(
   const reactEnabled = isReactEnabled(ctx)
   const vueRuntimeEnabled = vueEnabled && (!reactEnabled || hasWevuDependency(ctx))
   const runtimeProvider = resolveRuntimeProvider('miniprogram', vueRuntimeEnabled ? 'vue' : 'native')
-  const preparedTemplates = !ctx.configService.isDev && !subPackageMeta && !libModeEnabled
+  const preparedTemplates = !subPackageMeta && !libModeEnabled
     ? createPreparedTemplates(ctx)
     : undefined
   const templateAssetPackages = new Map<string, string>()

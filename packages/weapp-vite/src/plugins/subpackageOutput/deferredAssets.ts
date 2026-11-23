@@ -8,7 +8,7 @@ import { normalizeFsResolvedId } from '../../utils/resolvedId'
 import { findLocalImageReferences } from '../outputFinalizer/templateImages'
 import { outputPackage } from './access'
 import { resolveSourcePackage } from './ownership'
-import { hasSubpackagePlaceholder } from './template'
+import { mayUseSubpackageAssetNames } from './template'
 import { interceptAssetHooks } from './viteAssetHooks'
 
 interface PendingAsset {
@@ -96,11 +96,7 @@ export function createDeferredAssets(context: SubpackageNamingContext, templates
   return {
     packages,
     configure(config: ResolvedConfig) {
-      const output = config.build.rolldownOptions.output
-      const outputs = Array.isArray(output) ? output : [output]
-      if (config.command !== 'build' || config.build.lib || config.build.ssr
-        || (!hasSubpackagePlaceholder(config.build.assetsDir)
-          && !outputs.some(item => hasSubpackagePlaceholder(item?.assetFileNames) || typeof item?.assetFileNames === 'function'))) {
+      if (config.command !== 'build' || !mayUseSubpackageAssetNames(config.build)) {
         return
       }
       root = config.root

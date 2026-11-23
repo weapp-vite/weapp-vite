@@ -1,7 +1,20 @@
+import type { BuildOptions } from 'vite'
+
 const placeholder = '[subpackage]'
 
 export function hasSubpackagePlaceholder(value: unknown): value is string {
   return typeof value === 'string' && value.includes(placeholder)
+}
+
+/** 命名函数可能按单个资源返回占位符，也需要完整消费者图。 */
+export function mayUseSubpackageAssetNames(build: BuildOptions | undefined) {
+  if (!build || build.lib || build.ssr) {
+    return false
+  }
+  const output = build.rolldownOptions?.output ?? build.rollupOptions?.output
+  const outputs = Array.isArray(output) ? output : [output]
+  return hasSubpackagePlaceholder(build.assetsDir)
+    || outputs.some(item => hasSubpackagePlaceholder(item?.assetFileNames) || typeof item?.assetFileNames === 'function')
 }
 
 export function expandSubpackageTemplate(template: string, resolveRoot: () => string) {
