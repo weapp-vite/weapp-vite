@@ -4,7 +4,7 @@ import path from 'pathe'
 import { build } from 'vite'
 import { expect, it } from 'vitest'
 import { weapp } from '../../vite'
-import { createSubpackageOutputFixture } from './nativeFixture'
+import { createSubpackageOutputFixture, readPageImage } from './nativeFixture'
 
 it.each([
   { name: 'only by subpackage JS', via: 'js', location: 'subpackage' },
@@ -12,6 +12,7 @@ it.each([
   { name: 'only by subpackage WXML', via: 'wxml', location: 'subpackage' },
   { name: 'only by independent subpackage WXML', via: 'wxml', location: 'subpackage', independent: true },
   { name: 'from main WXML and subpackage JS', via: 'js', location: 'main', mainTemplate: true },
+  { name: 'from main JS and subpackage JS', via: 'js', location: 'main', mainLogo: 'logo.png' },
   { name: 'from main JS and subpackage WXSS', via: 'wxss', location: 'main', mainLogo: 'logo.png' },
   { name: 'under separate paths with identical bytes', via: 'wxss', location: 'main', mainLogo: 'other/logo.png' },
   { name: 'with a Rolldown naming callback', via: 'js', location: 'subpackage', customNaming: true },
@@ -77,7 +78,12 @@ it.each([
     expect(logos).toEqual([expect.stringMatching(`^${directory}/logo-`)])
     expect(await readFile(path.join(dist, logos[0]!))).toEqual(await readFile(image))
     const featureOutput = await readFile(path.join(dist, `${featureRoute}.${via}`), 'utf8')
-    expect(featureOutput).toContain(`/${logos[0]}`)
+    if (via === 'js') {
+      expect(readPageImage(dist, featureRoute)).toBe(`/${logos[0]}`)
+    }
+    else {
+      expect(featureOutput).toContain(`/${logos[0]}`)
+    }
     if (via === 'wxml') {
       expect(featureOutput).toContain(`src="${outsideURL}"`)
       expect(files.some(file => /(?:^|\/)outside(?:-|\.)/.test(file))).toBe(false)
@@ -93,7 +99,7 @@ it.each([
     expect(JSON.stringify(manifest)).not.toContain('weapp-vite-asset-references')
     expect(files.some(file => file.startsWith('weapp-vite-asset-references'))).toBe(false)
     if ('mainLogo' in options) {
-      expect(await readFile(path.join(dist, `${mainRoute}.js`), 'utf8')).toContain(`/${logos[0]}`)
+      expect(readPageImage(dist, mainRoute)).toBe(`/${logos[0]}`)
     }
     if ('mainTemplate' in options) {
       expect(await readFile(path.join(dist, `${mainRoute}.wxml`), 'utf8')).toContain(`src="/${logos[0]}"`)

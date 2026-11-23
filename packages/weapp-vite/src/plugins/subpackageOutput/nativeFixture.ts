@@ -1,7 +1,34 @@
 import { Buffer } from 'node:buffer'
+import { readFileSync } from 'node:fs'
 import { mkdir, mkdtemp, realpath, rm, symlink, writeFile } from 'node:fs/promises'
 import os from 'node:os'
+import { runInNewContext } from 'node:vm'
 import path from 'pathe'
+
+/** 执行生成的页面和同步依赖，读取 Page 注册时的图片 URL。 */
+export function readPageImage(dist: string, route: string) {
+  let image: string | undefined
+  const modules = new Map<string, { exports: unknown }>()
+  function load(file: string) {
+    const existing = modules.get(file)
+    if (existing) {
+      return existing.exports
+    }
+    const module = { exports: {} }
+    modules.set(file, module)
+    runInNewContext(readFileSync(file, 'utf8'), {
+      module,
+      exports: module.exports,
+      require: (specifier: string) => load(path.resolve(path.dirname(file), specifier)),
+      Page: (config: { data: { image: string } }) => {
+        image = config.data.image
+      },
+    }, { filename: file })
+    return module.exports
+  }
+  load(path.join(dist, `${route}.js`))
+  return image
+}
 
 /** 创建同时从主包与普通分包消费同一物理资源的原生宿主回归项目。 */
 export async function createSubpackageOutputFixture() {

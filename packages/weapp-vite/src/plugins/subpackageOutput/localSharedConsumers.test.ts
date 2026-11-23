@@ -1,35 +1,41 @@
-import { readFileSync } from 'node:fs'
 import { copyFile, mkdir, readdir, readFile, symlink, writeFile } from 'node:fs/promises'
-import { runInNewContext } from 'node:vm'
 import path from 'pathe'
 import { build } from 'vite'
 import { expect, it } from 'vitest'
 import { weapp } from '../../vite'
-import { createSubpackageOutputFixture } from './nativeFixture'
+import { createSubpackageOutputFixture, readPageImage } from './nativeFixture'
 
-function readPageImage(dist: string, route: string) {
-  let image: string | undefined
-  const modules = new Map<string, { exports: unknown }>()
-  function load(file: string) {
-    const existing = modules.get(file)
-    if (existing) {
-      return existing.exports
+it('names exclusive main and subpackage images in separate configured directories', async () => {
+  const fixture = await createSubpackageOutputFixture()
+  try {
+    const [main, feature] = fixture.routes
+    const src = path.join(fixture.root, 'src')
+    await writeFile(path.join(src, 'main.svg'), '<svg xmlns="http://www.w3.org/2000/svg" width="1" height="1"/>')
+    await writeFile(path.join(src, `${main}.js`), 'import image from "../../main.svg"; Page({ data: { image } })')
+    await writeFile(path.join(src, `${main}.wxss`), '.page { background: url("../../main.svg") }')
+    await build({
+      root: fixture.root,
+      configFile: false,
+      logLevel: 'silent',
+      plugins: [weapp()],
+      weapp: { srcRoot: 'src', vue: { enable: false }, autoRoutes: false, autoImport: false, autoImportComponents: false, npm: { enable: false } },
+      build: { assetsDir: '[subpackage]/managed', assetsInlineLimit: 0 },
+    })
+    const dist = path.join(fixture.root, 'dist')
+    const files = (await readdir(dist, { recursive: true })).map(file => path.normalize(file))
+    const images = files.filter(file => /\.(?:png|svg)$/.test(file))
+    expect(images).toHaveLength(2)
+    for (const [route, expectedPath] of [[main, /^managed\/main-[^/]+\.svg$/], [feature, /^packages\/feature\/managed\/image-[^/]+\.png$/]] as const) {
+      const file = images.find(file => expectedPath.test(file))
+      expect(file).toBeDefined()
+      expect(readPageImage(dist, route)).toBe(`/${file}`)
+      expect(await readFile(path.join(dist, `${route}.wxss`), 'utf8')).toContain(`/${file}`)
     }
-    const module = { exports: {} }
-    modules.set(file, module)
-    runInNewContext(readFileSync(file, 'utf8'), {
-      module,
-      exports: module.exports,
-      require: (specifier: string) => load(path.resolve(path.dirname(file), specifier)),
-      Page: (config: { data: { image: string } }) => {
-        image = config.data.image
-      },
-    }, { filename: file })
-    return module.exports
   }
-  load(path.join(dist, `${route}.js`))
-  return image
-}
+  finally {
+    await fixture.close()
+  }
+})
 
 it.each([
   { name: 'main JS and subpackage JS/WXSS', mainConsumer: 'js' },

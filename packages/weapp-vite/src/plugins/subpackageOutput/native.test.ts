@@ -3,7 +3,7 @@ import path from 'pathe'
 import { build } from 'vite'
 import { expect, it } from 'vitest'
 import { weapp } from '../../vite'
-import { createSubpackageOutputFixture } from './nativeFixture'
+import { createSubpackageOutputFixture, readPageImage } from './nativeFixture'
 
 it.each([
   { extension: 'js', naming: 'assetsDir' },
@@ -176,6 +176,8 @@ it.each([
       }
       if (consumers === 'wxml') {
         await writeFile(path.join(fixture.root, 'src', `${route}.js`), 'Page({})')
+      }
+      if (consumers === 'wxml' || consumers === 'mixed') {
         await writeFile(path.join(fixture.root, 'src', `${route}.wxml`), '<image src="/packages/feature/image.png"/>')
       }
     }
@@ -201,26 +203,29 @@ it.each([
       .rejects
       .toThrow(new RegExp(`跨分包资源 "packages/feature/assets/image-[^/]+\\.png" 无法由 "${mainRoute}\\.${extension}" 访问`))
     await compile('assets')
-    const files = (await readdir(path.join(fixture.root, 'dist'), { recursive: true })).map(file => path.normalize(file))
+    const dist = path.join(fixture.root, 'dist')
+    const files = (await readdir(dist, { recursive: true })).map(file => path.normalize(file))
+    const images = files.filter(file => file.endsWith('.png'))
+    expect(images).toEqual([expect.stringMatching(/^assets\/image-[^/]+\.png$/)])
+    const [image] = images
     for (const route of fixture.routes) {
       for (const extension of ['js', 'json', 'wxml', 'wxss']) {
         expect(files).toContain(`${route}.${extension}`)
       }
-      if (consumers === 'wxml') {
-        const template = await readFile(path.join(fixture.root, 'dist', `${route}.wxml`), 'utf8')
-        const target = template.match(/src="\/([^"]+)"/)![1]!
-        expect(target).toMatch(/^assets\//)
-        expect(files).toContain(target)
+      if (consumers === 'js' || consumers === 'mixed') {
+        expect(readPageImage(dist, route)).toBe(`/${image}`)
       }
-      else if (consumers !== 'js') {
-        const css = await readFile(path.join(fixture.root, 'dist', `${route}.wxss`), 'utf8')
+      if (consumers === 'wxml' || consumers === 'mixed') {
+        const template = await readFile(path.join(dist, `${route}.wxml`), 'utf8')
+        expect(template).toContain(`src="/${image}"`)
+      }
+      if (consumers === 'wxss' || consumers === 'mixed') {
+        const css = await readFile(path.join(dist, `${route}.wxss`), 'utf8')
         const url = css.match(/url\(["']?([^"')]+)["']?\)/)![1]!
         const target = url.startsWith('/') ? url.slice(1) : path.normalize(path.join(path.dirname(route), url))
-        expect(target).toMatch(/^assets\//)
-        expect(files).toContain(target)
+        expect(target).toBe(image)
       }
     }
-    expect(files.filter(file => file.endsWith('.png'))).toEqual([expect.stringMatching(/^assets\/image-[^/]+\.png$/)])
   }
   finally {
     await fixture.close()
