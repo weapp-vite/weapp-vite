@@ -58,6 +58,8 @@ export default defineConfig({
 
 此能力只扩展命名，不改变动态导入模式、分块策略或宿主分包加载能力。
 
+独立分包单独构建。对于参与 `[subpackage]` 资产命名的图片、字体等资源，独立分包构建会将占位符展开为自己的分包 `root`，即使资源来自 `node_modules` 或公共源码。若主包也引用同一资源，两次构建各自生成可访问的文件。普通分包仍按来源归属命名。
+
 ## `weapp.styles` {#weapp-styles}
 
 - **类型**：`StyleConfigEntry | StyleConfigEntry[]`

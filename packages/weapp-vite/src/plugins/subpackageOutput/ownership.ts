@@ -72,6 +72,10 @@ export function resolveAssetPackage(asset: { originalFileNames: string[] }, cont
   if (roots.has(undefined)) {
     throw new Error('[weapp-vite] [subpackage] 资源来源为未知虚拟模块，无法确定归属。')
   }
+  // 独立分包单独构建，进入该产物图的资源由此分包持有，包括来自依赖或公共源码的资源。
+  if (context.independentRoot) {
+    return context.independentRoot
+  }
   // 同一资源已由 bundler 去重合并时保留公共产物，不为命名复制资源。
   return roots.size === 1 ? roots.values().next().value! : ''
 }
@@ -82,7 +86,7 @@ export function assertAssetPackageAccess(asset: { fileName: string, originalFile
     .filter(Boolean)
     .sort((left, right) => right.length - left.length)
     .find(root => asset.fileName.startsWith(`${root}/`))
-  if (destination && asset.originalFileNames.some(id => packageRoot(id, context) !== destination)) {
+  if (destination && destination !== context.independentRoot && asset.originalFileNames.some(id => packageRoot(id, context) !== destination)) {
     throw new Error(`[weapp-vite] [subpackage] 跨分包资源 "${asset.fileName}" 无法独立访问；请为共享资源设置不含占位符的主包 assetFileNames。`)
   }
 }
