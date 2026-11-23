@@ -186,7 +186,7 @@
   "dependencies": {
     "@babel/core": "catalog:",
     "@babel/plugin-transform-dynamic-import": "^8.0.1",
-    "@babel/plugin-transform-modules-commonjs": "^8.1.2",
+    "@babel/plugin-transform-modules-commonjs": "^8.1.3",
     "@babel/preset-env": "catalog:",
     "@babel/preset-typescript": "catalog:",
     "@jridgewell/remapping": "catalog:",
