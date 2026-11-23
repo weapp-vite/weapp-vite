@@ -23,6 +23,7 @@ import { preflight } from './preflight'
 import { createProjectConfigDirectoryPlugin } from './projectConfig/directory'
 import { createReactPlugin, isReactEnabled } from './react'
 import { createSubpackageOutputPlugin } from './subpackageOutput'
+import { collectTemplateConsumers } from './subpackageOutput/templateConsumers'
 import { createTailwindcssPlugin } from './tailwindcss'
 import { uniAppCompatibility } from './uniApp'
 import { vue } from './vue'
@@ -104,7 +105,7 @@ export function vitePluginWeapp(
       independentRoot: subPackageMeta?.subPackage.independent ? subPackageMeta.subPackage.root : undefined,
       roots: () => ctx.scanService.subPackageMap.keys(),
       templateAssetPackages,
-    }, !ctx.configService.isDev && !subPackageMeta && !libModeEnabled ? () => ctx.runtimeState.wxml.emittedCode : undefined)],
+    }, !ctx.configService.isDev && !subPackageMeta && !libModeEnabled ? plugin => collectTemplateConsumers(ctx, plugin) : undefined)],
     preflight(ctx),
     uniAppCompatibility(ctx),
     createReactPlugin(ctx),

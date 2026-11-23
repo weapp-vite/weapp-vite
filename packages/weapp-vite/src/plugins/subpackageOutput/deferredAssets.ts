@@ -17,6 +17,8 @@ interface PendingAsset {
   placeholder: string
 }
 
+export type TemplateConsumers = (plugin: PluginContext) => Iterable<[string, string]>
+
 function findEntryPackages(ctx: PluginContext, modules: Iterable<string>, entryPackage: (id: string) => string | undefined) {
   const queue = [...modules]
   const visited = new Set<string>()
@@ -43,7 +45,7 @@ function findEntryPackages(ctx: PluginContext, modules: Iterable<string>, entryP
 }
 
 /** 入口图完整后再选择 JS、样式和模板共同引用的资源的落位。 */
-export function createDeferredAssets(context: SubpackageNamingContext, templates: () => ReadonlyMap<string, string>) {
+export function createDeferredAssets(context: SubpackageNamingContext, templates: TemplateConsumers) {
   const pending = new Map<string, PendingAsset>()
   const consumersByReference = new Map<string, Set<string>>()
   const filenames = new Map<string, string>()
@@ -57,9 +59,9 @@ export function createDeferredAssets(context: SubpackageNamingContext, templates
     return path.resolve(root, normalizeFsResolvedId(id))
   }
 
-  async function collectTemplatePackages(keys: Map<string, string>, groups: Map<string, Set<string>>) {
+  async function collectTemplatePackages(plugin: PluginContext, keys: Map<string, string>, groups: Map<string, Set<string>>) {
     const referenced = new Map<string, { source: string, owners: Set<string> }>()
-    for (const [fileName, code] of templates()) {
+    for (const [fileName, code] of templates(plugin)) {
       let owner: string | undefined
       for (const { relative } of findLocalImageReferences(code, fileName)) {
         const source = sourcePath(path.join(context.srcRoot, relative))
@@ -166,7 +168,7 @@ export function createDeferredAssets(context: SubpackageNamingContext, templates
         }
         groups.set(key, owners)
       }
-      await collectTemplatePackages(assetKeys, groups)
+      await collectTemplatePackages(this, assetKeys, groups)
       for (const [source, key] of assetKeys) {
         const owners = groups.get(key)!
         packages.set(source, owners.size === 1 ? owners.values().next().value! : '')

@@ -1,5 +1,6 @@
 import type { OutputOptions } from 'rolldown'
 import type { Plugin } from 'vite'
+import type { TemplateConsumers } from './deferredAssets'
 import type { SubpackageNamingContext } from './ownership'
 import { assertBundleAssetAccess } from './access'
 import { createDeferredAssets } from './deferredAssets'
@@ -7,7 +8,7 @@ import { assertAssetPackageAccess, resolveAssetPackage, resolveChunkPackage } fr
 import { constrainIndependentAssetTemplate, expandSubpackageTemplate, hasSubpackagePlaceholder } from './template'
 
 /** 为占位符和独立分包适配原生命名，保留 bundler 的 hash、引用及写出所有权。 */
-export function createSubpackageOutputPlugin(context: SubpackageNamingContext, templates?: () => ReadonlyMap<string, string>): Plugin {
+export function createSubpackageOutputPlugin(context: SubpackageNamingContext, templates?: TemplateConsumers): Plugin {
   const deferred = templates && createDeferredAssets(context, templates)
   const wrapped = new WeakSet<object>()
   let usesAssetPlaceholder = false
