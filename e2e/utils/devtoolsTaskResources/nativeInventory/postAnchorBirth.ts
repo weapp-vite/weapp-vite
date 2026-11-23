@@ -55,13 +55,13 @@ export function postAnchorBirth(absolute: DarwinProcessAbsoluteEvidence | undefi
   return birth ?? null
 }
 
-/** 枚举仅允许凭据不同；所有逐行身份必须是同一活体，RSS 原始读取不得缺失。 */
+/** 枚举仅允许凭据不同；所有逐行身份必须是同一活体代际，RSS 原始读取不得缺失。 */
 export function completePostAnchorRow(row: NativeRow) {
   const { before, task, after, enumeratedIdentity, gaps } = row.entry
   return [before, after].every(read => read.result === 0 && read.errno === 0 && read.length > 0 && read.identity !== null)
     && before.identity?.pid === row.pid && !before.identity.zombie
     && sameNativeIdentity(enumeratedIdentity, before.identity)
-    && sameCredentials(before.identity, after.identity) && sameCredentials(before.identity, task.identity)
+    && sameNativeIdentity(before.identity, after.identity) && sameNativeIdentity(before.identity, task.identity)
     && task.count > 0 && task.errno === 0 && absoluteTicks(task.rssBytes) !== null
     && gaps.every(gap => gap === 'enumeration-identity-changed' || gap === 'image-changed')
 }

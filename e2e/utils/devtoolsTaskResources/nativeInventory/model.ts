@@ -37,11 +37,6 @@ export function sameNativeIdentity(first: DarwinProcessIdentity | null, second: 
     && first.zombie === second.zombie
 }
 
-/** 同帧相邻查询还必须保持凭据一致，不能沿用跨帧允许的凭据变化。 */
-function sameFrameIdentity(first: DarwinProcessIdentity | null, second: DarwinProcessIdentity | null) {
-  return first !== null && second !== null && sameDarwinIdentity(first, second)
-}
-
 function nativeTicks(value: string | null | undefined): bigint | null {
   if (typeof value !== 'string' || !/^(?:0|[1-9]\d*)$/.test(value)) {
     return null
@@ -102,6 +97,7 @@ export function completeNativeLiveRow(row: NativeRow) {
   return [before, after].every(read => read.result === 0 && read.length > 0 && read.errno === 0)
     && [pathBefore, pathAfter].every(read => read.count > 0 && read.errno === 0)
     && task.count > 0 && task.errno === 0 && row.rssBytes !== null
+    && sameDarwinIdentity(before.identity!, task.identity!) && sameDarwinIdentity(before.identity!, after.identity!)
     && row.imageSource === 'kernel-path' && row.images?.length === 1 && row.entry.gaps.length === 0
 }
 
@@ -126,41 +122,43 @@ export function nativeLocation(phase: NativePhase): ProcessInventoryLocation {
   return { round: phase === 'closure2' ? 3 : phase === 'closure1' ? 2 : 1, phase }
 }
 
-/** 映像证明只取同一行相邻内核调用；RSS 还必须绑定相同的精确身份。 */
+/** 映像与 RSS 绑定同一进程代际；外来归属另行验证凭据连续性。 */
 export function normalizeNativeFrame(wire: DarwinProcessFrame): NativeFrame {
   const rows = new Map<number, NativeRow>()
   for (const entry of wire.rows) {
     const before = entry.before.identity
     const positions = ['before', 'task', 'after'] as const
-    const changedPosition = positions.find(position => entry[position].identity !== null && !sameFrameIdentity(entry.enumeratedIdentity, entry[position].identity))
-    const enumerationIdentityChange = changedPosition ? { from: entry.enumeratedIdentity, to: entry[changedPosition].identity!, position: changedPosition } : null
+    const changedPosition = positions.find(position => entry[position].identity !== null && !sameDarwinIdentity(entry.enumeratedIdentity, entry[position].identity))
+    const enumerationIdentityChange = changedPosition
+      ? { from: entry.enumeratedIdentity, to: entry[changedPosition].identity!, position: changedPosition }
+      : null
     const after = entry.after.identity
     const canonical = before ?? after
-    const stable = sameFrameIdentity(before, after) && before?.zombie === false
+    const stable = sameNativeIdentity(before, after) && before?.zombie === false
     const firstPath = entry.pathBefore.executable
     const secondPath = entry.pathAfter.executable
     const imageChanged = validNativeImage(firstPath) && validNativeImage(secondPath) && firstPath !== secondPath
-    const taskStable = sameFrameIdentity(before, entry.task.identity)
-    const changedIdentity = canonical === null ? null : [entry.task.identity, before, after].find(identity => identity !== null && !sameFrameIdentity(canonical, identity)) ?? null
+    const taskStable = sameNativeIdentity(before, entry.task.identity)
+    const changedIdentity = canonical === null ? null : [entry.task.identity, before, after].find(identity => identity !== null && !sameNativeIdentity(canonical, identity)) ?? null
     const rss = entry.task.rssBytes === null ? null : Number(entry.task.rssBytes)
     rows.set(entry.pid, {
       pid: entry.pid,
       identity: canonical,
       finalIdentity: after,
-      rssBytes: !enumerationIdentityChange && stable && taskStable && rss !== null && Number.isSafeInteger(rss) && rss >= 0 ? rss : null,
-      images: !enumerationIdentityChange && stable && validNativeImage(firstPath) && firstPath === secondPath ? [firstPath] : null,
-      imageSource: !enumerationIdentityChange && stable && validNativeImage(firstPath) && firstPath === secondPath ? 'kernel-path' : 'not-verified',
+      rssBytes: stable && taskStable && rss !== null && Number.isSafeInteger(rss) && rss >= 0 ? rss : null,
+      images: stable && validNativeImage(firstPath) && firstPath === secondPath ? [firstPath] : null,
+      imageSource: stable && validNativeImage(firstPath) && firstPath === secondPath ? 'kernel-path' : 'not-verified',
       entry,
-      identityChanged: changedIdentity !== null || enumerationIdentityChange !== null,
+      identityChanged: changedIdentity !== null,
       changedIdentity,
       enumerationIdentityChange,
       imageChanged,
     })
   }
   const owned = rows.get(wire.ownedHelper.pid)
-  if (!owned || owned.identityChanged || owned.imageChanged || !sameFrameIdentity(owned.identity, wire.ownedHelper.identity)
-    || !sameFrameIdentity(owned.finalIdentity, wire.ownedHelper.identity)
-    || !sameFrameIdentity(owned.entry.enumeratedIdentity, wire.ownedHelper.identity) || !sameFrameIdentity(owned.entry.task.identity, wire.ownedHelper.identity)
+  if (!owned || owned.identityChanged || owned.imageChanged || !sameDarwinIdentity(owned.identity!, wire.ownedHelper.identity)
+    || !sameDarwinIdentity(owned.finalIdentity!, wire.ownedHelper.identity)
+    || !sameDarwinIdentity(owned.entry.enumeratedIdentity, wire.ownedHelper.identity) || !sameDarwinIdentity(owned.entry.task.identity!, wire.ownedHelper.identity)
     || owned.entry.pathBefore.executable !== wire.ownedHelper.executable || owned.entry.pathAfter.executable !== wire.ownedHelper.executable) {
     throw new Error('Resource sampling cannot verify its exact owned native inspector.')
   }

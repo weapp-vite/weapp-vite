@@ -9,7 +9,8 @@ import { absoluteTicks, absoluteWithin, completePostAnchorRow, postAnchorBirth, 
 function completeAnchorForeignBracket(row: NativeRow, installationRoot: string) {
   const { before, enumeratedIdentity, gaps, pathBefore, pathAfter } = row.entry
   const credentialsChanged = enumeratedIdentity.uid !== before.identity?.uid
-  return completePostAnchorRow(row) && foreignPaths(row.entry, installationRoot)
+  return completePostAnchorRow(row) && sameCredentials(before.identity, row.entry.task.identity)
+    && sameCredentials(before.identity, row.entry.after.identity) && foreignPaths(row.entry, installationRoot)
     && pathBefore.executable === pathAfter.executable
     && (credentialsChanged ? gaps.length === 1 && gaps[0] === 'enumeration-identity-changed' : gaps.length === 0)
 }

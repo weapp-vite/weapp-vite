@@ -13,7 +13,7 @@ afterEach(() => vi.restoreAllMocks())
 
 function changeUid(row: DarwinProcessEntry, field: 'before' | 'task' | 'after') {
   row[field].identity!.uid++
-  row.gaps = field === 'task' ? ['rss-identity-mismatch'] : ['identity-changed', 'rss-identity-mismatch']
+  row.gaps = field === 'before' ? ['enumeration-identity-changed'] : []
   return row
 }
 
@@ -25,31 +25,27 @@ function summarize(frames: DarwinProcessFrame[]) {
   return summarizeNativeInventory({ inventory, installationRoot: fixtureInstallation, samplingStartedAt: new Date(0).toISOString(), deadline: 10_000, textProofs: [], textObservations: [] })
 }
 
-describe('native same-frame credential identity', () => {
-  it.each(uidCases)('retains PID $pid $field UID drift without assigning its RSS', ({ pid, field }) => {
+describe('native process generation and credentials are observed separately', () => {
+  it.each(uidCases)('retains PID $pid $field UID drift while assigning RSS to its stable generation', ({ pid, field }) => {
     const changed = changeUid(entry(pid), field)
     const normalized = normalizeNativeFrame(frame('anchor', [changed])).rows.get(pid)!
 
-    expect(normalized.identityChanged).toBe(true)
-    expect(normalized.changedIdentity).not.toBeNull()
-    expect(normalized.rssBytes).toBeNull()
-    if (field !== 'task') {
-      expect(normalized.images).toBeNull()
-      expect(normalized.imageSource).toBe('not-verified')
-    }
-    expect(normalized.entry.gaps).toEqual(field === 'task' ? ['rss-identity-mismatch'] : ['identity-changed', 'rss-identity-mismatch'])
+    expect(normalized).toMatchObject({ identityChanged: false, changedIdentity: null, rssBytes: 1000, imageSource: 'kernel-path' })
+    expect(normalized.images).toHaveLength(1)
+    expect(normalized.enumerationIdentityChange).toMatchObject({ position: field })
+    expect(normalized.entry.gaps).toEqual(field === 'before' ? ['enumeration-identity-changed'] : [])
   })
 
-  it.each(uidCases)('keeps the installation total unavailable after PID $pid $field UID drift', ({ pid, field }) => {
+  it.each(uidCases)('keeps the installation total complete after PID $pid $field UID drift', ({ pid, field }) => {
     const frames = phases.map(phase => frame(phase, [11, 22].map(candidate => phase === 'anchor' && candidate === pid ? changeUid(entry(candidate), field) : entry(candidate))))
     const report = summarize(frames)
 
-    expect(report.installationRssBytes.status).toBe('unavailable')
+    expect(report.installationRssBytes.status).toBe(pid === 22 && field === 'before' ? 'unavailable' : 'observed')
     expect(report.identityChangedProcesses).toEqual([expect.objectContaining({ pid })])
-    expect(report.processes.some(process => process.pid === pid)).toBe(false)
-    expect(report.verifiedMemberRssBytes).toBe(pid === 11 ? 0 : 1000)
+    expect(report.processes.some(process => process.pid === pid)).toBe(pid === 11)
+    expect(report.verifiedMemberRssBytes).toBe(1000)
     expect(report.nativeFrames?.find(value => value.phase === 'anchor')?.rows.find(row => row.pid === pid)?.gaps)
-      .toEqual(field === 'task' ? ['rss-identity-mismatch'] : ['identity-changed', 'rss-identity-mismatch'])
+      .toEqual(field === 'before' ? ['enumeration-identity-changed'] : [])
   })
 
   it.each(['before', 'task', 'after', 'claimed-owner'] as const)('rejects an owned helper with a different %s UID', (field) => {

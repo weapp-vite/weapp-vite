@@ -13,13 +13,13 @@ export function verifiedPostAnchorForeignProcesses(inventory: NativeInventory, i
   const anchorEnd = absoluteTicks(frames[1]!.wire.absolute!.endedAtTicks)!
   const proofs: VerifiedPostAnchorForeignProcess[] = []
   for (const [pid, entry] of tracked) {
-    if ((entry.firstPhase !== 'closure1' && entry.firstPhase !== 'closure2') || entry.absent || !entry.changed
+    const change = inventory.changes.get(pid)
+    if ((entry.firstPhase !== 'closure1' && entry.firstPhase !== 'closure2') || entry.absent || (!entry.changed && !change)
       || selectedSeen.has(pid) || entry.textImageEvidenceConflict || entry.closureIdentityUnverifiable
       || !entry.causes.length || entry.causes.some(cause => !['enumeration-identity-changed', 'identity-changed', 'image-changed'].includes(cause.reason))
       || frames.slice(0, 2).some(frame => frame.rows.has(pid))) {
       continue
     }
-    const change = inventory.changes.get(pid)
     if (change && (change.reasons.length !== 1 || change.reasons[0] !== 'credentials-changed'
       || change.boundary?.from.position !== 'enumeration' || change.boundary.from.phase !== change.boundary.to.phase)) {
       continue
@@ -31,7 +31,9 @@ export function verifiedPostAnchorForeignProcesses(inventory: NativeInventory, i
     let previousImage: string | null = null
     let valid = Boolean(first)
     for (const [index, row] of rows.entries()) {
-      if (!row || !first || !completePostAnchorRow(row) || !sameCredentials(first.identity, row.identity)
+      const finalRow = index === rows.length - 1
+      if (!row || !first || !completePostAnchorRow(row) || !sameCredentials(row.entry.before.identity, row.entry.after.identity)
+        || (finalRow && !sameCredentials(row.entry.before.identity, row.entry.task.identity)) || !sameCredentials(first.identity, row.identity)
         || !foreignPaths(row.entry, installationRoot) || !absoluteWithin(row.entry.absolute, frames[firstIndex + index]!.wire.absolute)
         || (previousImage !== null && previousImage !== row.entry.pathBefore.executable)) {
         valid = false

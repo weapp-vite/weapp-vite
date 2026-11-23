@@ -59,15 +59,47 @@ describe('enumeration identity cannot be joined to another native row identity',
     expect(rows).toEqual(original)
   })
 
-  it.each(['before', 'task', 'after'] as const)('keeps same-frame %s credentials strict and rejects an unverified helper enumeration', (position) => {
+  it.each(['before', 'task', 'after'] as const)('keeps same-frame %s credentials separate from process generation', (position) => {
     const changed = entry(22)
     changed[position].identity!.uid++
     const row = normalizeNativeFrame(frame('anchor', [entry(11), changed])).rows.get(22)!
-    expect(row).toMatchObject({ identityChanged: true, rssBytes: null, images: null, imageSource: 'not-verified' })
-    expect(row.enumerationIdentityChange).toMatchObject({ position, from: { uid: 501 }, to: { uid: 502 } })
+    expect(row).toMatchObject({ identityChanged: false, rssBytes: 1000, imageSource: 'kernel-path' })
+    expect(row.images).toHaveLength(1)
+    expect(row.enumerationIdentityChange).toMatchObject({ from: expect.objectContaining({ uid: 501 }), to: expect.objectContaining({ uid: 502 }), position })
     const helper = frame('anchor')
     helper.ownedHelper.row.enumeratedIdentity.uid++
     expect(() => normalizeNativeFrame(helper)).toThrow(/owned native inspector/)
+  })
+
+  it('closes a new foreign process whose credentials change during one RSS observation', () => {
+    const rows = phases.map((phase) => {
+      const values = [entry(11)]
+      if (phase === 'closure1' || phase === 'closure2') {
+        const foreign = entry(22)
+        if (phase === 'closure1') {
+          foreign.task.identity!.uid++
+        }
+        values.push(foreign)
+      }
+      return values
+    })
+    const report = summarize(rows)
+
+    expect(report).toMatchObject({
+      installationRssBytes: { status: 'observed', value: 1000 },
+      closureOwnership: { status: 'observed', value: 'verified' },
+      unclassifiedProcessCount: 0,
+      uninspectedNewProcessCount: 0,
+      verifiedNewForeignProcessCount: 1,
+      newProcesses: [{ pid: 22, classification: 'verified-foreign' }],
+      identityChangedProcesses: [{ pid: 22, reasons: ['credentials-changed'] }],
+      newProcesses: [{ pid: 22, classification: 'verified-foreign' }],
+    })
+    expect(report.nativeFrames![2]!.rows.find(row => row.pid === 22)).toMatchObject({
+      credentials: { mainStable: false, enumerationMatchesMain: true },
+      rss: { bytes: '1000' },
+      gaps: [],
+    })
   })
 
   it('keeps an enumeration-only anchor PID unclassified without filling its ancestry, queries or RSS', () => {

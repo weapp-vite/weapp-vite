@@ -13,7 +13,11 @@ export function trackEnumerationIdentity(
   cause: (entry: TrackedNativeProcess, reason: ProcessIdentityGapCause['reason'], phase: NativePhase) => void,
 ) {
   function record(from: DarwinProcessIdentity, to: DarwinProcessIdentity, boundary: NonNullable<ProcessIdentityChangeObservation['boundary']>, credentials: boolean) {
-    entry.changed = true
+    const generationChanged = !sameNativeIdentity(from, to)
+    const credentialBoundary = credentials && from.uid !== to.uid
+    if (generationChanged || (credentialBoundary && boundary.to.position === 'before' && entry.classification !== 'installation-image')) {
+      entry.changed = true
+    }
     cause(entry, 'enumeration-identity-changed', phase)
     if (changes.has(row.pid)) {
       return

@@ -1,10 +1,15 @@
 import { describe, expect, it, vi } from 'vitest'
-import { abortable } from '../src/fetch/abort'
+import { abortable, requestAbortReason } from '../src/fetch/abort'
 import { resolveRequestMeta } from '../src/fetch/meta'
 import { RequestPolyfill } from '../src/http'
 import { getRequestBodyValue } from '../src/http/request'
 
 describe('fetch body preparation', () => {
+  it('creates the default AbortError when no reason is present', () => {
+    const reason = requestAbortReason({ reason: undefined } as AbortSignal)
+    expect(reason).toMatchObject({ name: 'AbortError', message: 'The operation was aborted.' })
+  })
+
   it('honors an already aborted signal and still observes a rejected background operation', async () => {
     const controller = new AbortController()
     const reason = new Error('cancelled before preparation')

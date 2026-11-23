@@ -40,6 +40,16 @@ describe('Darwin native frame protocol', () => {
     }
     expect(value.ownedHelper.identity.status).toBe(fixtureReady.identity.status)
   })
+  it('binds RSS to the same process generation when credentials change during the task read', () => {
+    const frame = fixtureFrame()
+    frame.rows[1]!.task.identity!.uid++
+
+    const row = parse(frame).rows[1]!
+
+    expect(row.gaps).toEqual([])
+    expect(row.task.rssBytes).toBe('200')
+    expect(row.task.identity!.uid).not.toBe(row.before.identity!.uid)
+  })
   it('keeps zombie transitions distinct from ordinary status changes', () => {
     const frame = fixtureFrame()
     frame.rows[1]!.after.identity!.status = fixtureReady.abi.zombieStatus

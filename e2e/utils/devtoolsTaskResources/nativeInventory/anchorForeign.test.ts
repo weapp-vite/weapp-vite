@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { anchorForeignConfirmation, anchorForeignFrames, anchorForeignRows, summarizeAnchorForeignFrames } from './anchorForeignFixture'
 import { entry, fixtureForeign, fixtureSelected } from './fixture'
 import { normalizeNativeFrame } from './model'
+import { postAnchorBootstrap } from './postAnchorFixture'
 
 beforeEach(() => vi.spyOn(Date, 'now').mockReturnValue(0))
 afterEach(() => vi.restoreAllMocks())
@@ -11,7 +12,11 @@ describe('original anchor foreign brackets after complete preparation', () => {
     const frames = anchorForeignFrames(parentPid)
     const original = structuredClone(frames)
     const normalized = normalizeNativeFrame(frames[1]!).rows.get(22)!
-    expect(normalized).toMatchObject({ images: null, rssBytes: null, identityChanged: true })
+    expect(normalized).toMatchObject({
+      images: [postAnchorBootstrap],
+      rssBytes: 99999,
+      identityChanged: false,
+    })
     const report = summarizeAnchorForeignFrames(frames)
     expect(report).toMatchObject({
       installationRssBytes: { status: 'observed', value: 1000 },

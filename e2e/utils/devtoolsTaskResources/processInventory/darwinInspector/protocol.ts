@@ -17,8 +17,11 @@ function identity(value: unknown, abi: DarwinInspectorAbi): DarwinProcessIdentit
   }
   return { pid: integer(raw.pid, 1, 0x7FFFFFFF), parentPid: integer(raw.parentPid, 0, 0x7FFFFFFF), uid: integer(raw.uid, 0, 0xFFFFFFFF), status, startedSeconds: decimal(raw.startedSeconds), startedMicroseconds: decimal(raw.startedMicroseconds, 999_999n), zombie: raw.zombie as boolean }
 }
+export function sameDarwinGeneration(left: DarwinProcessIdentity, right: DarwinProcessIdentity) {
+  return left.pid === right.pid && left.parentPid === right.parentPid && left.startedSeconds === right.startedSeconds && left.startedMicroseconds === right.startedMicroseconds && left.zombie === right.zombie
+}
 export function sameDarwinIdentity(left: DarwinProcessIdentity, right: DarwinProcessIdentity) {
-  return left.pid === right.pid && left.parentPid === right.parentPid && left.uid === right.uid && left.startedSeconds === right.startedSeconds && left.startedMicroseconds === right.startedMicroseconds && left.zombie === right.zombie
+  return sameDarwinGeneration(left, right) && left.uid === right.uid
 }
 function identityObservation(value: unknown, abi: DarwinInspectorAbi): DarwinIdentityObservation {
   const raw = record(value, ['result', 'length', 'errno', 'identity'])
@@ -83,10 +86,15 @@ function entry(value: unknown, abi: DarwinInspectorAbi, requireAbsolute: boolean
   if (!pathAfter.executable) {
     gaps.push('image-after-unavailable')
   }
-  if (before.identity && after.identity && !sameDarwinIdentity(before.identity, after.identity)) {
+  if (before.identity && after.identity && !sameDarwinGeneration(before.identity, after.identity)) {
     gaps.push('identity-changed')
   }
-  if ([before.identity, task.identity, after.identity].some(observed => observed && !sameDarwinIdentity(enumeratedIdentity, observed))) {
+  const generationConflict = [before.identity, task.identity, after.identity]
+    .some(observed => observed && !sameDarwinGeneration(enumeratedIdentity, observed))
+  const enumerationCredentialConflict = before.identity
+    && sameDarwinGeneration(enumeratedIdentity, before.identity)
+    && !sameDarwinIdentity(enumeratedIdentity, before.identity)
+  if (generationConflict || enumerationCredentialConflict) {
     gaps.push('enumeration-identity-changed')
   }
   if (pathBefore.executable && pathAfter.executable && pathBefore.executable !== pathAfter.executable) {
@@ -95,7 +103,7 @@ function entry(value: unknown, abi: DarwinInspectorAbi, requireAbsolute: boolean
   if (task.rssBytes === null) {
     gaps.push('rss-unavailable')
   }
-  if (task.identity && (!before.identity || !after.identity || !sameDarwinIdentity(task.identity, before.identity) || !sameDarwinIdentity(task.identity, after.identity))) {
+  if (task.identity && (!before.identity || !after.identity || !sameDarwinGeneration(task.identity, before.identity) || !sameDarwinGeneration(task.identity, after.identity))) {
     gaps.push('rss-identity-mismatch')
   }
   if ([enumeratedIdentity, before.identity, after.identity, task.identity].some(item => item?.zombie)) {

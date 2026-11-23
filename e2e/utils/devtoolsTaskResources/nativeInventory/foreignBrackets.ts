@@ -38,7 +38,8 @@ function completeCredentialRow(row: NativeRow, installationRoot: string, first: 
   const changed = !sameCredentials(enumeratedIdentity, before.identity)
   const completeCredentials = [enumeratedIdentity.uid, before.identity?.uid, task.identity?.uid, after.identity?.uid]
     .every(validNativeUid)
-  return completeCredentials && completePostAnchorRow(row) && Number.isSafeInteger(Number(task.rssBytes))
+  return completeCredentials && completePostAnchorRow(row) && sameCredentials(before.identity, task.identity)
+    && sameCredentials(before.identity, row.entry.after.identity) && Number.isSafeInteger(Number(task.rssBytes))
     && foreignPaths(row.entry, installationRoot) && pathBefore.executable === pathAfter.executable
     && (first
       ? changed && row.enumerationIdentityChange?.position === 'before'

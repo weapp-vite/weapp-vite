@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { foreignCredentialFrames, foreignCredentialRows, summarizeForeignCredentialFrames } from './foreignCredentialFixture'
 import { normalizeNativeFrame } from './model'
-import { processAbsolute } from './postAnchorFixture'
+import { postAnchorBootstrap, processAbsolute } from './postAnchorFixture'
 
 beforeEach(() => vi.spyOn(Date, 'now').mockReturnValue(0))
 afterEach(() => vi.restoreAllMocks())
@@ -11,9 +11,9 @@ describe('foreign main brackets after an enumeration-only credential change', ()
     const frames = foreignCredentialFrames()
     const original = structuredClone(frames)
     expect(normalizeNativeFrame(frames[0]!).rows.get(22)).toMatchObject({
-      images: null,
-      rssBytes: null,
-      identityChanged: true,
+      images: [postAnchorBootstrap],
+      rssBytes: 99999,
+      identityChanged: false,
     })
 
     const report = summarizeForeignCredentialFrames(frames)

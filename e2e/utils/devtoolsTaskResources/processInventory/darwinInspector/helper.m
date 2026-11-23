@@ -138,10 +138,10 @@ static NSDictionary *readRow(pid_t pid, NSDictionary *enumeratedIdentity, uint64
   NSDictionary *after = readIdentity(pid);
   budget(deadline);
   NSDictionary *absolute = @{@"clockDomain":@"mach-absolute-ticks", @"startedAtTicks":precise(absoluteStarted), @"endedAtTicks":precise(mach_absolute_time()), @"birthBefore":birthBefore, @"birthAfter":birthAfter};
-  BOOL generationStable = sameGenerationIdentity(enumeratedIdentity, before[@"identity"]) && sameStableIdentity(before[@"identity"], task[@"identity"]) && sameStableIdentity(before[@"identity"], after[@"identity"]) && [before[@"identity"][@"zombie"] isEqual:@NO];
+  BOOL generationStable = sameGenerationIdentity(enumeratedIdentity, before[@"identity"]) && sameGenerationIdentity(before[@"identity"], task[@"identity"]) && sameGenerationIdentity(before[@"identity"], after[@"identity"]) && [before[@"identity"][@"zombie"] isEqual:@NO];
   BOOL imagesAvailable = [pathBefore[@"executable"] isKindOfClass:[NSString class]] && [pathAfter[@"executable"] isKindOfClass:[NSString class]];
   BOOL imageChanged = imagesAvailable && ![pathBefore[@"executable"] isEqual:pathAfter[@"executable"]];
-  BOOL credentialsChanged = generationStable && ![enumeratedIdentity[@"uid"] isEqual:before[@"identity"][@"uid"]];
+  BOOL credentialsChanged = generationStable && (![enumeratedIdentity[@"uid"] isEqual:before[@"identity"][@"uid"]] || ![before[@"identity"][@"uid"] isEqual:task[@"identity"][@"uid"]] || ![task[@"identity"][@"uid"] isEqual:after[@"identity"][@"uid"]]);
   id confirmation = confirmChanges && generationStable && imagesAvailable && (imageChanged || credentialsChanged) ? readConfirmation(pid, deadline) : [NSNull null];
   return @{@"pid":@(pid), @"enumeratedIdentity":enumeratedIdentity, @"startedAtNanoseconds":precise(started), @"endedAtNanoseconds":precise(nowNs()), @"before":before, @"pathBefore":pathBefore, @"task":task, @"pathAfter":pathAfter, @"after":after, @"absolute":absolute, @"confirmation":confirmation};
 }
