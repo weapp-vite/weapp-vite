@@ -547,6 +547,37 @@ describe('scanPlugin service', () => {
     expect(entry.json.subPackages).toEqual([{ root: 'pkgA', pages: ['pages/a'] }])
   })
 
+  it('does not merge scanned pages into app config when auto routes are disabled', async () => {
+    findJsonEntryMock.mockResolvedValue({ path: '/project/src/app.json' })
+    mockAppScriptEntries({ appPath: '/project/src/app.ts' })
+    findVueEntryMock.mockResolvedValue(undefined)
+    const ctx = createCtx({
+      configService: {
+        absoluteSrcRoot: '/project/src',
+        absolutePluginRoot: undefined,
+        weappViteConfig: { autoRoutes: false },
+      },
+      jsonService: {
+        read: vi.fn(async () => ({ pages: ['pages/home/index'] })),
+      },
+      autoRoutesService: {
+        isEnabled: vi.fn(() => false),
+        ensureFresh: vi.fn(async () => {}),
+        getReference: vi.fn(() => ({
+          pages: ['pages/goal/__tests__/index'],
+          entries: ['pages/goal/__tests__/index'],
+          subPackages: [],
+        })),
+      },
+    })
+
+    const { createScanService } = await import('./service')
+    const entry = await createScanService(ctx).loadAppEntry()
+
+    expect(entry.json.pages).toEqual(['pages/home/index'])
+    expect(ctx.autoRoutesService.ensureFresh).not.toHaveBeenCalled()
+  })
+
   it('merges auto-routes pages and subPackages into partially extracted app.vue config', async () => {
     findJsonEntryMock.mockResolvedValue({ path: undefined })
     mockAppScriptEntries()

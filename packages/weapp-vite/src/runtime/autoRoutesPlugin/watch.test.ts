@@ -1,7 +1,7 @@
 import type { MutableCompilerContext } from '../../context'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createRuntimeState } from '../runtimeState'
-import { updateCandidateFromFile } from './watch'
+import { matchesRouteFile, updateCandidateFromFile } from './watch'
 
 const findVueEntryMock = vi.hoisted(() => vi.fn())
 const findJsEntryMock = vi.hoisted(() => vi.fn())
@@ -107,5 +107,23 @@ describe('autoRoutesPlugin watch helpers', () => {
       hasTemplate: true,
       jsonPath: '/project/src/pages/home/index.json',
     })
+  })
+
+  it('ignores test files during incremental route updates', async () => {
+    const ctx = createContext()
+    const candidates = new Map()
+
+    expect(matchesRouteFile(ctx, '/project/src/pages/home/index.test.ts')).toBe(false)
+    expect(matchesRouteFile(ctx, '/project/src/pages/home/__tests__/index.ts')).toBe(false)
+
+    findVueEntryMock.mockResolvedValue(undefined)
+    findJsEntryMock.mockResolvedValue({ path: '/project/src/pages/home/index.test.ts', predictions: [] })
+    await expect(updateCandidateFromFile(
+      ctx,
+      candidates,
+      '/project/src/pages/home/index.test.ts',
+      'create',
+    )).resolves.toBe(false)
+    expect(candidates).toHaveLength(0)
   })
 })

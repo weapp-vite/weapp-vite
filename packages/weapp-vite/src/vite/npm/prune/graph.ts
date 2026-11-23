@@ -69,7 +69,7 @@ export function collectPackages(output: PreparedNpmOutput) {
 }
 
 export function resolveCandidates(relative: string, files: Map<string, { fileName: string, source: string | Uint8Array }>) {
-  const normalized = normalizeFileName(relative)
+  const normalized = relative.trim() ? normalizeFileName(relative) : ''
   const candidates = new Set<string>([normalized])
   if (!files.has(normalized)) {
     for (const file of files.keys()) {
@@ -113,6 +113,37 @@ function resolvePackageSpecifier(specifier: string, boundary: string, packages: 
   }
 }
 
+function resolvePackageEntryCandidates(
+  relative: string,
+  packageEntry: NpmPackage,
+) {
+  const normalized = relative.trim() ? normalizeFileName(relative) : ''
+  if (normalized) {
+    return resolveCandidates(normalized, packageEntry.files)
+  }
+
+  const packageJson = packageEntry.files.get('package.json')
+  if (packageJson) {
+    try {
+      const metadata: unknown = JSON.parse(textOf(packageJson.source))
+      if (metadata && typeof metadata === 'object' && !Array.isArray(metadata)) {
+        const main = (metadata as { main?: unknown }).main
+        if (typeof main === 'string' && main.trim()) {
+          const mainCandidates = resolveCandidates(main, packageEntry.files)
+          if (mainCandidates.length) {
+            return mainCandidates
+          }
+        }
+      }
+    }
+    catch {
+      // 无法读取 package.json 时沿用 index 入口回退。
+    }
+  }
+
+  return resolveCandidates(normalized, packageEntry.files)
+}
+
 function resolveReference(current: string, reference: string, packageEntry: NpmPackage, packages: Map<string, NpmPackage>): ReferenceTarget[] {
   const value = reference.trim().split(/[?#]/, 1)[0]!
   if (!value || /^(?:https?:|data:|\/\/)/i.test(value) || value.startsWith('{{')) {
@@ -133,7 +164,8 @@ function resolveReference(current: string, reference: string, packageEntry: NpmP
   if (!resolved) {
     return []
   }
-  return resolveCandidates(resolved.relative, packages.get(resolved.info.root)!.files)
+  const targetPackage = packages.get(resolved.info.root)!
+  return resolvePackageEntryCandidates(resolved.relative, targetPackage)
     .map(relative => ({ root: resolved.info.root, relative }))
 }
 
@@ -177,7 +209,8 @@ function resolveBundleReference(fileName: string, reference: string, boundary: s
   if (!resolved) {
     return []
   }
-  return resolveCandidates(resolved.relative, packages.get(resolved.info.root)!.files)
+  const targetPackage = packages.get(resolved.info.root)!
+  return resolvePackageEntryCandidates(resolved.relative, targetPackage)
     .map(relative => ({ root: resolved.info.root, relative }))
 }
 

@@ -24,6 +24,7 @@ const CONFIG_SUFFIXES = configExtensions.map(ext => `.${ext}`)
 const SKIPPED_DIRECTORIES = new Set(['.git', '.husky', '.idea', '.turbo'])
 const SCRIPT_SIDECAR_PATTERN = /\.(?:wxs|sjs)\.[jt]s$/i
 const TEMPLATE_SIDECAR_PATTERN = new RegExp(`\\.(?:${templateExtensions.join('|')})\\.[jt]s$`, 'i')
+const TEST_ROUTE_PATH_PATTERN = /(?:^|\/)__tests__(?:\/|$)|(?:^|\/)[^/]+\.(?:spec|test)\.[^/]+$/i
 
 export function isConfigFile(filePath: string) {
   return CONFIG_SUFFIXES.some(ext => filePath.endsWith(ext))
@@ -53,6 +54,10 @@ export function isTemplateFile(filePath: string) {
 export function isStyleFile(filePath: string) {
   const ext = path.extname(filePath)
   return STYLE_EXTENSIONS.has(ext)
+}
+
+export function isExcludedAutoRoutePath(relativePath: string) {
+  return TEST_ROUTE_PATH_PATTERN.test(relativePath.replaceAll('\\', '/'))
 }
 
 function ensureCandidate(map: Map<string, CandidateEntry>, base: string) {
@@ -122,6 +127,10 @@ function resolveCandidateEntryPath(
   }
 
   if (isAutoRoutesGeneratedRelativePath(normalizedRelative)) {
+    return undefined
+  }
+
+  if (isExcludedAutoRoutePath(normalizedRelative)) {
     return undefined
   }
 
@@ -254,7 +263,7 @@ export async function collectCandidateForBase(base: string): Promise<CandidateEn
   const files = await fs.readdir(directory, { withFileTypes: true }).catch(() => [])
   for (const file of files) {
     const entryPath = path.join(directory, file.name)
-    if (file.isFile() && removeExtensionDeep(entryPath) === base) {
+    if (file.isFile() && removeExtensionDeep(entryPath) === base && !isExcludedAutoRoutePath(entryPath)) {
       applyCandidateEntryToMap(candidates, entryPath, { candidateBase: base })
     }
   }
