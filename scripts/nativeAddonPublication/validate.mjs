@@ -4,14 +4,13 @@ import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 import { getNativeTarget, getNativeTargetForRuntime, nativeTargets } from './targets.mjs'
 
-const repositoryRoot = fileURLToPath(new URL('../../', import.meta.url))
-const rootPackagePath = path.join(repositoryRoot, 'packages/ast-native/package.json')
+const defaultRepositoryRoot = fileURLToPath(new URL('../../', import.meta.url))
 
 async function readJson(file) {
   return JSON.parse(await readFile(file, 'utf8'))
 }
 
-async function validateTarget(target, version, requireBinary) {
+async function validateTarget(repositoryRoot, target, version, requireBinary) {
   const packagePath = path.join(repositoryRoot, target.packageDirectory, 'package.json')
   const manifest = await readJson(packagePath)
   if (manifest.name !== target.packageName || manifest.version !== version) {
@@ -34,7 +33,9 @@ async function validateTarget(target, version, requireBinary) {
   }
 }
 
-export async function validateNativePublication({ requireBinaries = false, targetId, assertRuntime = false } = {}) {
+export async function validateNativePublication({ requireBinaries = false, targetId, assertRuntime = false, root } = {}) {
+  const repositoryRoot = path.resolve(root ?? defaultRepositoryRoot)
+  const rootPackagePath = path.join(repositoryRoot, 'packages/ast-native/package.json')
   const rootPackage = await readJson(rootPackagePath)
   const version = rootPackage.version
   const expectedDependencies = Object.fromEntries(nativeTargets.map(target => [target.packageName, 'workspace:*']))
@@ -52,7 +53,7 @@ export async function validateNativePublication({ requireBinaries = false, targe
     }
   }
   for (const target of targets) {
-    await validateTarget(target, version, requireBinaries)
+    await validateTarget(repositoryRoot, target, version, requireBinaries)
   }
   return { version, targets: targets.map(target => target.id) }
 }
@@ -60,10 +61,12 @@ export async function validateNativePublication({ requireBinaries = false, targe
 if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1])) {
   const args = new Set(process.argv.slice(2))
   const targetArg = process.argv.slice(2).find(argument => argument.startsWith('--target='))
+  const rootArg = process.argv.slice(2).find(argument => argument.startsWith('--root='))
   const result = await validateNativePublication({
     requireBinaries: args.has('--require-binaries'),
     assertRuntime: args.has('--assert-runtime'),
     targetId: targetArg?.slice('--target='.length),
+    root: rootArg?.slice('--root='.length),
   })
   process.stdout.write(`Validated native publication targets: ${result.targets.join(', ')}\n`)
 }

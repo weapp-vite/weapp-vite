@@ -1,4 +1,5 @@
-import { readFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
+import os from 'node:os'
 import path from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { getNativeTargetForRuntime, nativeTargets, packageManifestForTarget } from './targets.mjs'
@@ -35,5 +36,26 @@ describe('native addon publication targets', () => {
     expect(result.targets).toHaveLength(6)
     const root = JSON.parse(await readFile(path.resolve('packages/ast-native/package.json'), 'utf8'))
     expect(Object.keys(root.optionalDependencies)).toHaveLength(6)
+  })
+
+  it('validates an explicit checkout root when the driver is outside the candidate', async () => {
+    const root = await mkdtemp(path.join(os.tmpdir(), 'native-publication-'))
+    try {
+      const packageFiles = [
+        'packages/ast-native/package.json',
+        ...nativeTargets.map(target => `${target.packageDirectory}/package.json`),
+      ]
+      await Promise.all(packageFiles.map(async (file) => {
+        const destination = path.join(root, file)
+        await mkdir(path.dirname(destination), { recursive: true })
+        await writeFile(destination, await readFile(path.resolve(file)))
+      }))
+      await expect(validateNativePublication({ root, targetId: 'linux-x64-gnu' })).resolves.toMatchObject({
+        targets: ['linux-x64-gnu'],
+      })
+    }
+    finally {
+      await rm(root, { recursive: true, force: true })
+    }
   })
 })

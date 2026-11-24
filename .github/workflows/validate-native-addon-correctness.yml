@@ -85,7 +85,7 @@ jobs:
         run: pnpm --filter @weapp-vite/ast-native native:build
 
       - name: Validate the staged target package
-        run: node .tmp/pr-driver/scripts/nativeAddonPublication/validate.mjs --target=${{ matrix.id }} --require-binaries --assert-runtime
+        run: node .tmp/pr-driver/scripts/nativeAddonPublication/validate.mjs --root=. --target=${{ matrix.id }} --require-binaries --assert-runtime
 
       - name: Require the actual addon and all covered exports
         run: node .tmp/pr-driver/scripts/verify-native-addon-correctness.mjs binding .tmp/native-addon-correctness
