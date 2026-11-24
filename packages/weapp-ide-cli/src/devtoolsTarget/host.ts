@@ -18,6 +18,10 @@ function ownershipError(message: string) {
   return Object.assign(new Error(message), { code: 'WECHAT_DEVTOOLS_HOST_IDENTITY_MISMATCH' })
 }
 
+function portNotListeningError() {
+  return Object.assign(new Error('No verified WeChat DevTools listener owns the selected port.'), { code: 'WECHAT_DEVTOOLS_PORT_NOT_LISTENING' })
+}
+
 function normalize(value: string, platform: NodeJS.Platform) {
   const normalized = platform === 'win32' ? value.replaceAll('\\', '/').toLowerCase() : value
   return normalized.replace(/\/$/, '')
@@ -148,7 +152,7 @@ export async function assertWechatDevtoolsPort(target: ResolvedWechatDevtoolsTar
   if (platform === 'win32') {
     const entries = await readWindowsProcesses(`$ErrorActionPreference='Stop'; @(Get-NetTCPConnection -LocalPort ${port} -State Listen | Select-Object -ExpandProperty OwningProcess -Unique | ForEach-Object { Get-CimInstance Win32_Process -Filter "ProcessId=$_" } | Select-Object ProcessId,ExecutablePath) | ConvertTo-Json -Compress`, options)
     if (!entries.length) {
-      throw ownershipError('No verified WeChat DevTools listener owns the selected port.')
+      throw portNotListeningError()
     }
     for (const entry of entries) {
       assertExecutable(target, entry.executable, platform)
@@ -157,8 +161,11 @@ export async function assertWechatDevtoolsPort(target: ResolvedWechatDevtoolsTar
   }
   const result = await runInspection('lsof', ['-nP', `-iTCP:${port}`, '-sTCP:LISTEN', '-Fp'], options)
   const pids = [...new Set(result.stdout.split(/\r?\n/).filter(line => /^p\d+$/.test(line)).map(line => Number(line.slice(1))))]
+  if (result.exitCode === 1 && !result.stdout.trim() && !(result.stderr ?? '').trim()) {
+    throw portNotListeningError()
+  }
   if (result.exitCode !== 0 || !pids.length) {
-    throw ownershipError('No verified WeChat DevTools listener owns the selected port.')
+    throw ownershipError('Unable to verify the running WeChat DevTools listener.')
   }
   for (const pid of pids) {
     const executable = await readUnixExecutable(pid, options)

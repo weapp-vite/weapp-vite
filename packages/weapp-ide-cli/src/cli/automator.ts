@@ -219,8 +219,62 @@ export async function connectOpenedAutomator(options: AutomatorOptions): Promise
     scope.attempt()
     const launcher = new Launcher()
     const resolved = await scope.step(() => resolveAutomatorSessionOptions(options), { stage: 'resolve-cli' })
-    const persistedSession = await scope.step(() => readPersistedAutomatorSession({ projectPath, sessionId, port, installationId: resolved.installationId! }), { stage: 'session-lookup' })
+    const persistedSession = await scope.step(() => readPersistedAutomatorSession({
+      projectPath,
+      sessionId,
+      port,
+      installationId: resolved.installationId!,
+      signal: scope.signal,
+      timeout: scope.remainingMs(),
+    }), { stage: 'session-lookup' })
     if (!persistedSession) {
+      if (!sessionId && !process.env[MANAGED_PROJECT_JOURNAL_ENV]?.trim()) {
+        // 手工打开的项目没有 CLI journal；用已选安装的 auto 命令为当前项目建立 automator 连接。
+        if (resolved.runtimeProvider !== 'headless') {
+          await scope.step(() => assertWechatDevtoolsHost(resolved.target!, { signal: scope.signal, timeout: scope.remainingMs() }), { stage: 'host-identity' })
+        }
+        const miniProgram = await scope.step(async () => await launcher.launch({
+          cliPath: resolved.cliPath,
+          ...(port ? { port } : {}),
+          projectPath: path.resolve(projectPath),
+          ...(resolved.runtimeProvider ? { runtimeProvider: resolved.runtimeProvider } : {}),
+          signal: scope.signal,
+          timeout: scope.remainingMs(),
+          trustProject: options.trustProject,
+        }) as MiniProgram, {
+          stage: 'takeover',
+          disposeLate: program => program.disconnect(),
+        })
+        const disownSession = scope.own(() => miniProgram.disconnect(), 'automator-session')
+        if (resolved.runtimeProvider === 'headless') {
+          disownSession()
+          return miniProgram
+        }
+        const sessionMetadata = Reflect.get(miniProgram as object, '__WEAPP_VITE_SESSION_METADATA') as { port?: number, wsEndpoint?: string } | undefined
+        if (typeof sessionMetadata?.wsEndpoint !== 'string' || !sessionMetadata.wsEndpoint || !Number.isInteger(sessionMetadata.port)) {
+          throw Object.assign(new Error('DEVTOOLS_SESSION_METADATA_INVALID: opened project takeover did not return a verified automator endpoint.'), { code: 'DEVTOOLS_SESSION_METADATA_INVALID' })
+        }
+        const endpoint = new URL(sessionMetadata.wsEndpoint)
+        if (endpoint.protocol !== 'ws:' || endpoint.hostname !== '127.0.0.1' || !endpoint.port) {
+          throw Object.assign(new Error('DEVTOOLS_SESSION_ENDPOINT_INVALID: opened project takeover did not return a loopback websocket endpoint.'), { code: 'DEVTOOLS_SESSION_ENDPOINT_INVALID' })
+        }
+        const endpointPort = Number(endpoint.port)
+        if (sessionMetadata.port !== endpointPort || (port && endpointPort !== port)) {
+          throw Object.assign(new Error(`DEVTOOLS_SESSION_PORT_MISMATCH: requested=${port ?? endpointPort} endpoint=${endpointPort}`), { code: 'DEVTOOLS_SESSION_PORT_MISMATCH' })
+        }
+        await scope.step(() => assertWechatDevtoolsPort(resolved.target!, endpointPort, { signal: scope.signal, timeout: scope.remainingMs() }), { stage: 'port-identity' })
+        await scope.step(() => persistAutomatorSession({
+          installationId: resolved.installationId!,
+          ...(port !== undefined ? { port: endpointPort } : {}),
+          projectPath,
+          signal: scope.signal,
+          wsEndpoint: endpoint.href,
+        }), { stage: 'session-persist' })
+        // 接管手工窗口只借用连接，close 不能向 DevTools 发送 App.exit/Tool.close。
+        miniProgram.close = async () => await miniProgram.disconnect()
+        disownSession()
+        return miniProgram
+      }
       throw Object.assign(new Error('DEVTOOLS_SESSION_IDENTITY_UNVERIFIED: no matching installation-bound session; launch the selected installation before connecting.'), { code: 'DEVTOOLS_SESSION_IDENTITY_UNVERIFIED' })
     }
     const wsEndpoint = persistedSession.wsEndpoint

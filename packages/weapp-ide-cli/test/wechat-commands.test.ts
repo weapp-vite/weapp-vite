@@ -167,6 +167,22 @@ describe('wechat command helpers', () => {
     expect(runWechatCliCommandMock).not.toHaveBeenCalled()
   })
 
+  it('falls back to the official CLI while the selected installation is starting', async () => {
+    openWechatIdeProjectByHttpMock.mockRejectedValueOnce(Object.assign(
+      new Error('No verified WeChat DevTools listener owns the selected port.'),
+      { code: 'WECHAT_DEVTOOLS_PORT_NOT_LISTENING' },
+    ))
+    const { openWechatIde } = await import('../src/cli/wechat-commands')
+
+    await openWechatIde({ projectPath: 'fixture' })
+
+    expect(runWechatCliCommandMock).toHaveBeenCalledWith([
+      'open',
+      '--project',
+      expect.stringMatching(createPathSuffixPattern('fixture')),
+    ], { target })
+  })
+
   it('holds one machine lease through selection, HTTP failure, and native fallback', async () => {
     let leaseHeld = false
     withMachineLeaseMock.mockImplementation(async (run) => {
