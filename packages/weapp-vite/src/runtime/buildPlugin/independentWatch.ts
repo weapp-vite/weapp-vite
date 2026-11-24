@@ -57,8 +57,9 @@ export function collectIndependentWatchFiles(registry: IndependentWatchRegistry,
         },
       },
     } satisfies Plugin,
-    commit() {
+    commit(additionalFiles: Iterable<string> = []) {
       if (active()) {
+        capture(additionalFiles)
         registry.set(root, files)
       }
     },

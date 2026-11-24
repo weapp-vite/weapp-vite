@@ -1,6 +1,7 @@
 import type { OutputBundle, OutputChunk } from 'rolldown'
 import type { Plugin, ResolvedConfig } from 'vite'
 import type { BuildTarget, CompilerContext } from '../context'
+import type { TemplateImageSources } from './outputFinalizer/templateImages'
 import { Buffer } from 'node:buffer'
 import path from 'node:path'
 import {
@@ -17,7 +18,9 @@ import { applyOutputChunkTransform, replaceOutputChunkCode, resolveOutputChunkTr
 import { normalizePath, toPosixPath } from '../utils/path'
 import { normalizeEncodedSourceMapLike } from '../utils/sourcemap'
 import { pruneOwnedAssetFiles } from './asset/prune'
+import { excludeLinkedAssetCopies } from './asset/sourceIdentity'
 import { createAssetSourcePlan } from './asset/sources'
+import { collectIndependentLocalAssets } from './outputFinalizer/independent'
 import { emitAlipayGenericPlaceholderAssetsByBase, resolveWeappScopedSlotGenericPlaceholderBase } from './vue/transform/bundle/platform'
 import { injectNativeScopedSlotHostPropertiesInJs } from './vue/transform/injectNativeScopedSlotHostProperties'
 
@@ -26,6 +29,7 @@ interface AssetPluginState {
   buildTarget: BuildTarget
   resolvedConfig?: ResolvedConfig
   pendingAssets?: Promise<string[]>
+  rewrittenTemplateImageSources?: TemplateImageSources
 }
 
 function stripQueryAndHash(value: string) {
@@ -273,7 +277,7 @@ export function patchScopedSlotHostAssetsInBundle(
   }
 }
 
-export function collectBundledAssetSourcePaths(bundle: OutputBundle | Record<string, any>) {
+export function collectBundledAssetSourcePaths(bundle: OutputBundle | Record<string, any>, root?: string) {
   const sources = new Set<string>()
 
   for (const output of Object.values(bundle)) {
@@ -283,7 +287,10 @@ export function collectBundledAssetSourcePaths(bundle: OutputBundle | Record<str
 
     for (const originalFile of output.originalFileNames ?? []) {
       if (typeof originalFile === 'string' && originalFile) {
-        sources.add(normalizePath(originalFile))
+        const source = normalizePath(originalFile)
+        sources.add(root && !path.posix.isAbsolute(source) && !path.win32.isAbsolute(source)
+          ? normalizePath(path.resolve(root, source))
+          : source)
       }
     }
   }
@@ -309,15 +316,20 @@ export function resolvePendingAssetFiles(
   files: string[] | undefined,
   bundle: OutputBundle,
   getModuleIds: () => Iterable<string>,
+  root?: string,
+  matchLinkedAssets = false,
 ) {
   if (!files?.length) {
     return []
   }
 
-  const bundledSources = collectBundledAssetSourcePaths(bundle)
-  const pendingAfterBundle = files.filter((file) => {
+  const bundledSources = collectBundledAssetSourcePaths(bundle, root)
+  let pendingAfterBundle = files.filter((file) => {
     return !bundledSources.has(normalizePath(file))
   })
+  if (matchLinkedAssets && pendingAfterBundle.length) {
+    pendingAfterBundle = excludeLinkedAssetCopies(files, pendingAfterBundle, bundledSources)
+  }
   if (!pendingAfterBundle.length) {
     return []
   }
@@ -368,14 +380,18 @@ async function emitAssets(
   )
 }
 
-function createAssetCollector(state: AssetPluginState): Plugin {
+function createAssetCollector(state: AssetPluginState): [Plugin, Plugin] {
   const { ctx } = state
   const { configService } = ctx
   let committedOwnedFiles = new Set<string>()
   let nextOwnedFiles = new Set<string>()
+  let releasedFiles: string[] = []
   let removedFiles: string[] = []
 
-  return {
+  let earlyFiles: string[] = []
+  let deferredFiles: string[] = []
+
+  return [{
     name: 'weapp-vite:asset',
     enforce: 'post',
 
@@ -384,21 +400,62 @@ function createAssetCollector(state: AssetPluginState): Plugin {
     },
 
     buildStart() {
-      if (!state.resolvedConfig) {
+      const config = state.resolvedConfig
+      // Stateful 原生图可能只刷新一部分入口；静态复制由完整资产快照统一决定。
+      if (!config || (config.command === 'serve' && config.experimental.bundledDev)) {
         state.pendingAssets = Promise.resolve([])
         return
       }
 
-      state.pendingAssets = createAssetSourcePlan(configService, state.resolvedConfig.build.outDir, state.buildTarget).scan()
+      state.pendingAssets = createAssetSourcePlan(configService, config.build.outDir, state.buildTarget).scan()
     },
 
     async generateBundle(_options, bundle) {
       patchScopedSlotHostAssetsInBundle(ctx, this, bundle as Record<string, any>)
       const files = await state.pendingAssets
-      const pending = resolvePendingAssetFiles(files, bundle as OutputBundle, () => this.getModuleIds())
-      await emitAssets(ctx, this, bundle as Record<string, any>, pending, 8)
-      nextOwnedFiles = new Set(pending.map(file => configService.relativeOutputPath(file)))
-      removedFiles = [...committedOwnedFiles].filter(file => !nextOwnedFiles.has(file) && !bundle[file])
+      deferredFiles = []
+      earlyFiles = []
+      for (const file of files ?? []) {
+        const target = state.resolvedConfig?.assetsInclude(file) ? deferredFiles : earlyFiles
+        target.push(file)
+      }
+      earlyFiles = resolvePendingAssetFiles(earlyFiles, bundle as OutputBundle, () => this.getModuleIds(), state.resolvedConfig?.root)
+      await emitAssets(ctx, this, bundle as Record<string, any>, earlyFiles, 8)
+    },
+  }, {
+    name: 'weapp-vite:asset-copy',
+    enforce: 'post',
+    generateBundle: {
+      order: 'post',
+      async handler(_options, bundle) {
+        // 模板绑定先交给 bundler 发射；静态复制只接收没有被构建图消费的文件。
+        const independent = state.buildTarget === 'app'
+          ? collectIndependentLocalAssets(ctx, state.resolvedConfig?.root ?? configService.cwd)
+          : undefined
+        const rewrittenSources = new Set<string>()
+        for (const sources of state.rewrittenTemplateImageSources?.values() ?? []) {
+          for (const source of sources) {
+            rewrittenSources.add(source)
+          }
+        }
+        const candidates = independent?.sources.size || rewrittenSources.size
+          ? deferredFiles.filter((file) => {
+              const source = normalizePath(file)
+              return !independent?.sources.has(source) && !rewrittenSources.has(source)
+            })
+          : deferredFiles
+        const pending = resolvePendingAssetFiles(
+          candidates,
+          bundle as OutputBundle,
+          () => this.getModuleIds(),
+          state.resolvedConfig?.root,
+          state.resolvedConfig?.resolve.preserveSymlinks,
+        )
+        await emitAssets(ctx, this, bundle as Record<string, any>, pending, 8)
+        nextOwnedFiles = new Set([...earlyFiles, ...pending].map(file => configService.relativeOutputPath(file)))
+        releasedFiles = [...committedOwnedFiles].filter(file => !nextOwnedFiles.has(file))
+        removedFiles = releasedFiles.filter(file => !bundle[file] && !independent?.outputNames.has(file))
+      },
     },
 
     async writeBundle() {
@@ -406,12 +463,15 @@ function createAssetCollector(state: AssetPluginState): Plugin {
         return
       }
       await pruneOwnedAssetFiles(path.resolve(state.resolvedConfig.root, state.resolvedConfig.build.outDir), removedFiles)
+      for (const file of releasedFiles) {
+        ctx.runtimeState.asset.emittedBuffer.delete(file)
+      }
       committedOwnedFiles = nextOwnedFiles
     },
-  }
+  }]
 }
 
-export function asset(ctx: CompilerContext): Plugin[] {
-  const state: AssetPluginState = { ctx, buildTarget: ctx.currentBuildTarget ?? 'app' }
-  return [createAssetCollector(state)]
+export function asset(ctx: CompilerContext, rewrittenTemplateImageSources?: TemplateImageSources): [Plugin, Plugin] {
+  const state: AssetPluginState = { ctx, buildTarget: ctx.currentBuildTarget ?? 'app', rewrittenTemplateImageSources }
+  return createAssetCollector(state)
 }

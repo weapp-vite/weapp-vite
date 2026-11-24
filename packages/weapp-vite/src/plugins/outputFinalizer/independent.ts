@@ -1,7 +1,12 @@
-import type { EmittedAsset, OutputAsset, OutputChunk, RolldownOutput } from 'rolldown'
+import type { EmittedAsset, OutputAsset, OutputBundle, OutputChunk, RolldownOutput } from 'rolldown'
 import type { CompilerContext } from '../../context'
 import type { SubPackageMetaValue } from '../../types'
+import type { TemplateImageSources } from './templateImages'
+import path from 'pathe'
 import { isBundlerDiagnosticAsset } from '../../runtime/buildPlugin/outputBoundary'
+import { normalizePath } from '../../utils/path'
+import { withRealpathScope } from '../../utils/realpathScope'
+import { readAssetPhysicalPath } from '../asset/sourceIdentity'
 
 type EmitAsset = (asset: EmittedAsset) => void
 
@@ -28,6 +33,66 @@ function toEmittedAsset(output: OutputAsset | OutputChunk): EmittedAsset {
 
 function getBundleOutputs(output: RolldownOutput) {
   return Array.isArray(output.output) ? output.output : []
+}
+
+/** 在子构建结束前补全同内容图片的已重写来源，供主构建跳过静态复制。 */
+export function includeIndependentTemplateImageSources(bundle: OutputBundle, root: string, images: TemplateImageSources) {
+  for (const [target, sources] of images) {
+    const output = bundle[target]
+    if (output?.type !== 'asset') {
+      continue
+    }
+    const originals = new Set(output.originalFileNames.map(source => path.resolve(root, source)))
+    const added = [...sources].filter(source => !originals.has(source))
+    if (added.length) {
+      output.originalFileNames = [...output.originalFileNames, ...added]
+    }
+  }
+}
+
+function collectIndependentSources(ctx: CompilerContext, root: string) {
+  const sources = new Set<string>()
+  const outputNames = new Set<string>()
+  for (const [packageRoot, result] of ctx.runtimeState?.build?.independent?.outputs ?? []) {
+    if (!ctx.scanService?.independentSubPackageMap?.has(packageRoot)) {
+      continue
+    }
+    const prefix = `${packageRoot}/`
+    const sourceRoot = path.resolve(ctx.configService.absoluteSrcRoot, packageRoot)
+    let physicalRoot: string | undefined
+    for (const item of getBundleOutputs(result)) {
+      if (isBundlerDiagnosticAsset(item) || !item.fileName.startsWith(prefix)) {
+        continue
+      }
+      outputNames.add(item.fileName)
+      if (item.type !== 'asset') {
+        continue
+      }
+      for (const original of item.originalFileNames ?? []) {
+        const source = normalizePath(path.resolve(root, original))
+        // 独立构建已消费的来源不再由主构建静态复制，包含公共源码目录中的图片。
+        // 否则只有独立分包引用的公共图片会额外落一份到主包，违背按使用范围输出。
+        sources.add(source)
+        if (source.startsWith(`${sourceRoot}/`)) {
+          continue
+        }
+        // 子构建可能保留软链接，按包的物理根还原主构建扫描到的路径。
+        const physical = readAssetPhysicalPath(source)
+        if (physical && physical !== source) {
+          physicalRoot ??= readAssetPhysicalPath(sourceRoot) ?? sourceRoot
+          if (physical.startsWith(`${physicalRoot}/`)) {
+            sources.add(path.join(sourceRoot, path.relative(physicalRoot, physical)))
+          }
+        }
+      }
+    }
+  }
+  return { sources, outputNames }
+}
+
+/** 交接独立构建消费的全部来源，避免主构建再静态复制这些资源。 */
+export function collectIndependentLocalAssets(ctx: CompilerContext, root: string) {
+  return withRealpathScope(() => collectIndependentSources(ctx, root))
 }
 
 export function collectIndependentOutputFileNames(ctx: CompilerContext) {

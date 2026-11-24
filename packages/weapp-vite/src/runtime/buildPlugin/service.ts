@@ -36,6 +36,7 @@ import { isCompilerContentSource, resolveCompilerContentOwner, resolveCompilerCo
 import { createVueEntryUpdateInspector } from '../../plugins/core/lifecycle/vueEntryUpdate'
 import { collectVueStyleScriptChanges } from '../../plugins/core/lifecycle/vueStyleDependency'
 import { invalidateSharedStyleCache } from '../../plugins/css/shared/preprocessor'
+import { mayUseSubpackageAssetNames } from '../../plugins/subpackageOutput/template'
 import { invalidateFileCache } from '../../plugins/utils/cache'
 import {
   configSuffixes,
@@ -1923,7 +1924,9 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
         debug?.(`[module-graph-provider] affected=${graphAffectedEntries.size} files=${batchReasons.length}`)
         recordHmrProfileDuration(ctx.runtimeState.build.hmr.profile, 'snapshotResolveMs', performance.now() - snapshotResolveStartedAt)
         const snapshotBuildStartedAt = performance.now()
-        let requiresFullRescan = batchReasons.some(batchReason =>
+        // 占位符按所有入口消费者命名；局部快照无法判断资源是否应该迁回分包。
+        let requiresFullRescan = (target === 'app' && configService.platform === 'weapp'
+          && mayUseSubpackageAssetNames(snapshotBuildOptions.build)) || batchReasons.some(batchReason =>
           batchReason.forceFullRescan
           || batchReason.event === 'create'
           || batchReason.event === 'delete',

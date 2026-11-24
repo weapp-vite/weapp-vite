@@ -23,7 +23,9 @@ keywords:
 
 ## 输出路径中的 `[subpackage]` {#subpackage-output-placeholder}
 
-`build.assetsDir` 和 `build.rolldownOptions.output.chunkFileNames` 支持可选目录占位符 `[subpackage]`。它使用产物命名归属的完整分包 `root`，例如 `packages/feature`，不使用分包可选的 `name`。主包展开为空，并移除空目录段的分隔符。
+`build.assetsDir`、`build.rolldownOptions.output.assetFileNames` 和 `build.rolldownOptions.output.chunkFileNames` 支持可选目录占位符 `[subpackage]`。它使用产物命名归属的完整分包 `root`，例如 `packages/feature`。主包展开为空，并移除空目录段的分隔符。
+
+对于希望将独占资源放入分包的小程序，推荐显式配置：
 
 ```ts
 export default defineConfig({
@@ -33,7 +35,7 @@ export default defineConfig({
 })
 ```
 
-参与默认命名的主包资源输出到 `assets/`，分包专属资源输出到 `packages/feature/assets/`。JS、CSS、图片和字体继续由 Vite/Rolldown 发射并维护引用与 hash。页面、组件等固定文件名入口及 `publicDir` 原样复制文件保持原有路径。
+小程序构建的默认值仍为 `.`。显式启用此配置后，参与默认命名的主包资源输出到 `assets/`，分包专属资源输出到 `packages/feature/assets/`。JS、CSS、图片和字体继续由 Vite/Rolldown 发射并维护引用与 hash。页面、组件等固定文件名入口及 `publicDir` 原样复制文件保持原有路径。
 
 需要单独指定 JS chunk 路径时，可以设置：
 
@@ -50,13 +52,21 @@ export default defineConfig({
 })
 ```
 
-显式 `chunkFileNames` 完整覆盖默认 chunk 模板，不再拼接 `assetsDir`；函数返回的模板也支持占位符。不使用 `[subpackage]` 时，保持普通的 `outDir` 相对路径语义，不自动添加分包前缀。`[name]`、`[hash]` 等原生占位符仍由 bundler 展开。
+显式的 `assetFileNames` 和 `chunkFileNames` 分别覆盖对应的默认资源和 chunk 模板，不再拼接 `assetsDir`；函数返回的模板也支持占位符。对主包和普通分包，不使用 `[subpackage]` 时，路径仍相对 `outDir`，不会自动添加分包前缀。`[name]`、`[hash]` 等原生占位符仍由 bundler 展开。
 
 占位符必须作为完整目录段且最多出现一次。对跨多个分包的混合 chunk 或缺少来源信息的资源，使用占位符时会给出明确诊断；可拆分分组、为插件资源提供 `originalFileName`，或显式采用不含占位符的命名模板。
 
-同内容资源继续遵循 bundler 原生去重。如果资源落在某个分包，而合并来源或实际引用方还包含主包或其他分包，构建会报错，避免生成跨分包访问资源的产物。同一份物理源文件被多个包引用时也会校验；同步共享 chunk 的间接资产依赖和聚合 CSS 的资源引用同样受此约束。此时可显式设置不含占位符的 `assetFileNames`，让共享资源输出到主包公共目录；不会在输出阶段搬移文件或复制资源。库模式等原本不消费 `assetsDir` 的场景保持 Vite 的既有行为。
+使用小程序 `build`（包括 `build --watch`）时，JS 导入、样式 URL 与原生 WXML、Vue 页面模板中的本地图片引用可共同决定资源归属。使用占位符时，只被一个普通分包消费的图片（包括从 `node_modules` 导入的图片）输出到该分包；主包和分包、或多个普通分包共用时，在主包输出一份。同内容资源在可访问范围内由 bundler 去重。显式模板即使不含占位符，也会校验打包资源的包可见性。如果公共资源被放入其他消费者无法访问的分包，构建会报出引用位置和目标路径。可用不含占位符的 `assetFileNames` 指定主包公共目录。
+
+微信小程序的经典开发服务器在使用占位符时，会根据完整的消费者图重建。资源归属变化后，各页面引用随产物更新，过期文件在成功写出后清理。库模式沿用原有命名行为。
 
 此能力只扩展命名，不改变动态导入模式、分块策略或宿主分包加载能力。
+
+独立分包单独构建。参与资产命名的图片、字体等资源保留在自己的分包内，即使资源来自 `node_modules` 或公共源码。独立分包会给不含占位符的资产模板补上自身的 `root`，例如 `images/[name][extname]` 会输出到 `packages/feature/images/`；模板已包含本包根目录时不会重复添加。使用 `[subpackage]` 时，将它放在第一个目录段。若主包也引用同一资源，两次构建各自生成可访问的文件。
+
+微信小程序 WXML 的本地静态 `<image src>` 会复用由 JS 或 CSS 唯一发射的图片。配置资源命名后，仅由 WXML 引用的本地图片也遵循 `assetsDir` 或优先级更高的显式 `assetFileNames`，构建会同步更新引用。正式构建还会考虑原生页面通过 `weapp.wxml.transform` 新增或移除的静态引用。动态绑定本身不被改写；绑定值若来自 JS 导入，使用该导入得到的 URL。内联资源、外部 URL、`publicDir` 资源和插件显式指定 `fileName` 的产物保留原有路径规则。
+
+原生 WXML 可以通过 `/node_modules/包名/图片.png` 或指向项目 `node_modules` 的相对文件路径引用依赖图片；同路径已有 `publicDir` 文件时保留原样，项目绝对路径优先查找源码目录。如需按包名和 `exports` 解析，请在 JS 中导入图片，再将 URL 绑定到 `src`。
 
 ## `weapp.styles` {#weapp-styles}
 

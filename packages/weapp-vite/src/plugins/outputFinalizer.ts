@@ -1,9 +1,10 @@
 import type { EmittedAsset, OutputBundle } from 'rolldown'
-import type { Plugin } from 'vite'
+import type { Plugin, ResolvedConfig } from 'vite'
 import type { CompilerContext } from '../context'
 import type { SubPackageMetaValue } from '../types'
 import type { RewriteWevuInternalRuntimeImportsOptions } from './core/helpers'
-import type { OutputAssetEntry } from './outputFinalizer/templates'
+import type { TemplateImageSources } from './outputFinalizer/templateImages'
+import type { OutputAssetEntry, PreparedTemplates } from './outputFinalizer/templates'
 import { analyzeGlassEaselBundle } from '../analyze/glassEasel'
 import { notifyDevModuleGraphHost } from '../moduleGraph/host'
 import { parseGraphOutputModuleId, resolveGraphOutputOwner } from '../moduleGraph/outputMetadata'
@@ -19,6 +20,7 @@ import { consumePendingOwnerStyleSources } from './css'
 import { createOutputAssetTransaction } from './outputFinalizer/assets'
 import { restoreNativePageLayoutOutputs } from './outputFinalizer/pageLayout'
 import { normalizeClassScopedAssets } from './outputFinalizer/scopedStyles'
+import { createTemplateImageRewriter } from './outputFinalizer/templateImages'
 import { normalizeTemplateAssetEntries } from './outputFinalizer/templates'
 
 export { createOutputPublicationPlugin, pruneUnchangedDevHmrOutputs, pruneUneventedDevHmrChunks } from './outputFinalizer/publication'
@@ -187,8 +189,15 @@ export async function normalizeTemplateAssets(
   await normalizeTemplateAssetEntries(ctx, collectOutputFinalizerAssetEntries(bundle).templateAssets)
 }
 
-export function createOutputFinalizerPlugin(ctx: CompilerContext, subPackageMeta?: SubPackageMetaValue): Plugin {
+export function createOutputFinalizerPlugin(
+  ctx: CompilerContext,
+  subPackageMeta?: SubPackageMetaValue,
+  templateAssetPackages?: Map<string, string>,
+  rewrittenTemplateImageSources?: TemplateImageSources,
+  preparedTemplates?: PreparedTemplates,
+): Plugin {
   let preserveCompleteBundle = false
+  let imageNaming: Pick<ResolvedConfig, 'publicDir' | 'assetsInclude'> | undefined
   let unobserve: (() => Promise<void>) | undefined
   const wevuRuntimeRewriteOptions: RewriteWevuInternalRuntimeImportsOptions = {
     get runtimeFileName() {
@@ -217,6 +226,9 @@ export function createOutputFinalizerPlugin(ctx: CompilerContext, subPackageMeta
 
   return {
     name: 'weapp-vite:output-finalizer',
+    buildStart() {
+      preparedTemplates?.clear()
+    },
     enforce: 'post',
     async configureServer(server) {
       const subscription = bindWxmlDependencyWatch(ctx, server, change => notifyDevModuleGraphHost(ctx, change))
@@ -241,10 +253,17 @@ export function createOutputFinalizerPlugin(ctx: CompilerContext, subPackageMeta
     configResolved(config) {
       // 原生引擎发布完整模块注册图；classic 按源事件裁剪会破坏其重载输出。
       preserveCompleteBundle = config.experimental?.bundledDev === true
+      // 与 experimental 一致：未解析或手写配置可能省略 rolldownOptions，缺失时按默认命名处理。
+      const output = config.build.rolldownOptions?.output
+      const hasAssetFileNames = (Array.isArray(output) ? output : [output]).some(item => item?.assetFileNames !== undefined)
+      if (!config.build.lib && (config.build.assetsDir !== '.' || hasAssetFileNames)) {
+        imageNaming = config
+      }
     },
     generateBundle: {
       order: 'post',
       async handler(_options, bundle) {
+        rewrittenTemplateImageSources?.clear()
         const checkpoint = createHmrProfileCheckpoint(ctx.configService.isDev ? ctx.runtimeState?.build?.hmr?.profile : undefined)
         deferWxmlDependencyCommit(ctx)
         const assets = createOutputAssetTransaction(bundle as unknown as OutputBundle)
@@ -278,6 +297,36 @@ export function createOutputFinalizerPlugin(ctx: CompilerContext, subPackageMeta
           addWatchFile: file => this.addWatchFile?.(file),
           warn: message => this.warn(message),
           partial,
+          preparedTemplates,
+          rewriteImages: ctx.configService.platform === 'weapp' && assetEntries.templateAssets.length
+            ? createTemplateImageRewriter(outputBundle, ctx.configService.cwd, ctx.configService.absoluteSrcRoot, {
+                roots: () => ctx.scanService.subPackageMap.keys(),
+                independentRoot: subPackageMeta?.subPackage.independent ? subPackageMeta.subPackage.root : undefined,
+              }, imageNaming && {
+                publicDir: imageNaming.publicDir,
+                assetsInclude: imageNaming.assetsInclude,
+                useConsumerPackages: Boolean(templateAssetPackages && !subPackageMeta && !partial),
+                onRewrite: (source, target) => {
+                  if (rewrittenTemplateImageSources) {
+                    const sources = rewrittenTemplateImageSources.get(target) ?? new Set<string>()
+                    sources.add(source)
+                    rewrittenTemplateImageSources.set(target, sources)
+                  }
+                },
+                emit: (asset, owner) => {
+                  this.addWatchFile(asset.originalFileName)
+                  if (owner !== undefined) {
+                    templateAssetPackages?.set(asset.originalFileName, owner)
+                  }
+                  try {
+                    return this.getFileName(this.emitFile(asset))
+                  }
+                  finally {
+                    templateAssetPackages?.delete(asset.originalFileName)
+                  }
+                },
+              })
+            : undefined,
         })
         checkpoint('finalizeTemplateMs')
         deferWxmlDependencyCommit(ctx, commitDependencies)

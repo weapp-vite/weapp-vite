@@ -75,6 +75,23 @@ export function observeWxmlDependencies(ctx: Pick<CompilerContext, 'runtimeState
   }
 }
 
+/** 统一校验转换和验证阶段登记的监听文件。 */
+export function createWxmlWatchFileResolver(ctx: CompilerContext) {
+  const root = ctx.configService.cwd
+  let output: string | undefined
+  return (file: string) => {
+    if (typeof file !== 'string' || !file.trim()) {
+      throw new TypeError('addWatchFile expects a nonempty file path.')
+    }
+    output ??= normalizeFsResolvedId(ctx.configService.outDir)
+    const resolved = normalizeFsResolvedId(path.resolve(root, file))
+    if (resolved === output || resolved.startsWith(`${output}/`)) {
+      throw new Error('addWatchFile cannot watch generated output.')
+    }
+    return resolved
+  }
+}
+
 /** 注册立即生效以支持失败恢复，成功后再提交本轮各模板的依赖集合。 */
 export function beginWxmlDependencies(ctx: CompilerContext, scope: string, partial: boolean, stage: ProcessingStage = 'transform') {
   const state = ctx.runtimeState?.wxmlProcessing
@@ -82,8 +99,7 @@ export function beginWxmlDependencies(ctx: CompilerContext, scope: string, parti
   const key = `${stage}:${scope}`
   const token = Symbol(key)
   let completed = false
-  const root = ctx.configService.cwd
-  let output: string | undefined
+  const resolveWatchFile = createWxmlWatchFileResolver(ctx)
   state?.pending.set(token, { scope, stage, templates: pending })
   const fail = () => {
     if (!state || completed || !state.pending.has(token)) {
@@ -157,14 +173,7 @@ export function beginWxmlDependencies(ctx: CompilerContext, scope: string, parti
         if (completed || (state && !state.pending.has(token))) {
           throw new Error('The template dependency transaction has already completed.')
         }
-        if (typeof file !== 'string' || !file.trim()) {
-          throw new TypeError('addWatchFile expects a nonempty file path.')
-        }
-        output ??= normalizeFsResolvedId(ctx.configService.outDir)
-        const resolved = normalizeFsResolvedId(path.resolve(root, file))
-        if (resolved === output || resolved.startsWith(`${output}/`)) {
-          throw new Error('addWatchFile cannot watch generated output.')
-        }
+        const resolved = resolveWatchFile(file)
         if (state) {
           retainDependency(state, files, resolved)
         }

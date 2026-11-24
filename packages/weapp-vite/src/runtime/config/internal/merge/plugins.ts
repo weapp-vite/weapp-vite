@@ -6,6 +6,7 @@ import { isWeappCompilerPlugin } from '../../../../plugins/compilerPlugin'
 import { WEAPP_VITE_NPM_PRUNING_PLUGIN_NAME } from '../../../../runtime/buildPlugin/npmPruning'
 
 const WEAPP_VITE_OUTPUT_FINALIZER_PLUGIN_NAME = 'weapp-vite:output-finalizer'
+const WEAPP_VITE_ASSET_COPY_PLUGIN_NAME = 'weapp-vite:asset-copy'
 const WEAPP_VITE_OUTPUT_PUBLICATION_PLUGIN_NAME = 'weapp-vite:output-publication'
 
 export function normalizePluginOptions(option: PluginOption | PluginOption[] | undefined): PluginOption[] {
@@ -37,6 +38,7 @@ export function arrangePlugins(
   const tsconfigPlugins: PluginOption[] = []
   const others: PluginOption[] = []
   const finalizers: PluginOption[] = []
+  const assetCopies: PluginOption[] = []
   const publishers: PluginOption[] = []
   const sourceCompilers: PluginOption[] = []
   const outputCompilers: PluginOption[] = []
@@ -48,6 +50,10 @@ export function arrangePlugins(
     }
     if (isNamedPlugin(entry, WEAPP_VITE_OUTPUT_FINALIZER_PLUGIN_NAME) || isNamedPlugin(entry, WEAPP_VITE_NPM_PRUNING_PLUGIN_NAME)) {
       finalizers.push(entry)
+      continue
+    }
+    if (isNamedPlugin(entry, WEAPP_VITE_ASSET_COPY_PLUGIN_NAME)) {
+      assetCopies.push(entry)
       continue
     }
     if (isNamedPlugin(entry, WEAPP_VITE_OUTPUT_PUBLICATION_PLUGIN_NAME)) {
@@ -89,5 +95,5 @@ export function arrangePlugins(
     others.push(entry)
   }
 
-  config.plugins = [...others, ...tsconfigPlugins, ...sourceCompilers, ...cssPlugins, ...finalizers, ...outputCompilers, ...publishers]
+  config.plugins = [...others, ...tsconfigPlugins, ...sourceCompilers, ...cssPlugins, ...finalizers, ...assetCopies, ...outputCompilers, ...publishers]
 }

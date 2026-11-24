@@ -1,4 +1,5 @@
 import type { Plugin } from 'vite'
+import type { TemplateImageSources } from './outputFinalizer/templateImages'
 import type { CompilerContext } from '@/context'
 import type { SubPackageMetaValue, WeappVitePluginApi } from '@/types'
 import { wrapPlugin } from 'vite-plugin-performance'
@@ -16,6 +17,7 @@ import { css } from './css'
 import { i18n } from './i18n'
 import { createLibDtsPlugin } from './libDts'
 import { createOutputFinalizerPlugin, createOutputPublicationPlugin } from './outputFinalizer'
+import { createPreparedTemplates } from './outputFinalizer/templates'
 import { markOwnedPlugin } from './ownedInstances'
 import { createPackageImportsQueryPlugin } from './packageImports'
 import { createPluginProjectOutputPlugin } from './pluginProjectOutput'
@@ -23,6 +25,7 @@ import { preflight } from './preflight'
 import { createProjectConfigDirectoryPlugin } from './projectConfig/directory'
 import { createReactPlugin, isReactEnabled } from './react'
 import { createSubpackageOutputPlugin } from './subpackageOutput'
+import { collectTemplateConsumers } from './subpackageOutput/templateConsumers'
 import { createTailwindcssPlugin } from './tailwindcss'
 import { uniAppCompatibility } from './uniApp'
 import { vue } from './vue'
@@ -95,13 +98,19 @@ export function vitePluginWeapp(
   const reactEnabled = isReactEnabled(ctx)
   const vueRuntimeEnabled = vueEnabled && (!reactEnabled || hasWevuDependency(ctx))
   const runtimeProvider = resolveRuntimeProvider('miniprogram', vueRuntimeEnabled ? 'vue' : 'native')
+  const preparedTemplates = !subPackageMeta && !libModeEnabled
+    ? createPreparedTemplates(ctx)
+    : undefined
+  const templateAssetPackages = new Map<string, string>()
+  const rewrittenTemplateImageSources: TemplateImageSources = new Map()
   const groups: Plugin[][] = [
     [createContextPlugin(ctx), createPackageImportsQueryPlugin(), createSelectedRuntimeProviderPlugin(runtimeProvider, ctx.configService.isDev)],
     [createWasmPlugin(ctx, resolveWasmScope(ctx, subPackageMeta?.subPackage.independent ? subPackageMeta.subPackage.root : undefined)), createSubpackageOutputPlugin({
       srcRoot: ctx.configService.absoluteSrcRoot,
       independentRoot: subPackageMeta?.subPackage.independent ? subPackageMeta.subPackage.root : undefined,
       roots: () => ctx.scanService.subPackageMap.keys(),
-    })],
+      templateAssetPackages,
+    }, preparedTemplates ? plugin => collectTemplateConsumers(ctx, plugin, preparedTemplates) : undefined)],
     preflight(ctx),
     uniAppCompatibility(ctx),
     createReactPlugin(ctx),
@@ -111,9 +120,10 @@ export function vitePluginWeapp(
     groups.push(wevu(ctx))
   }
   const autoRoutesEnabled = resolveWeappAutoRoutesConfig(ctx.configService?.weappViteConfig?.autoRoutes).enabled
+  const assetPlugins = subPackageMeta ? undefined : asset(ctx, rewrittenTemplateImageSources)
 
-  if (!subPackageMeta) {
-    groups.push(asset(ctx))
+  if (assetPlugins) {
+    groups.push([assetPlugins[0]])
     if (autoRoutesEnabled && !libModeEnabled) {
       groups.push(autoRoutes(ctx))
     }
@@ -133,7 +143,10 @@ export function vitePluginWeapp(
   if (!subPackageMeta && !libModeEnabled) {
     groups.push([createProjectConfigDirectoryPlugin(ctx), createAppBuilderPlugin(ctx), createWorkerOutputPlugin(ctx), createPluginProjectOutputPlugin(ctx)])
   }
-  groups.push([createOutputFinalizerPlugin(ctx, subPackageMeta)])
+  groups.push([createOutputFinalizerPlugin(ctx, subPackageMeta, templateAssetPackages, rewrittenTemplateImageSources, preparedTemplates)])
+  if (assetPlugins) {
+    groups.push([assetPlugins[1]])
+  }
   if (tailwindcssPlugins.length > 1) {
     groups.push([tailwindcssPlugins[1]!])
   }
@@ -147,7 +160,7 @@ export function vitePluginWeapp(
   if (!subPackageMeta && usesBundlerNpmPublication(ctx)) {
     groups.push([createNpmPruningPlugin(ctx)])
   }
-  groups.push([createOutputPublicationPlugin(ctx, subPackageMeta)])
+  groups.push([createOutputPublicationPlugin(ctx, subPackageMeta, rewrittenTemplateImageSources)])
 
   const assembled = attachRuntimePlugins(ctx, flatten(groups))
   if (subPackageMeta) {

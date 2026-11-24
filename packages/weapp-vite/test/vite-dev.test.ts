@@ -1,4 +1,5 @@
 import type { InlineConfig, Plugin, ViteDevServer } from 'vite'
+import { Buffer } from 'node:buffer'
 import { realpathSync } from 'node:fs'
 import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import os from 'node:os'
@@ -163,6 +164,72 @@ it('keeps a recoverable host after an initial syntax failure', async () => {
   await writeFile(path.join(root, 'src/pages/home/index.ts'), 'Page({ data: { message: "fixed-initial-error" } })')
   await expect.poll(() => read('pages/home/index.js'), { timeout: 10_000 }).toContain('fixed-initial-error')
 }, 30_000)
+
+it.each([
+  { type: 'WXML', mixed: false, style: false, runtime: 'classic' },
+  { type: 'JS, WXSS and WXML', mixed: true, style: true, runtime: 'classic' },
+  { type: 'JS, WXSS and WXML', mixed: true, style: true, runtime: 'stateful-experimental' },
+  { type: 'JS and WXML', mixed: true, style: false, runtime: 'stateful-experimental' },
+] as const)('moves shared images used by $type between packages in $runtime', async ({ mixed, runtime, style }) => {
+  const home = 'pages/home/index'
+  const feature = 'packages/feature/pages/home/index'
+  const pic = '<image src="/packages/feature/image.png"/>'
+  const image = Buffer.from('asset update fixture')
+  const { root, read, server } = await fixture([], undefined, async (root) => {
+    await mkdir(path.join(root, 'src', path.dirname(feature)), { recursive: true })
+    for (const [file, content] of Object.entries({
+      'app.json': JSON.stringify({ pages: [home], subpackages: [{ root: 'packages/feature', pages: ['pages/home/index'] }] }),
+      [`${feature}.ts`]: mixed
+        ? 'import image from "../../image.png"; Page({ data: { image } })'
+        : 'Page({})',
+      [`${feature}.json`]: '{}',
+      [`${feature}.wxml`]: pic,
+      ...(style && { [`${feature}.wxss`]: 'view { background: url("../../image.png"); }' }),
+      'packages/feature/image.png': image,
+    })) {
+      await writeFile(path.join(root, 'src', file), content)
+    }
+    return {
+      weapp: { srcRoot: 'src', autoRoutes: false, vue: { enable: false }, hmr: { runtime } },
+      build: mixed
+        ? { assetsInlineLimit: 0, rolldownOptions: { output: { assetFileNames: () => '[subpackage]/assets/[name]-[hash][extname]' } } }
+        : { assetsDir: '[subpackage]/assets', assetsInlineLimit: 0 },
+    }
+  })
+  expect(server.config.experimental.bundledDev).toBe(runtime === 'stateful-experimental')
+  const outputImage = async (route: string) => {
+    const src = /<image\s+src="([^"]+)"/.exec(await read(`${route}.wxml`))?.[1]
+    return src?.startsWith('/') ? src.slice(1) : src && path.posix.normalize(path.posix.join(path.posix.dirname(route), src))
+  }
+  const payload = (file: string) => readFile(path.join(root, 'dist', file))
+  const expectFeature = async (file: string) => {
+    expect(await outputImage(feature)).toBe(file)
+    expect(await payload(file)).toEqual(image)
+    if (mixed) {
+      expect(await read(`${feature}.js`)).toContain(`/${file}`)
+    }
+    if (style) {
+      expect(await read(`${feature}.wxss`)).toContain(`/${file}`)
+    }
+  }
+  const local = await outputImage(feature)
+  expect(local).toMatch(/^packages\/feature\/assets\/image-[^/]+\.png$/)
+  await expectFeature(local!)
+
+  const mainTemplate = path.join(root, 'src', `${home}.wxml`)
+  await writeFile(mainTemplate, pic)
+  await expect.poll(async () => (await outputImage(home)) ?? '', { timeout: 10_000 }).toMatch(/^assets\/image-[^/]+\.png$/)
+  const shared = (await outputImage(home))!
+  await expect.poll(() => payload(local!).catch(error => error.code), { timeout: 10_000 }).toBe('ENOENT')
+  await expectFeature(shared)
+
+  await writeFile(mainTemplate, '<view/>')
+  await expect.poll(() => outputImage(feature), { timeout: 10_000 }).toBe(local)
+  await expect.poll(() => payload(shared).catch(error => error.code), { timeout: 10_000 }).toBe('ENOENT')
+  expect(await outputImage(home)).toBeUndefined()
+  await expectFeature(local!)
+  expect(server.config.experimental.bundledDev).toBe(runtime === 'stateful-experimental' && !style)
+}, 35_000)
 
 it('reloads imported config exactly once through the host before rebuilding', async () => {
   const { root, read } = await fixture([], 'Page({ data: { message: CONFIG_MESSAGE } })', async (projectRoot) => {
