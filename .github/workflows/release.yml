@@ -71,7 +71,58 @@ permissions:
   id-token: write
 
 jobs:
+  native-addon-build:
+    name: Build native addon (${{ matrix.id }})
+    if: ${{ (github.event_name == 'schedule' && github.event.schedule == '17 22 * * *') || github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.mode != 'oidc-audit' && inputs.mode != 'bootstrap') }}
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - id: darwin-arm64
+            runner: macos-15
+          - id: darwin-x64
+            runner: macos-15-intel
+          - id: linux-arm64-gnu
+            runner: ubuntu-24.04-arm
+          - id: linux-x64-gnu
+            runner: ubuntu-latest
+          - id: win32-arm64-msvc
+            runner: windows-11-arm
+          - id: win32-x64-msvc
+            runner: windows-latest
+    steps:
+      - name: Check out release source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.source-sha || github.sha }}
+          persist-credentials: false
+      - name: Set up Node.js
+        uses: ./.github/actions/setup-node-pnpm
+        with:
+          node-version: default
+          install-dependencies: 'false'
+          freeze-toolchain: 'false'
+      - name: Install dependencies without lifecycle builds
+        run: pnpm install --frozen-lockfile --ignore-scripts
+      - name: Install the package Rust toolchain
+        working-directory: packages/ast-native
+        run: rustup show active-toolchain
+      - name: Build and stage the target addon
+        run: pnpm --filter @weapp-vite/ast-native native:build
+      - name: Validate the target package
+        run: node scripts/nativeAddonPublication/validate.mjs --target=${{ matrix.id }} --require-binaries --assert-runtime
+      - name: Upload the target package
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: ast-native-${{ matrix.id }}
+          path: packages/ast-native-${{ matrix.id }}
+          if-no-files-found: error
+          retention-days: 14
+
   release:
+    needs: native-addon-build
     if: ${{ github.event_name != 'schedule' && inputs.mode != 'nightly' && inputs.mode != 'oidc-audit' && inputs.mode != 'bootstrap' }}
     # npm 发布完成即释放互斥，文档部署使用自己的队列。
     concurrency:
@@ -125,6 +176,13 @@ jobs:
 
       - name: Install Dependencies
         run: pnpm install --frozen-lockfile
+
+      - name: Download native addon packages
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: ast-native-*
+          path: packages
+          merge-multiple: false
 
       - name: Record release cache toolchain
         run: |
@@ -295,6 +353,7 @@ jobs:
     secrets: inherit
 
   nightly:
+    needs: native-addon-build
     name: Publish nightly
     if: ${{ (github.event_name == 'schedule' && github.event.schedule == '17 22 * * *') || (github.event_name == 'workflow_dispatch' && inputs.mode == 'nightly') }}
     # Nightly quality/build/consumer work can take hours. Keep duplicate nightly
@@ -343,6 +402,13 @@ jobs:
 
       - name: Install Dependencies without lifecycle scripts
         run: pnpm install --frozen-lockfile --ignore-scripts
+
+      - name: Download native addon packages
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: ast-native-*
+          path: packages
+          merge-multiple: false
 
       - name: Publish nightly packages
         id: nightly-publish

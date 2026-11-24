@@ -3,7 +3,7 @@ import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
-import { freezeProjectSupportArtifacts } from './identity'
+import { defaultAddonPath, freezeProjectSupportArtifacts } from './identity'
 
 const roots: string[] = []
 const fixture: ProfileCase = { id: 'fixture', cohort: 'wevu', project: 'apps/example', config: 'vite.config.ts', file: 'src/index.vue', isPage: true, expectCompilerBatch: true }
@@ -43,5 +43,24 @@ describe('prepared project support identity', () => {
     const { root, support } = await createSupportFiles()
     await rm(path.join(support, 'tsconfig.app.json'))
     await expect(freezeProjectSupportArtifacts(root, [fixture])).rejects.toThrow('Project support files are required')
+  })
+})
+
+describe('native addon identity', () => {
+  it('resolves the current platform package binary', () => {
+    const target = {
+      'darwin:arm64': 'darwin-arm64',
+      'darwin:x64': 'darwin-x64',
+      'linux:arm64': 'linux-arm64-gnu',
+      'linux:x64': 'linux-x64-gnu',
+      'win32:arm64': 'win32-arm64-msvc',
+      'win32:x64': 'win32-x64-msvc',
+    }[`${process.platform}:${process.arch}`]
+    const supported = target && (process.platform !== 'linux' || Boolean(process.report?.getReport?.().header?.glibcVersionRuntime))
+    if (!supported) {
+      expect(() => defaultAddonPath('/repo')).toThrow('Unsupported native platform')
+      return
+    }
+    expect(defaultAddonPath('/repo')).toBe(`/repo/packages/ast-native-${target}/weapp_vite_ast_native.${target}.node`)
   })
 })

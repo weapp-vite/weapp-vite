@@ -3423,6 +3423,37 @@ importers:
       vitest:
         specifier: 5.1.1
         version: 5.1.1(@types/node@26.6.6)(@vitest/browser-playwright@5.1.1)(@vitest/coverage-v8@5.1.1)(@vitest/ui@5.1.1)(happy-dom@21.0.4(bufferutil@4.1.0))(vite@8.3.5)
+    optionalDependencies:
+      '@weapp-vite/ast-native-darwin-arm64':
+        specifier: workspace:*
+        version: link:../ast-native-darwin-arm64
+      '@weapp-vite/ast-native-darwin-x64':
+        specifier: workspace:*
+        version: link:../ast-native-darwin-x64
+      '@weapp-vite/ast-native-linux-arm64-gnu':
+        specifier: workspace:*
+        version: link:../ast-native-linux-arm64-gnu
+      '@weapp-vite/ast-native-linux-x64-gnu':
+        specifier: workspace:*
+        version: link:../ast-native-linux-x64-gnu
+      '@weapp-vite/ast-native-win32-arm64-msvc':
+        specifier: workspace:*
+        version: link:../ast-native-win32-arm64-msvc
+      '@weapp-vite/ast-native-win32-x64-msvc':
+        specifier: workspace:*
+        version: link:../ast-native-win32-x64-msvc
+
+  packages/ast-native-darwin-arm64: {}
+
+  packages/ast-native-darwin-x64: {}
+
+  packages/ast-native-linux-arm64-gnu: {}
+
+  packages/ast-native-linux-x64-gnu: {}
+
+  packages/ast-native-win32-arm64-msvc: {}
+
+  packages/ast-native-win32-x64-msvc: {}
 
   packages/create-weapp-vite:
     dependencies:

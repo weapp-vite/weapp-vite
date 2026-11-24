@@ -117,7 +117,7 @@ keywords:
 | 包名 | 定位 | 适用场景 | 文档入口 |
 | --- | --- | --- | --- |
 | `@weapp-vite/ast` | Babel/Oxc 统一 AST 工具 | 插件、编译器和静态分析 | [/packages/ast](/packages/ast) |
-| `@weapp-vite/ast-native` | Rust/Oxc 原生 AST 原型 | 受控的 native AST 性能实验 | [/packages/ast-native](/packages/ast-native) |
+| `@weapp-vite/ast-native` | Rust/Oxc 原生 AST 分析 | 显式启用的跨平台 native AST 性能实验 | [/packages/ast-native](/packages/ast-native) |
 | `@weapp-vite/hmr` | HMR 批次与资产交付内核 | 编写宿主插件或集成自定义 watcher | [/packages/hmr](/packages/hmr) |
 | `@weapp-vite/tailwindcss` | Tailwind 宿主无关控制器 | 在 weapp-vite 插件中接入 Tailwind | [/packages/tailwindcss](/packages/tailwindcss) |
 | `@weapp-vite/qr` | 二维码编码、解码与终端渲染 | CLI 登录、截图和小程序码识别 | [/packages/qr](/packages/qr) |

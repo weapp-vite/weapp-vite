@@ -5,6 +5,16 @@
     "windows": "windows-latest",
     "macos": "macos-15"
   },
+  "nativeAddon": {
+    "targets": [
+      { "id": "darwin-arm64", "runner": "macos-15" },
+      { "id": "darwin-x64", "runner": "macos-15-intel" },
+      { "id": "linux-arm64-gnu", "runner": "ubuntu-24.04-arm" },
+      { "id": "linux-x64-gnu", "runner": "ubuntu-latest" },
+      { "id": "win32-arm64-msvc", "runner": "windows-11-arm" },
+      { "id": "win32-x64-msvc", "runner": "windows-latest" }
+    ]
+  },
   "node": {
     "default": "26.13.1",
     "ci": "24",

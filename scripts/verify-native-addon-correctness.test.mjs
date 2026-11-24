@@ -129,16 +129,12 @@ describe('actual-addon correctness evidence gate', () => {
 })
 
 describe('actual-addon CI execution contract', () => {
-  it('builds on all three hosts with a fixed Node version and the package-owned Rust toolchain', async () => {
+  it('builds and validates every native target on its matching host runner', async () => {
     const job = await addonJob()
-    expect([...job.strategy.matrix.os].sort()).toEqual([
-      // eslint-disable-next-line no-template-curly-in-string -- runner 版本由共享 CI toolchain policy 决定。
-      '${{ fromJSON(inputs.ci_toolchain).runners.macos }}',
-      'ubuntu-latest',
-      'windows-latest',
-    ])
     // eslint-disable-next-line no-template-curly-in-string -- 验证 GitHub Actions 的表达式原文。
-    expect(job['runs-on']).toBe('${{ matrix.os }}')
+    expect(job.strategy.matrix.include).toBe('${{ fromJSON(inputs.ci_toolchain).nativeAddon.targets }}')
+    // eslint-disable-next-line no-template-curly-in-string -- 验证 GitHub Actions 的表达式原文。
+    expect(job['runs-on']).toBe('${{ matrix.runner }}')
     const node = job.steps.find(step => step.uses === './.tmp/pr-driver/.github/actions/setup-node-pnpm')
     expect(node.with).toMatchObject({
       'node-version': 'default',
@@ -159,12 +155,9 @@ describe('actual-addon CI execution contract', () => {
     expect(install.run).toContain('--frozen-lockfile')
     expect(install.run).toContain('--ignore-scripts')
     const build = job.steps.find(step => step.run?.includes(' exec napi build '))
-    expect(build.run).toContain('--filter @weapp-vite/ast-native')
-    expect(build.run).toContain('--release')
-    expect(build.run).toContain('--platform')
-    expect(build.run).toContain('--no-js')
-    expect(build.run).toContain('-- --locked')
-    expect(build.run).not.toMatch(/noop|--all-features|--features/)
+    expect(build).toBeUndefined()
+    expect(job.steps.find(step => step.run === 'pnpm --filter @weapp-vite/ast-native native:build')).toBeDefined()
+    expect(job.steps.find(step => step.run?.includes('nativeAddonPublication/validate.mjs --target='))).toBeDefined()
   })
 
   it('requires the addon before the native tests and validates complete evidence even after test failure', async () => {
@@ -198,7 +191,7 @@ describe('actual-addon CI execution contract', () => {
     // eslint-disable-next-line no-template-curly-in-string -- 验证 GitHub Actions 的表达式原文。
     expect(job.env.NATIVE_CORRECTNESS_DRIVER_COMMIT).toBe('${{ github.sha }}')
     const planIndex = job.steps.findIndex(step => step.run?.includes('verify-native-addon-correctness.mjs plan '))
-    const buildIndex = job.steps.findIndex(step => step.run?.includes(' exec napi build '))
+    const buildIndex = job.steps.findIndex(step => step.run === 'pnpm --filter @weapp-vite/ast-native native:build')
     expect(planIndex).toBeGreaterThanOrEqual(0)
     expect(planIndex).toBeLessThan(buildIndex)
     for (const step of job.steps.filter(step => step.run?.includes('verify-native-addon-correctness.mjs '))) {

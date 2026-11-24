@@ -3,19 +3,32 @@ import process from 'node:process'
 
 const require = createRequire(import.meta.url)
 
-const bindingByPlatform = {
-  'darwin:arm64': './weapp_vite_ast_native.darwin-arm64.node',
-  'darwin:x64': './weapp_vite_ast_native.darwin-x64.node',
-  'linux:arm64': './weapp_vite_ast_native.linux-arm64-gnu.node',
-  'linux:x64': './weapp_vite_ast_native.linux-x64-gnu.node',
-  'win32:arm64': './weapp_vite_ast_native.win32-arm64-msvc.node',
-  'win32:x64': './weapp_vite_ast_native.win32-x64-msvc.node',
+const targetByRuntime = {
+  'darwin:arm64': { id: 'darwin-arm64', packageName: '@weapp-vite/ast-native-darwin-arm64' },
+  'darwin:x64': { id: 'darwin-x64', packageName: '@weapp-vite/ast-native-darwin-x64' },
+  'linux:arm64': { id: 'linux-arm64-gnu', packageName: '@weapp-vite/ast-native-linux-arm64-gnu' },
+  'linux:x64': { id: 'linux-x64-gnu', packageName: '@weapp-vite/ast-native-linux-x64-gnu' },
+  'win32:arm64': { id: 'win32-arm64-msvc', packageName: '@weapp-vite/ast-native-win32-arm64-msvc' },
+  'win32:x64': { id: 'win32-x64-msvc', packageName: '@weapp-vite/ast-native-win32-x64-msvc' },
 }
 
-const bindingPath = bindingByPlatform[`${process.platform}:${process.arch}`]
+if (process.platform === 'linux' && !process.report?.getReport?.().header?.glibcVersionRuntime) {
+  throw new Error(`Unsupported @weapp-vite/ast-native platform: linux:${process.arch}:musl-or-unknown-libc`)
+}
 
-if (!bindingPath) {
+const target = targetByRuntime[`${process.platform}:${process.arch}`]
+
+if (!target) {
   throw new Error(`Unsupported @weapp-vite/ast-native platform: ${process.platform}:${process.arch}`)
+}
+
+let binding
+try {
+  binding = require(target.packageName)
+}
+catch (error) {
+  const detail = error instanceof Error ? `: ${error.message}` : ''
+  throw new Error(`Unable to load @weapp-vite/ast-native native binding for ${target.id}. Install ${target.packageName} or disable native AST.${detail}`, { cause: error })
 }
 
 const {
@@ -28,7 +41,7 @@ const {
   getVueSfcSignaturePayloadNative: getVueSfcSignaturePayloadNativeBinding,
   mayContainPlatformApiAccessNative,
   mayContainStaticRequireLiteralNative,
-} = require(bindingPath)
+} = binding
 
 function getVueSfcSignaturePayloadNative(source) {
   return getVueSfcSignaturePayloadNativeBinding(source) ?? undefined

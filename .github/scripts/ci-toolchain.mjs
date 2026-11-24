@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs'
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
+import { nativeTargets } from '../../scripts/nativeAddonPublication/targets.mjs'
 
 const root = fileURLToPath(new URL('../../', import.meta.url))
 const policyPath = fileURLToPath(new URL('../ci-toolchain.json', import.meta.url))
@@ -62,6 +63,16 @@ export function validateCiToolchain(policy) {
   }
   if (policy.runners.macos === 'macos-latest') {
     throw new Error('macOS CI must use a pinned runner label')
+  }
+  const targets = policy.nativeAddon?.targets
+  if (!Array.isArray(targets) || targets.length !== nativeTargets.length) {
+    throw new Error('Native addon runner policy must cover every supported target')
+  }
+  for (const [index, target] of nativeTargets.entries()) {
+    const policyTarget = targets[index]
+    if (policyTarget?.id !== target.id || typeof policyTarget.runner !== 'string' || !policyTarget.runner) {
+      throw new Error(`Invalid native addon runner mapping for ${target.id}`)
+    }
   }
   const defaultVersion = readFileSync(`${root}/.node-version`, 'utf8').trim()
   const packageJson = JSON.parse(readFileSync(packagePath, 'utf8'))

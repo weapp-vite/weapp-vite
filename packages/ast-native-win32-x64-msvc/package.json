@@ -1,0 +1,29 @@
+{
+  "name": "@weapp-vite/ast-native-win32-x64-msvc",
+  "version": "0.2.6",
+  "description": "Native @weapp-vite/ast-native binding for win32-x64-msvc",
+  "os": [
+    "win32"
+  ],
+  "cpu": [
+    "x64"
+  ],
+  "license": "MIT",
+  "homepage": "https://github.com/weapp-vite/weapp-vite#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/weapp-vite/weapp-vite.git",
+    "directory": "packages/ast-native-win32-x64-msvc"
+  },
+  "main": "./weapp_vite_ast_native.win32-x64-msvc.node",
+  "files": [
+    "weapp_vite_ast_native.win32-x64-msvc.node"
+  ],
+  "scripts": {
+    "prepack": "node ../../scripts/nativeAddonPublication/validate.mjs --target=win32-x64-msvc --require-binaries"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org"
+  }
+}

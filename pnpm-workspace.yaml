@@ -26,6 +26,14 @@ versioning:
       - '@weapp-vite/dashboard'
       - wevu
       - '@wevu/compiler'
+    -
+      - '@weapp-vite/ast-native'
+      - '@weapp-vite/ast-native-darwin-arm64'
+      - '@weapp-vite/ast-native-darwin-x64'
+      - '@weapp-vite/ast-native-linux-arm64-gnu'
+      - '@weapp-vite/ast-native-linux-x64-gnu'
+      - '@weapp-vite/ast-native-win32-arm64-msvc'
+      - '@weapp-vite/ast-native-win32-x64-msvc'
 
   changelog:
     storage: repository
