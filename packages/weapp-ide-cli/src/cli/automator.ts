@@ -265,7 +265,7 @@ export async function connectOpenedAutomator(options: AutomatorOptions): Promise
         await scope.step(() => assertWechatDevtoolsPort(resolved.target!, endpointPort, { signal: scope.signal, timeout: scope.remainingMs() }), { stage: 'port-identity' })
         await scope.step(() => persistAutomatorSession({
           installationId: resolved.installationId!,
-          port: endpointPort,
+          ...(port !== undefined ? { port: endpointPort } : {}),
           projectPath,
           signal: scope.signal,
           wsEndpoint: endpoint.href,

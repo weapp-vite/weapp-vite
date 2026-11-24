@@ -138,4 +138,25 @@ describe('connecting to an opened managed automator', () => {
     expect(mocks.disconnect).toHaveBeenCalledExactlyOnceWith()
     expect(mocks.rawClose).not.toHaveBeenCalled()
   })
+
+  it('persists an unconfigured manual takeover under the default project key', async () => {
+    vi.stubEnv('WEAPP_IDE_MANAGED_PROJECT_JOURNAL', undefined)
+    mocks.readSession.mockResolvedValue(null)
+    mocks.launch.mockResolvedValueOnce({
+      ...makeProgram(),
+      __WEAPP_VITE_SESSION_METADATA: {
+        port: 19201,
+        wsEndpoint: 'ws://127.0.0.1:19201/',
+      },
+    })
+
+    await connectOpenedAutomator({ projectPath })
+
+    expect(mocks.persistSession).toHaveBeenCalledExactlyOnceWith({
+      installationId: target.installationId,
+      projectPath,
+      signal: expect.any(AbortSignal),
+      wsEndpoint: 'ws://127.0.0.1:19201/',
+    })
+  })
 })
