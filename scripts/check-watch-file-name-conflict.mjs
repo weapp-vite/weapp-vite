@@ -40,7 +40,14 @@ async function waitForCondition(check, timeoutMs, message) {
 async function configureTemplateWatch(root) {
   const configPath = path.join(root, 'weapp-vite.config.ts')
   const configContent = await fs.readFile(configPath, 'utf8')
-  const injected = configContent.replace(
+  const withClassicRuntime = configContent.replace(
+    '      weapp: {',
+    [
+      '      weapp: {',
+      '        hmr: { runtime: \'classic\' },',
+    ].join('\n'),
+  )
+  const injected = withClassicRuntime.replace(
     '      plugins: [',
     [
       '      build: {',
@@ -54,8 +61,8 @@ async function configureTemplateWatch(root) {
       '      plugins: [',
     ].join('\n'),
   )
-  if (injected === configContent) {
-    throw new Error('Expected plugin list not found in template config')
+  if (withClassicRuntime === configContent || injected === withClassicRuntime) {
+    throw new Error('Expected weapp config and plugin list not found in template config')
   }
   await fs.writeFile(configPath, injected, 'utf8')
 }

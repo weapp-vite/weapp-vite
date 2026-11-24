@@ -40,8 +40,8 @@ export async function snapshot(page: Page) {
   return await page.callMethod('_snapshot') as Feature1087Snapshot
 }
 
-export async function currentPage(miniProgram: MiniProgram, route: string) {
-  const page = await waitForCurrentPagePath(miniProgram, route, 15_000)
+export async function currentPage(miniProgram: MiniProgram, route: string, timeoutMs = 15_000) {
+  const page = await waitForCurrentPagePath(miniProgram, route, timeoutMs)
   assert(page, `Expected current page ${route}`)
   await expect.poll(async () => {
     const state = await snapshot(page)
