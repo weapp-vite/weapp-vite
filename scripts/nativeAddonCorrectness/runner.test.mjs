@@ -6,6 +6,8 @@ import { manifestPath } from './manifest.mjs'
 import { runCorrectness } from './runner.mjs'
 import { candidateFixture, completeReport } from './testHelpers.mjs'
 
+const fixtureAddonFile = 'packages/ast-native-linux-x64-gnu/weapp_vite_ast_native.linux-x64-gnu.node'
+
 const roots = []
 beforeEach(() => {
   vi.stubEnv('NATIVE_CORRECTNESS_EXPECTED_COMMIT', '')
@@ -22,7 +24,7 @@ async function preparedFixture() {
   const dependencies = {
     commit: vi.fn(async root => root === driverRoot ? 'b'.repeat(40) : 'a'.repeat(40)),
     loadBinding: vi.fn(async () => Object.fromEntries(fixture.manifest.requiredExports.map(name => [name, () => {}]))),
-    findAddonFiles: vi.fn(async () => ['packages/ast-native/index.js', 'packages/ast-native/fixture.node']),
+    findAddonFiles: vi.fn(async () => ['packages/ast-native/index.js', fixtureAddonFile]),
   }
   const run = (mode, extra = {}) => runCorrectness(mode, fixture.root, fixture.directory, { ...dependencies, ...extra })
   await run('plan')
@@ -85,7 +87,7 @@ describe('trusted native correctness runner', () => {
     expect(summary.buildOptions).toEqual({ force: true, concurrency: 1 })
     expect(summary.suiteFiles).toEqual(manifest.suites.map(suite => suite.file))
     expect(summary.suites).toHaveLength(manifest.suites.length)
-    expect(summary.addonFiles.map(item => item.file)).toEqual(['packages/ast-native/index.js', 'packages/ast-native/fixture.node'])
+    expect(summary.addonFiles.map(item => item.file)).toEqual(['packages/ast-native/index.js', fixtureAddonFile])
     expect(dependencies.loadBinding).toHaveBeenCalledOnce()
     expect(JSON.stringify(summary)).not.toContain(root)
   })
@@ -184,10 +186,10 @@ describe('trusted native correctness runner', () => {
     await expect(run('run')).rejects.toThrow('preflight did not pass')
   })
 
-  it.each(['index.js', 'fixture.node'])('rejects replacement of the actual addon %s after preflight without reloading it', async (file) => {
+  it.each(['index.js', fixtureAddonFile])('rejects replacement of the actual addon %s after preflight without reloading it', async (file) => {
     const { root, run, dependencies } = await preparedFixture()
     await run('binding')
-    await writeFile(path.join(root, 'packages/ast-native', file), 'replacement fixture bytes\n')
+    await writeFile(path.join(root, file === 'index.js' ? 'packages/ast-native/index.js' : fixtureAddonFile), 'replacement fixture bytes\n')
     await expect(run('run')).rejects.toThrow('changed after preflight')
     await expect(run('report')).rejects.toThrow('changed after preflight')
     expect(dependencies.loadBinding).toHaveBeenCalledOnce()
@@ -197,7 +199,7 @@ describe('trusted native correctness runner', () => {
     const { root, run } = await preparedFixture()
     await run('binding')
     const execute = vi.fn(async () => {
-      await writeFile(path.join(root, 'packages/ast-native/fixture.node'), 'replacement fixture bytes\n')
+      await writeFile(path.join(root, fixtureAddonFile), 'replacement fixture bytes\n')
     })
     await expect(run('run', { execute })).rejects.toThrow('changed after preflight')
     expect(execute).toHaveBeenCalledOnce()

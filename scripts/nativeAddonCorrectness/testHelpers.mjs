@@ -24,10 +24,11 @@ export function extendedManifest() {
 
 export async function candidateFixture(manifest = extendedManifest()) {
   const root = await mkdtemp(path.join(os.tmpdir(), 'native-correctness-'))
+  const addonFile = 'packages/ast-native-linux-x64-gnu/weapp_vite_ast_native.linux-x64-gnu.node'
   const files = [
     [manifestPath, JSON.stringify(manifest)],
     ['packages/ast-native/index.js', 'export const fixture = true\n'],
-    ['packages/ast-native/fixture.node', 'fixture binary identity only; never loaded as an addon\n'],
+    [addonFile, 'fixture binary identity only; never loaded as an addon\n'],
     ['packages-runtime/wevu-compiler/package.json', '{"name":"@wevu/compiler"}'],
     ['packages/weapp-vite/package.json', '{"name":"weapp-vite"}'],
     ...manifest.suites.map(suite => [`packages/ast-native/${suite.file}`, '// correctness fixture\n']),
