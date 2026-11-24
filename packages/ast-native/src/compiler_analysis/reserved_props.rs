@@ -19,8 +19,7 @@ fn runtime_props_contain_reserved(argument: &Expression<'_>) -> bool {
             let oxc_ast::ast::ObjectPropertyKind::ObjectProperty(property) = property else {
                 return false;
             };
-            !property.computed
-                && !property.method
+            !property.method
                 && property.kind == PropertyKind::Init
                 && static_property_name(&property.key).is_some_and(is_reserved)
         }),

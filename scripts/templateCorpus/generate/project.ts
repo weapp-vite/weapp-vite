@@ -31,7 +31,7 @@ export function createControlledProject(release: FrameworkRelease, target: Frame
     name: 'template-corpus-controlled-build',
     version: '0.0.0',
     private: true,
-    packageManager: 'pnpm@12.16.1',
+    packageManager: 'pnpm@12.23.0',
     dependencies: project.dependencies,
   })}\n`
   project.files['pnpm-workspace.yaml'] = 'packages: []\n'

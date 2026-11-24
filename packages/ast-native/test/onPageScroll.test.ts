@@ -141,6 +141,10 @@ const count = 1
       kinds: ['syncApi'],
     },
     {
+      source: 'const page = { ["onPageScroll"]: () => wx.getStorageSync("k") }',
+      kinds: [],
+    },
+    {
       source: 'onPageScroll(() => {})',
       kinds: ['empty'],
     },

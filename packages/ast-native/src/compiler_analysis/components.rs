@@ -24,7 +24,7 @@ fn static_properties<'a>(
         let ObjectPropertyKind::ObjectProperty(property) = property else {
             return None;
         };
-        if property.computed || property.method || property.kind != PropertyKind::Init {
+        if property.method || property.kind != PropertyKind::Init {
             return None;
         }
         let name = static_property_name(&property.key)?;

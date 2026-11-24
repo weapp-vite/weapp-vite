@@ -66,8 +66,10 @@ describe('frozen compiler generation catalog', () => {
 
   it('keeps genuine target extensions and compiler options independent', async () => {
     const catalog = await readFrameworkCatalog()
+    const rootManifest = JSON.parse(await readFile(new URL('../../package.json', import.meta.url), 'utf8')) as { packageManager: string }
     const uni = selectFrameworkTarget(catalog, 'uni-vue3', '3.0.0-5030420261029002', 'mp-weixin')
     const project = createControlledProject(uni.release, uni.target)
+    expect(JSON.parse(project.files['package.json']!).packageManager).toBe(rootManifest.packageManager)
     expect(project.files['compile.cjs']).toContain('initEnv(process.argv[2] === \'development\' ? \'dev\' : \'build\'')
     expect(project.files['compile.cjs']).not.toContain('watch:')
     expect(project.dependencies['@dcloudio/uni-mp-weixin']).toBe(uni.release.version)

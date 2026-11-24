@@ -118,7 +118,7 @@ catalog:
   miniprogram-api-typings: ^5.3.1
   miniprogram-computed: ^9.0.0
   obug: ^3.0.0
-  oxc-parser: ^0.159.0
+  oxc-parser: ^0.160.0
   oxc-walker: ^1.1.1
   pathe: ^2.0.3
   picocolors: ^1.1.1

@@ -69,7 +69,7 @@ export const TEMPLATE_CATALOG = {
   'magic-string': '^1.4.5',
   'miniprogram-api-typings': '^5.3.1',
   'miniprogram-computed': '^9.0.0',
-  'oxc-parser': '^0.159.0',
+  'oxc-parser': '^0.160.0',
   'oxc-walker': '^1.1.1',
   'pkg-types': '^2.4.0',
   'postcss-selector-parser': '^7.2.1',

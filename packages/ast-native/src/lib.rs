@@ -228,7 +228,7 @@ impl<'a> OnPageScrollVisitor<'a> {
 
 impl<'a> Visit<'a> for OnPageScrollVisitor<'a> {
     fn visit_object_property(&mut self, property: &ObjectProperty<'a>) {
-        if !property.computed && static_property_name(&property.key) == Some("onPageScroll") {
+        if static_property_name(&property.key) == Some("onPageScroll") {
             let start = if property.method {
                 property.key.span().end
             } else {
@@ -792,7 +792,7 @@ fn has_platform_api_member_expression(expression: &Expression) -> bool {
 fn static_property_name<'a>(key: &'a PropertyKey<'a>) -> Option<&'a str> {
     match key {
         PropertyKey::StaticIdentifier(identifier) => Some(identifier.name.as_str()),
-        PropertyKey::StringLiteral(literal) => literal.value.as_str(),
+        PropertyKey::StaticStringLiteral(literal) => literal.value.as_str(),
         _ => None,
     }
 }
