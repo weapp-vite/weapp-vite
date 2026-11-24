@@ -95,6 +95,29 @@ describe('wechat devtools http helpers', () => {
     expect(events).toEqual(['project-confirmed', 'http-open'])
   })
 
+  it('waits for a cold-started DevTools HTTP listener before opening a project', async () => {
+    assertPort
+      .mockRejectedValueOnce(Object.assign(new Error('listener is not ready'), { code: 'WECHAT_DEVTOOLS_PORT_NOT_LISTENING' }))
+      .mockResolvedValueOnce(undefined)
+    const { openWechatIdeProjectByHttp } = await import('../src/cli/http')
+
+    await openWechatIdeProjectByHttp('fixtures/demo-app')
+
+    expect(assertPort).toHaveBeenCalledTimes(2)
+    expect(fetch).toHaveBeenCalledExactlyOnceWith(expect.any(URL), expect.objectContaining({ method: 'GET' }))
+  })
+
+  it('does not retry an HTTP port owned by a different DevTools installation', async () => {
+    const mismatch = Object.assign(new Error('wrong installation'), { code: 'WECHAT_DEVTOOLS_HOST_IDENTITY_MISMATCH' })
+    assertPort.mockRejectedValueOnce(mismatch)
+    const { openWechatIdeProjectByHttp } = await import('../src/cli/http')
+
+    await expect(openWechatIdeProjectByHttp('fixture', { port: 22002, target: selectedTarget })).rejects.toBe(mismatch)
+
+    expect(assertPort).toHaveBeenCalledExactlyOnceWith(selectedTarget, 22002, expect.any(Object))
+    expect(fetch).not.toHaveBeenCalled()
+  })
+
   it.each(['fixtures/demo app', 'fixtures/中文应用', 'fixtures/中文 应用 100% & #'])('sends only the declared project parameter with one encoding: %s', async (fixturePath) => {
     const { openWechatIdeProjectByHttp } = await import('../src/cli/http')
     await openWechatIdeProjectByHttp(fixturePath)

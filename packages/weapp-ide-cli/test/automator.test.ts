@@ -22,6 +22,7 @@ const mkdirMock = vi.hoisted(() => vi.fn())
 const writeFileMock = vi.hoisted(() => vi.fn())
 const readFileMock = vi.hoisted(() => vi.fn())
 const rmMock = vi.hoisted(() => vi.fn())
+const createConnectionMock = vi.hoisted(() => vi.fn())
 const validateProjectMock = vi.hoisted(() => vi.fn())
 
 vi.mock('../src/cli/projectConfigValidation', () => ({ readAutomatorProjectConfig: validateProjectMock }))
@@ -57,6 +58,12 @@ vi.mock('node:fs/promises', () => ({
   },
 }))
 
+vi.mock('node:net', () => ({
+  default: {
+    createConnection: createConnectionMock,
+  },
+}))
+
 describe('automator helpers', () => {
   const mockProjectPath = path.resolve('/workspace/project')
 
@@ -71,6 +78,14 @@ describe('automator helpers', () => {
     writeFileMock.mockReset()
     readFileMock.mockReset()
     rmMock.mockReset()
+    createConnectionMock.mockReset().mockImplementation(() => ({
+      once: (event: string, callback: () => void) => {
+        if (event === 'connect') {
+          queueMicrotask(callback)
+        }
+      },
+      destroy: vi.fn(),
+    }))
     validateProjectMock.mockReset().mockResolvedValue({})
     resolveTargetMock.mockImplementation(async ({ cliPath }: { cliPath?: string }) => ({ cliPath: cliPath ?? '/Applications/wechat-cli', installationId: 'test-installation', appPath: 'app', profileDir: 'profile' }))
     readCustomConfigMock.mockResolvedValue({})
@@ -514,9 +529,40 @@ describe('automator helpers', () => {
       expect(rmMock).not.toHaveBeenCalled()
     })
 
-    it('rejects an explicit port without installation-bound project metadata', async () => {
-      await expect(connectOpenedAutomator({ port: 19_510, projectPath: '/workspace/project' })).rejects.toThrow('DEVTOOLS_SESSION_IDENTITY_UNVERIFIED')
+    it('takes over an opened project when its explicit automator port has no persisted session', async () => {
+      launchMock.mockResolvedValueOnce({
+        connected: true,
+        disconnect: vi.fn(),
+        close: vi.fn(),
+        __WEAPP_VITE_SESSION_METADATA: {
+          port: 19_510,
+          wsEndpoint: 'ws://127.0.0.1:19510',
+        },
+      })
+
+      await connectOpenedAutomator({ port: 19_510, projectPath: '/workspace/project' })
+
+      expect(launchMock).toHaveBeenCalledWith({
+        cliPath: '/Applications/wechat-cli',
+        port: 19_510,
+        projectPath: path.resolve('/workspace/project'),
+        signal: expect.any(AbortSignal),
+        timeout: expect.any(Number),
+        trustProject: undefined,
+      })
       expect(connectMock).not.toHaveBeenCalled()
+    })
+
+    it('preserves the selected runtime provider when taking over a project without a session record', async () => {
+      resolveTargetMock.mockResolvedValueOnce({ installationId: 'headless', runtimeProvider: 'headless' })
+      launchMock.mockResolvedValueOnce({ connected: true, disconnect: vi.fn() })
+
+      await connectOpenedAutomator({ projectPath: '/workspace/project', runtimeProvider: 'headless' })
+
+      expect(launchMock).toHaveBeenCalledWith(expect.objectContaining({
+        projectPath: path.resolve('/workspace/project'),
+        runtimeProvider: 'headless',
+      }))
     })
 
     it('matches persisted endpoint by session id and port', async () => {

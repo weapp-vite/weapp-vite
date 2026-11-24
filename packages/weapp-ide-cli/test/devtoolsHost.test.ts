@@ -84,11 +84,26 @@ describe('DevTools host ownership', () => {
     expect(execute).toHaveBeenCalledWith('lsof', ['-nP', '-iTCP:22001', '-sTCP:LISTEN', '-Fp'], expect.objectContaining({ reject: false, timeout: 3_000 }))
   })
 
-  it('rejects missing listeners and unavailable inspection instead of trusting the port number', async () => {
-    execute.mockResolvedValueOnce({ exitCode: 1, stdout: '' })
-    await expect(assertWechatDevtoolsPort(target(), 22001, { platform: 'darwin' })).rejects.toThrow('No verified')
+  it.each([
+    ['darwin', { exitCode: 1, stdout: '' }],
+    ['win32', { exitCode: 0, stdout: '[]' }],
+  ] as const)('classifies a missing %s listener separately from an installation mismatch', async (platform, result) => {
+    execute.mockResolvedValueOnce(result)
+    await expect(assertWechatDevtoolsPort(target(), 22001, { platform })).rejects.toMatchObject({
+      code: 'WECHAT_DEVTOOLS_PORT_NOT_LISTENING',
+    })
+  })
+
+  it('rejects unavailable listener inspection instead of trusting the port number', async () => {
     execute.mockRejectedValueOnce(new Error('inspection unavailable'))
     await expect(assertWechatDevtoolsPort(target(), 22001, { platform: 'darwin' })).rejects.toThrow('Unable to verify')
+  })
+
+  it('does not classify lsof failures as a missing listener', async () => {
+    execute.mockResolvedValueOnce({ exitCode: 1, stdout: '', stderr: 'lsof: permission denied' })
+    await expect(assertWechatDevtoolsPort(target(), 22001, { platform: 'darwin' })).rejects.toMatchObject({
+      code: 'WECHAT_DEVTOOLS_HOST_IDENTITY_MISMATCH',
+    })
   })
 
   it('uses Windows listener PIDs and executable paths with case-insensitive comparison', async () => {

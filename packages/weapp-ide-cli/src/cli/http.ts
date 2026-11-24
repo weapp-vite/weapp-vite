@@ -73,6 +73,58 @@ function createWechatDevtoolsHttpUrl(port: number, pathname: string, query: Reco
   return url
 }
 
+function isPortNotReadyError(error: unknown) {
+  return error instanceof Error
+    && Reflect.get(error, 'code') === 'WECHAT_DEVTOOLS_PORT_NOT_LISTENING'
+}
+
+function waitForPortRetry(delayMs: number, signal?: AbortSignal) {
+  signal?.throwIfAborted()
+  return new Promise<void>((resolve, reject) => {
+    let abort: () => void
+    const finish = () => {
+      signal?.removeEventListener('abort', abort)
+      resolve()
+    }
+    const timer = setTimeout(finish, delayMs)
+    abort = () => {
+      clearTimeout(timer)
+      signal?.removeEventListener('abort', abort)
+      reject(signal?.reason)
+    }
+    signal?.addEventListener('abort', abort, { once: true })
+    if (signal?.aborted) {
+      abort()
+    }
+  })
+}
+
+async function waitForWechatDevtoolsPort(
+  target: ResolvedWechatDevtoolsTarget,
+  port: number,
+  options: WechatDevtoolsHttpCommandOptions,
+  waitForPortMs: number,
+) {
+  const timeoutMs = Math.max(0, waitForPortMs)
+  const deadline = Date.now() + timeoutMs
+  while (true) {
+    try {
+      await assertWechatDevtoolsPort(target, port, {
+        signal: options.signal,
+        timeout: Math.min(options.timeoutMs ?? 1_000, Math.max(1, deadline - Date.now())),
+      })
+      return
+    }
+    catch (error) {
+      options.signal?.throwIfAborted()
+      if (!isPortNotReadyError(error) || Date.now() >= deadline) {
+        throw error
+      }
+      await waitForPortRetry(Math.min(100, Math.max(1, deadline - Date.now())), options.signal)
+    }
+  }
+}
+
 function parseWechatDevtoolsEngineBuildResult(body: string) {
   try {
     const parsed = JSON.parse(body) as WechatDevtoolsEngineBuildResult
@@ -87,6 +139,7 @@ async function requestSelectedWechatDevtoolsHttp(
   pathname: string,
   query: Record<string, string>,
   options: WechatDevtoolsHttpCommandOptions = {},
+  waitForPortMs = 0,
 ) {
   options.signal?.throwIfAborted()
   const target = await resolveWechatDevtoolsTarget(options)
@@ -101,7 +154,12 @@ async function requestSelectedWechatDevtoolsHttp(
     throw error
   })
   options.signal?.throwIfAborted()
-  await assertWechatDevtoolsPort(target, port, { signal: options.signal, timeout: options.timeoutMs })
+  if (waitForPortMs) {
+    await waitForWechatDevtoolsPort(target, port, options, waitForPortMs)
+  }
+  else {
+    await assertWechatDevtoolsPort(target, port, { signal: options.signal, timeout: options.timeoutMs })
+  }
   options.signal?.throwIfAborted()
   const url = createWechatDevtoolsHttpUrl(port, pathname, query)
 
@@ -132,10 +190,19 @@ async function requestSelectedWechatDevtoolsHttp(
   }
 }
 
+async function requestWechatDevtoolsHttpWithPortWait(
+  pathname: string,
+  query: Record<string, string>,
+  options: WechatDevtoolsHttpCommandOptions,
+  waitForPortMs: number,
+) {
+  options.signal?.throwIfAborted()
+  return await withMachineE2ELease(() => requestSelectedWechatDevtoolsHttp(pathname, query, options, waitForPortMs))
+}
+
 /** 请求期间持有机器租约，避免 E2E 与另一入口同时更改共享宿主。 */
 export async function requestWechatDevtoolsHttp(pathname: string, query: Record<string, string>, options: WechatDevtoolsHttpCommandOptions = {}) {
-  options.signal?.throwIfAborted()
-  return await withMachineE2ELease(() => requestSelectedWechatDevtoolsHttp(pathname, query, options))
+  return await requestWechatDevtoolsHttpWithPortWait(pathname, query, options, 0)
 }
 
 /**
@@ -145,9 +212,9 @@ export async function openWechatIdeProjectByHttp(
   projectPath: string,
   options: WechatDevtoolsHttpCommandOptions = {},
 ) {
-  const body = await requestWechatDevtoolsHttp('/v2/open', {
+  const body = await requestWechatDevtoolsHttpWithPortWait('/v2/open', {
     project: path.resolve(projectPath),
-  }, options)
+  }, options, 2_000)
   const response = body.trim()
   if (!response || /^\{\s*\}$/.test(response)) {
     throw createWechatDevtoolsHttpError('DevTools HTTP returned no project-open result; the target project opening is unconfirmed.', 'WECHAT_DEVTOOLS_HTTP_OPEN_UNCONFIRMED')

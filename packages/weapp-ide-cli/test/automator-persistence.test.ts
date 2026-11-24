@@ -1,14 +1,15 @@
 import path from 'node:path'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const mocks = vi.hoisted(() => ({ readFile: vi.fn(), rm: vi.fn(), connect: vi.fn(), assertPort: vi.fn() }))
+const mocks = vi.hoisted(() => ({ readFile: vi.fn(), rm: vi.fn(), connect: vi.fn(), launch: vi.fn(), assertPort: vi.fn(), createConnection: vi.fn() }))
 vi.mock('node:fs/promises', async (original) => {
   const actual = await original<typeof import('node:fs/promises')>()
   return { ...actual, default: { ...actual, readFile: mocks.readFile, rm: mocks.rm } }
 })
+vi.mock('node:net', () => ({ default: { createConnection: mocks.createConnection } }))
 vi.mock('@weapp-vite/miniprogram-automator', async importOriginal => ({
   ...await importOriginal<typeof import('@weapp-vite/miniprogram-automator')>(),
-  Launcher: class { connect = mocks.connect },
+  Launcher: class { connect = mocks.connect; launch = mocks.launch },
 }))
 vi.mock('../src/devtoolsTarget', () => ({
   resolveWechatDevtoolsTarget: async ({ cliPath }: { cliPath?: string }) => ({ cliPath: cliPath ?? 'stable-cli', installationId: cliPath ?? 'stable-cli', appPath: 'app', profileDir: 'profile' }),
@@ -24,6 +25,15 @@ describe('installation-bound automator connections', () => {
     vi.resetAllMocks()
     mocks.readFile.mockResolvedValue(JSON.stringify(stableSession))
     mocks.connect.mockResolvedValue({ disconnect: vi.fn() })
+    mocks.launch.mockRejectedValue(Object.assign(new Error('DEVTOOLS_SESSION_IDENTITY_UNVERIFIED'), { code: 'DEVTOOLS_SESSION_IDENTITY_UNVERIFIED' }))
+    mocks.createConnection.mockImplementation(() => ({
+      once: (event: string, callback: () => void) => {
+        if (event === 'connect') {
+          queueMicrotask(callback)
+        }
+      },
+      destroy: vi.fn(),
+    }))
   })
 
   it('preserves matching session metadata after transient connection failure', async () => {
