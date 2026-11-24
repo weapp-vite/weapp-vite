@@ -83,14 +83,30 @@ describe('run-e2e-suite ide cleanup hooks', () => {
 
   it('releases owned processes before every IDE task and after the suite', async () => {
     const cleanup = vi.fn(async () => {})
+    const prepareDist = vi.fn(async () => {})
     const [task] = await getSuiteTasks('ide-full')
-    const hooks = createIdeSuiteCleanupHooks([task!], cleanup)
+    const hooks = createIdeSuiteCleanupHooks([task!], cleanup, prepareDist)
 
-    await hooks.beforeEachTask?.(task!)
-    await hooks.beforeEachTask?.(task!)
+    await hooks.beforeEachTask?.(task!, new AbortController().signal)
+    await hooks.beforeEachTask?.(task!, new AbortController().signal)
     await hooks.afterAll?.()
 
+    expect(prepareDist).toHaveBeenCalledOnce()
     expect(cleanup).toHaveBeenCalledTimes(3)
+  })
+
+  it('builds the current weapp-vite dist before cleaning and launching the first IDE task', async () => {
+    const order: string[] = []
+    const [task] = await getSuiteTasks('ide-full')
+    const hooks = createIdeSuiteCleanupHooks(
+      [task!],
+      async () => { order.push('cleanup') },
+      async () => { order.push('build') },
+    )
+
+    await hooks.beforeEachTask?.(task!, new AbortController().signal)
+
+    expect(order).toEqual(['build', 'cleanup'])
   })
 
   it.each(['ci', 'full', 'full-regression', 'ide-headless-smoke', 'ide-headless-gate', 'ide-headless-full', 'ide-dom-headless'])(
@@ -105,12 +121,15 @@ describe('run-e2e-suite ide cleanup hooks', () => {
 
   it('cleans only the devtools tasks within a mixed suite', async () => {
     const cleanup = vi.fn(async () => {})
+    const prepareDist = vi.fn(async () => {})
     const [devtools] = await getSuiteTasks('ide-full')
     const [headless] = await getSuiteTasks('ide-dom-headless')
-    const hooks = createIdeSuiteCleanupHooks([headless!, devtools!], cleanup)
-    await hooks.beforeEachTask?.(headless!)
+    const hooks = createIdeSuiteCleanupHooks([headless!, devtools!], cleanup, prepareDist)
+    await hooks.beforeEachTask?.(headless!, new AbortController().signal)
     expect(cleanup).not.toHaveBeenCalled()
-    await hooks.beforeEachTask?.(devtools!)
+    expect(prepareDist).not.toHaveBeenCalled()
+    await hooks.beforeEachTask?.(devtools!, new AbortController().signal)
+    expect(prepareDist).toHaveBeenCalledOnce()
     expect(cleanup).toHaveBeenCalledOnce()
     await hooks.afterAll?.()
     expect(cleanup).toHaveBeenCalledTimes(2)

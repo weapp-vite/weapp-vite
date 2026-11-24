@@ -19,6 +19,7 @@ import { createSuiteSignalScope } from './suiteRunner/signals'
 import { assertVerificationPlan, createVerificationIdentity, taskDefinitionHash } from './verification/plan'
 import { currentVerificationProfile } from './verification/profile'
 import { verificationPlanSchema } from './verification/validation'
+import { ensureWeappViteDist } from './weappViteDistPreflight'
 
 function isCurrentModuleEntry(entryArg: string | undefined, moduleUrl: string) {
   if (!entryArg) {
@@ -44,16 +45,20 @@ export function shouldStopIdeSuiteAfterTaskFailure(tasks: SuiteTask[]) {
 export function createIdeSuiteCleanupHooks(
   tasks: SuiteTask[],
   cleanup: () => Promise<void> = cleanupResidualIdeProcesses,
+  prepareDist: (signal?: AbortSignal) => Promise<void> = ensureWeappViteDist,
 ) {
   if (!tasks.some(isDevtoolsVitestTask)) {
     return {}
   }
 
+  let distReady: Promise<void> | undefined
   return {
-    beforeEachTask: async (task: SuiteTask) => {
+    beforeEachTask: async (task: SuiteTask, signal: AbortSignal) => {
       if (!isDevtoolsVitestTask(task)) {
         return
       }
+      distReady ??= prepareDist(signal)
+      await distReady
       await cleanup()
     },
     afterAll: cleanup,
