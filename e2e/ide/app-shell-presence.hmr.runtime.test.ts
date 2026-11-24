@@ -6,6 +6,7 @@ import { parse } from '@weapp-vite/ast/babel'
 import traverse from '@weapp-vite/ast/babelTraverse'
 import path from 'pathe'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { captureAppReloadMarker, waitForAppReload } from '../utils/appReload'
 import { launchAutomator, reconnectAutomator } from '../utils/automator'
 import { runCleanupSteps } from '../utils/cleanupSteps'
 import { startDevProcess } from '../utils/dev-process'
@@ -232,6 +233,10 @@ describe('App template presence HMR on an unchanged plain page', { concurrent: f
 
     for (const stage of STAGES) {
       if (stage.id !== 'initial') {
+        const runtimeProvider = resolveRuntimeProviderName()
+        const reloadMarker = runtimeProvider === 'devtools'
+          ? await captureAppReloadMarker(miniProgram!)
+          : undefined
         await replaceFileByRename(APP_SOURCE, stage.shell ? withShell : withoutShell)
         await dev!.waitFor(expect.poll(readPublishedState, { timeout: 90_000 }).toEqual({
           ownerRequired: stage.shell,
@@ -247,14 +252,18 @@ describe('App template presence HMR on an unchanged plain page', { concurrent: f
           statefulControl: false,
         }), `${stage.id} page JS/WXML/JSON agree`)
 
-        if (resolveRuntimeProviderName() === 'headless') {
+        if (runtimeProvider === 'headless') {
           // headless 没有 IDE 完整重载；每代从新产物冷启，复用相同 DOM 与事件契约。
           await miniProgram!.close()
           miniProgram = await connect()
         }
-        else {
+        else if (reloadMarker) {
           // 只重连同一个已登记宿主，不另开 IDE、不主动 compile、不重试导航。
           miniProgram = await reconnectAutomator(miniProgram as MiniProgram)
+          await waitForAppReload(miniProgram, reloadMarker, '#app-shell-plain-page', { requireClassic: true })
+        }
+        else {
+          throw new Error(`Unsupported runtime provider: ${runtimeProvider}`)
         }
         const publishedDeadline = Date.now() + 45_000
         let publishedPage: DomPage | null | undefined
