@@ -2,10 +2,10 @@ import type { EmittedAsset, OutputBundle, PluginContext } from 'rolldown'
 import type { ResolvedConfig } from 'vite'
 import type { SubpackageNamingContext } from './ownership'
 import { createHash } from 'node:crypto'
-import { readFile, stat } from 'node:fs/promises'
+import { readFile } from 'node:fs/promises'
 import path from 'pathe'
 import { normalizeFsResolvedId } from '../../utils/resolvedId'
-import { createTemplateImageSourceResolver, findLocalImageReferences } from '../outputFinalizer/templateImages'
+import { createTemplateImageSourceResolver, findLocalImageReferences, isFile } from '../outputFinalizer/templateImages'
 import { outputPackage } from './access'
 import { resolveSourcePackage } from './ownership'
 import { mayUseSubpackageAssetNames } from './template'
@@ -76,7 +76,7 @@ export function createDeferredAssets(context: SubpackageNamingContext, templates
     for (const [source, owners] of referenced) {
       let key = keys.get(source)
       if (key === undefined) {
-        if (!(await stat(source, { throwIfNoEntry: false }))?.isFile()) {
+        if (!await isFile(source)) {
           continue
         }
         // 仅在模板中引用的不同源文件也可能与待发射文件同内容。

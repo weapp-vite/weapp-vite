@@ -53,7 +53,7 @@ export function findLocalImageReferences(code: string, fileName: string) {
 type ImageReference = ReturnType<typeof findLocalImageReferences>[number]
 
 /** 部分 Node 22 版本即使传入 throwIfNoEntry 仍会抛 ENOENT，这里统一收敛为布尔判断。 */
-async function isFile(file: string) {
+export async function isFile(file: string) {
   try {
     return (await stat(file)).isFile()
   }

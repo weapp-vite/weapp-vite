@@ -157,6 +157,34 @@ it.each(['assetsDir', 'assetFileNames (string)', 'assetFileNames (function)'] as
   }
 })
 
+it('ignores missing local WXML images during package ownership discovery', async () => {
+  const fixture = await createSubpackageOutputFixture()
+  try {
+    const [mainRoute, featureRoute] = fixture.routes
+    for (const route of fixture.routes) {
+      await writeFile(path.join(fixture.root, 'src', `${route}.js`), 'Page({})')
+      await writeFile(path.join(fixture.root, 'src', `${route}.wxss`), '')
+    }
+    await writeFile(path.join(fixture.root, 'src', `${mainRoute}.wxml`), '<view/>')
+    await writeFile(path.join(fixture.root, 'src', `${featureRoute}.wxml`), '<image src="/packages/feature/missing.png"/>')
+
+    await build({
+      root: fixture.root,
+      configFile: false,
+      logLevel: 'silent',
+      plugins: [weapp()],
+      weapp: { srcRoot: 'src', vue: { enable: false }, autoRoutes: false, autoImport: false, autoImportComponents: false, npm: { enable: false } },
+      build: { assetsDir: '[subpackage]/assets', assetsInlineLimit: 0 },
+    })
+
+    const output = await readFile(path.join(fixture.root, 'dist', `${featureRoute}.wxml`), 'utf8')
+    expect(output).toContain('src="/packages/feature/missing.png"')
+  }
+  finally {
+    await fixture.close()
+  }
+})
+
 it.each([
   { name: 'placeholder naming', consumers: 'mixed', usePlaceholder: true, useCallback: false },
   { name: 'explicit string without a placeholder', consumers: 'js', usePlaceholder: false, useCallback: false },
