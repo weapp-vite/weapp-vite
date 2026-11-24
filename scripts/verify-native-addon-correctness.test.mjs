@@ -157,7 +157,8 @@ describe('actual-addon CI execution contract', () => {
     const build = job.steps.find(step => step.run?.includes(' exec napi build '))
     expect(build).toBeUndefined()
     expect(job.steps.find(step => step.run === 'pnpm --filter @weapp-vite/ast-native native:build')).toBeDefined()
-    expect(job.steps.find(step => step.run?.includes('nativeAddonPublication/validate.mjs --target='))).toBeDefined()
+    // eslint-disable-next-line no-template-curly-in-string -- 验证 GitHub Actions 的表达式原文。
+    expect(job.steps.find(step => step.run === 'node .tmp/pr-driver/scripts/nativeAddonPublication/validate.mjs --root=. --target=${{ matrix.id }} --require-binaries --assert-runtime')).toBeDefined()
   })
 
   it('requires the addon before the native tests and validates complete evidence even after test failure', async () => {
