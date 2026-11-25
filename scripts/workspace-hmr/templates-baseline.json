@@ -468,6 +468,20 @@
           "impactFiles": 1
         }
       }
+    },
+    "templates/weapp-vite-wevu-varo-retail-template": {
+      "startupMs": 6348,
+      "scenarios": {
+        "vue-script": {
+          "impactFiles": 1
+        },
+        "vue-template": {
+          "impactFiles": 2
+        },
+        "vue-style": {
+          "impactFiles": 2
+        }
+      }
     }
   }
 }

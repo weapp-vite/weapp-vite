@@ -1,4 +1,10 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import path from 'node:path'
+import process from 'node:process'
+// eslint-disable-next-line e18e/ban-dependencies -- 通过独立进程运行模板的正式 prepare 命令。
+import { execa } from 'execa'
+import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
+import { TemplateName } from '@/enums'
+import { TEMPLATE_DIR_MAP } from '@/templates'
 
 vi.mock('wevu', () => ({ reactive: <T extends object>(value: T) => value }))
 
@@ -17,6 +23,14 @@ async function loadShop(initial?: unknown) {
 afterEach(() => vi.unstubAllGlobals())
 
 describe('Varo retail template checkout', () => {
+  beforeAll(async () => {
+    // Vite 转换模板源码前需要读取 prepare 生成的 TypeScript 项目引用。
+    const repoRoot = path.resolve(import.meta.dirname, '../../..')
+    const cwd = path.join(repoRoot, 'templates', TEMPLATE_DIR_MAP[TemplateName.wevuVaro])
+    const cli = path.join(repoRoot, 'packages/weapp-vite/dist/cli.mjs')
+    await execa(process.execPath, [cli, 'prepare'], { cwd, stdio: 'inherit' })
+  })
+
   it('keeps unselected cart lines and records each checkout only once', async () => {
     const retail = await loadShop()
     const { addProduct, products, shop, startCartCheckout, submitDemoOrder } = retail
