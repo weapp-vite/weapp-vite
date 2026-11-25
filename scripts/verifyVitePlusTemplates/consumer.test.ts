@@ -29,12 +29,13 @@ afterEach(async () => {
 })
 
 describe('Vite+ packed template consumer contracts', () => {
-  it('keeps seven pnpm templates, one npm template, six platforms and one workspace case in the complete matrix', () => {
+  it('keeps eight pnpm templates, one npm template, six platforms and one workspace case in the complete matrix', () => {
     const { matrix, selected } = selectCases()
     expect(selected).toEqual(matrix)
     expect(matrix.map(item => item.id)).toEqual([
       'pnpm/default',
       'pnpm/wevu',
+      'pnpm/wevu-varo',
       'pnpm/tailwindcss',
       'pnpm/tdesign',
       'pnpm/wevu-tdesign',
@@ -45,7 +46,7 @@ describe('Vite+ packed template consumer contracts', () => {
       'pnpm/workspace',
     ])
     expect(selectCases('npm/default').selected.map(item => item.id)).toEqual(['npm/default'])
-    expect(selectCases('npm/default').matrix).toHaveLength(10)
+    expect(selectCases('npm/default').matrix).toHaveLength(11)
     expect(() => selectCases('')).toThrow('cannot be empty')
     expect(() => selectCases('npm/react')).toThrow('Unknown')
   })

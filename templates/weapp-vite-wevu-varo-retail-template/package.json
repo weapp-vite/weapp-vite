@@ -1,0 +1,52 @@
+{
+  "name": "weapp-vite-wevu-varo-retail-template",
+  "type": "module",
+  "version": "1.0.0",
+  "private": true,
+  "description": "基于 Wevu 与 Varo 可编辑源码的微信小程序零售模板",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/weapp-vite/weapp-vite.git",
+    "directory": "templates/weapp-vite-wevu-varo-retail-template"
+  },
+  "bugs": {
+    "url": "https://github.com/weapp-vite/weapp-vite/issues"
+  },
+  "scripts": {
+    "dev": "wv dev",
+    "dev:open": "wv dev -o",
+    "dev:ui": "wv dev --ui",
+    "dev:open:ui": "wv dev --ui -o",
+    "build": "wv build",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "typecheck": "vue-tsc --noEmit -p .weapp-vite/tsconfig.app.json",
+    "open": "wv open",
+    "stylelint": "stylelint \"src/**/*.{css,scss,vue,wxss,acss,ttss,jxss,qss,tyss}\" --allow-empty-input",
+    "stylelint:fix": "stylelint \"src/**/*.{css,scss,vue,wxss,acss,ttss,jxss,qss,tyss}\" --fix --allow-empty-input",
+    "postinstall": "wv prepare"
+  },
+  "dependencies": {
+    "@varo-ui/headless": "3.0.0",
+    "@varo-ui/theme": "3.0.0",
+    "@weapp-tailwindcss/merge": "^2.2.4",
+    "clsx": "catalog:"
+  },
+  "devDependencies": {
+    "@icebreakers/eslint-config": "catalog:",
+    "@icebreakers/stylelint-config": "catalog:",
+    "@types/node": "catalog:",
+    "@weapp-vite/dashboard": "workspace:*",
+    "eslint": "catalog:",
+    "miniprogram-api-typings": "catalog:",
+    "postcss": "catalog:",
+    "stylelint": "catalog:",
+    "tailwindcss": "catalog:tailwind4",
+    "typescript": "catalog:",
+    "vue-tsc": "catalog:",
+    "weapp-tailwindcss": "catalog:",
+    "weapp-vite": "workspace:*",
+    "wevu": "workspace:*"
+  }
+}

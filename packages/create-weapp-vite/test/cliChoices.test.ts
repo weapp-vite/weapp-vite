@@ -54,6 +54,7 @@ describe('template and toolchain selection', () => {
     expect(templatePrompt.choices.map((choice: { value: string }) => choice.value)).toEqual([
       'default',
       'wevu',
+      'wevu-varo',
       'wevu-tdesign',
       'tailwindcss',
       'tdesign',

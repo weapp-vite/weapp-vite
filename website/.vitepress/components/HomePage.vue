@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useData } from 'vitepress'
 import { computed } from 'vue'
+import HomeVaroFeature from './HomeVaroFeature.vue'
 import TechBackground from './TechBackground.vue'
 
 const { isDark } = useData()
@@ -26,7 +27,7 @@ const packageFeatureCards: HomeFeatureCard[] = [
     icon: '🚀',
     title: '官方脚手架',
     packageName: 'create-weapp-vite',
-    description: '内置 default / Wevu / tailwindcss / tdesign 等模板，快速创建并对齐依赖组合。',
+    description: '内置原生、Wevu、Wevu + Varo 等模板，快速创建项目并对齐依赖组合。',
   },
   {
     href: '/wevu/',
@@ -160,6 +161,7 @@ const packageFeatureCards: HomeFeatureCard[] = [
       <div class="absolute inset-0 -z-10 bg-[linear-gradient(90deg,rgba(16,185,129,0.08)_1px,transparent_1px),linear-gradient(rgba(16,185,129,0.08)_1px,transparent_1px)] bg-size-[24px_24px]" />
     </div>
     <div class="mx-auto max-w-7xl px-6 py-8 sm:py-12">
+      <HomeVaroFeature />
       <div class="feature-grid grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
         <a
           v-for="(feature, featureIndex) in packageFeatureCards"

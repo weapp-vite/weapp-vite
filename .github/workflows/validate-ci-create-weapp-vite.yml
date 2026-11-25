@@ -155,7 +155,7 @@ jobs:
             {"os":"ubuntu-latest","node-version":"24","scope":"core"},
             {"os":"windows-latest","node-version":"24","scope":"core"},
             {"os":"${{ fromJSON(inputs.ci_toolchain).runners.macos }}","node-version":"24","scope":"core"},
-            {"os":"ubuntu-latest","node-version":"24","scope":"all-templates","templates":"default,multi-platform,multi-platform-sfc,plugin,lib,wevu,react,wevu-tdesign,tailwindcss,tdesign,vant"}
+            {"os":"ubuntu-latest","node-version":"24","scope":"all-templates","templates":"default,multi-platform,multi-platform-sfc,plugin,lib,wevu,wevu-varo,react,wevu-tdesign,tailwindcss,tdesign,vant"}
           ]}'
 
           single_matrix="$(printf '{"include":[{"os":"%s","node-version":"%s","scope":"core"}]}' "${INPUT_OS}" "${INPUT_NODE_VERSION}")"

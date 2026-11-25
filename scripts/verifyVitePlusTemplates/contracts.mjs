@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import { createPnpmCommand } from '../createWeappViteSmoke/commands.mjs'
 import { createPnpmProfileConfig, createRegistryEnvironment } from '../createWeappViteSmoke/registry.mjs'
 
-export const templateNames = ['default', 'wevu', 'tailwindcss', 'tdesign', 'wevu-tdesign', 'vant', 'react']
+export const templateNames = ['default', 'wevu', 'wevu-varo', 'tailwindcss', 'tdesign', 'wevu-tdesign', 'vant', 'react']
 export const requiredCandidates = ['@weapp-vite/language-service', '@weapp-vite/oxlint', '@weapp-vite/oxfmt', '@weapp-vite/eslint']
 
 /** 固定完整验收矩阵；显式筛选仍在报告中保留完整计划和未运行项目。 */

@@ -77,7 +77,7 @@ for (const name of Object.keys(agentManifest.templates)) {
     contentFile: content(`template-${name}.md`),
   }
   agentManifest.layers[`template:${name}`] = {
-    base: 'template-runtime-host',
+    base: name === 'wevu-varo' ? 'template:wevu' : 'template-runtime-host',
     include: [sectionId],
   }
 }

@@ -4707,6 +4707,64 @@ importers:
         specifier: workspace:*
         version: link:../../packages-runtime/wevu
 
+  templates/weapp-vite-wevu-varo-retail-template:
+    dependencies:
+      '@varo-ui/headless':
+        specifier: 3.0.0
+        version: 3.0.0
+      '@varo-ui/theme':
+        specifier: 3.0.0
+        version: 3.0.0(typescript@6.0.3)
+      '@weapp-tailwindcss/merge':
+        specifier: ^2.2.4
+        version: 2.2.7
+      clsx:
+        specifier: 'catalog:'
+        version: 2.1.1
+    devDependencies:
+      '@icebreakers/eslint-config':
+        specifier: 'catalog:'
+        version: 8.0.20(eslint-plugin-pnpm@1.9.1(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2)))(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2))(oxlint@1.91.0(oxlint-tsgolint@7.0.2005))(postcss@8.5.33)(stylelint@18.1.0)(supports-color@10.2.2)(tailwindcss@4.3.5)(vitest@5.1.1)
+      '@icebreakers/stylelint-config':
+        specifier: 'catalog:'
+        version: 6.0.5(postcss@8.5.33)(stylelint@18.1.0)(tailwindcss@4.3.5)
+      '@types/node':
+        specifier: 'catalog:'
+        version: 26.6.6
+      '@weapp-vite/dashboard':
+        specifier: workspace:*
+        version: link:../../packages/dashboard
+      eslint:
+        specifier: 'catalog:'
+        version: 10.15.0(jiti@2.7.0)(supports-color@10.2.2)
+      miniprogram-api-typings:
+        specifier: 'catalog:'
+        version: 5.3.1
+      postcss:
+        specifier: 'catalog:'
+        version: 8.5.33
+      stylelint:
+        specifier: 'catalog:'
+        version: 18.1.0
+      tailwindcss:
+        specifier: catalog:tailwind4
+        version: 4.3.5
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+      vue-tsc:
+        specifier: 'catalog:'
+        version: 3.3.14(typescript@6.0.3)
+      weapp-tailwindcss:
+        specifier: 'catalog:'
+        version: 5.7.5(@oxc-project/types@0.160.0)(jiti@2.7.0)(lightningcss@1.33.0)(rolldown@1.2.16)(supports-color@10.2.2)(tailwindcss@4.3.5)(tsx@4.23.15)(vite@8.3.5)(webpack@5.105.0(@swc/core@1.16.22)(csso@5.0.5)(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.33))
+      weapp-vite:
+        specifier: workspace:*
+        version: link:../../packages/weapp-vite
+      wevu:
+        specifier: workspace:*
+        version: link:../../packages-runtime/wevu
+
   test/fixture-projects/weapp-vite/asset:
     dependencies:
       gm-crypto:
@@ -10886,6 +10944,12 @@ packages:
 
   '@vant/weapp@1.11.7':
     resolution: {integrity: sha512-Rwn9BBnb4kHSV4XmvBicwtd42J+amEUfnFDcXJsGNPNX4a9c/DoT6YLsm4X1wB2+sQbdiQsbFBLAvGRBxCkD8g==}
+
+  '@varo-ui/headless@3.0.0':
+    resolution: {integrity: sha512-8i3alcNpa9AYg1iHkrMbNle/pWjQpeXNkjH+F+zKDnlQELhal9BNLxFR+3fEC4efkOukERKjVz5YucBxviqBUw==}
+
+  '@varo-ui/theme@3.0.0':
+    resolution: {integrity: sha512-ml4Z44R/bNFoX/p/TN4QhNYQLhZ0qZ5WtAFSAK1YBomMR6UiZDHVnV3A6Dq//wfLBQhXPDDNIsK4DAXWYZr95g==}
 
   '@vercel/detect-agent@1.2.7':
     resolution: {integrity: sha512-5tWaC9V+u4SHcSMKBz9FQb3Dhl/1A2lQ6QqHovu8uQeb8dTyjEevpJMANm/uQEn/usYB63fpdjWYjkJ8/bGtjA==}
@@ -23928,6 +23992,14 @@ snapshots:
       vue: 3.5.46(typescript@6.0.3)
 
   '@vant/weapp@1.11.7': {}
+
+  '@varo-ui/headless@3.0.0': {}
+
+  '@varo-ui/theme@3.0.0(typescript@6.0.3)':
+    dependencies:
+      vue: 3.5.46(typescript@6.0.3)
+    transitivePeerDependencies:
+      - typescript
 
   '@vercel/detect-agent@1.2.7': {}
 

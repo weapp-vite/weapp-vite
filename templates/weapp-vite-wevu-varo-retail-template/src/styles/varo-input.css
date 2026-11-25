@@ -1,0 +1,115 @@
+.varo-input {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 6px;
+  width: 100%;
+  min-width: 0;
+  color: var(--varo-ui-text);
+}
+
+.varo-input__label {
+  font-size: 14px;
+  color: var(--varo-ui-text-regular);
+}
+
+.varo-input__body {
+  box-sizing: border-box;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  width: 100%;
+  min-height: var(--varo-ui-input-height-md);
+  padding: 0 12px;
+  background: var(--varo-ui-surface);
+  border: 1px solid var(--varo-ui-border);
+  border-radius: var(--varo-ui-input-radius);
+  box-shadow: var(--varo-ui-shadow-sm);
+  transition:
+    border-color 0.18s ease,
+    box-shadow 0.18s ease;
+}
+
+.varo-input[data-type='textarea'] .varo-input__body {
+  position: relative;
+  align-items: flex-start;
+  padding: 10px 12px 28px;
+}
+
+.varo-input[data-size='sm'] .varo-input__body {
+  min-height: var(--varo-ui-input-height-sm);
+}
+
+.varo-input[data-size='lg'] .varo-input__body {
+  min-height: var(--varo-ui-input-height-lg);
+}
+
+.varo-input[data-focused='true'] .varo-input__body {
+  border-color: var(--varo-ui-primary);
+  box-shadow: 0 0 0 3px var(--varo-ui-ring);
+}
+
+.varo-input[data-invalid='true'] .varo-input__body {
+  border-color: var(--varo-ui-danger);
+}
+
+.varo-input__control {
+  flex: 1;
+  min-width: 0;
+  font: inherit;
+  color: inherit;
+  outline: 0;
+  background: transparent;
+  border: 0;
+}
+
+textarea.varo-input__control {
+  min-height: 72px;
+  padding: 0;
+  resize: none;
+}
+
+.varo-input__prefix,
+.varo-input__suffix,
+.varo-input__clear,
+.varo-input__word-limit {
+  flex: none;
+  font-size: 13px;
+  color: var(--varo-ui-text-muted);
+}
+
+.varo-input__clear.varo-input__clear {
+  box-sizing: border-box;
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  align-self: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  margin: -14px 0;
+  overflow: visible;
+  color: var(--varo-ui-text-placeholder);
+  cursor: pointer;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+}
+
+.varo-input__clear .varo-icon {
+  display: block;
+  width: 16px;
+  height: 16px;
+}
+
+.varo-input[data-type='textarea'] .varo-input__word-limit {
+  position: absolute;
+  right: 12px;
+  bottom: 8px;
+  line-height: 1;
+}
+
+.varo-input__error {
+  font-size: 12px;
+  color: var(--varo-ui-danger-text);
+}
