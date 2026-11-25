@@ -1,7 +1,7 @@
 {
   "name": "@wevu/a2ui",
   "type": "module",
-  "version": "0.0.1",
+  "version": "0.0.0",
   "description": "A2UI v1.0 的 Wevu 小程序渲染适配层",
   "license": "MIT",
   "homepage": "https://github.com/weapp-vite/weapp-vite#readme",
