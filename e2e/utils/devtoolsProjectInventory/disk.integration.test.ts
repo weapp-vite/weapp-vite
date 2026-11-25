@@ -19,46 +19,60 @@ afterEach(async () => {
   await machine.dispose()
 })
 
-async function scan() {
-  await scanDevtoolsProjectInventory(root, { machineLeaseOptions: { stateDirectory: machine.stateDirectory, env: { ...machine.environment } } })
+async function scan(signal: AbortSignal) {
+  await scanDevtoolsProjectInventory(root, {
+    signal,
+    timeoutMs: 60_000,
+    machineLeaseOptions: { stateDirectory: machine.stateDirectory, env: { ...machine.environment } },
+  })
 }
 
 describe('isolated inventory child with real journal files', () => {
-  it('accepts a missing inventory without creating a journal or directory', async () => {
-    await expect(scan()).resolves.toBeUndefined()
+  it('accepts a missing inventory without creating a journal or directory', async (context) => {
+    await expect(scan(context.signal)).resolves.toBeUndefined()
     await expect(fs.stat(root)).rejects.toMatchObject({ code: 'ENOENT' })
-  }, 30_000)
+  }, 75_000)
 
-  it('reads a released task without changing its directory or record bytes', async () => {
+  it('reads a released task without changing its directory or record bytes', async (context) => {
     const record = await createInventoryRecord(root)
     const recordPath = path.join(record.journalPath, `${record.id}.json`)
     const before = await fs.readFile(recordPath, 'utf8')
     const entries = await fs.readdir(root)
-    await expect(scan()).resolves.toBeUndefined()
+    await expect(scan(context.signal)).resolves.toBeUndefined()
     expect(await fs.readdir(root)).toEqual(entries)
     expect(await fs.readFile(recordPath, 'utf8')).toBe(before)
   }, 30_000)
 
-  it('preserves unresolved ownership as a failed child result', async () => {
+  it('preserves unresolved ownership as a failed child result', async (context) => {
     const record = await createInventoryRecord(root)
     await writeManagedRecord({ ...record, state: 'unconfirmed', releasedReason: undefined })
-    await expect(scan()).rejects.toThrow(/unresolved project ownership.*unconfirmed/)
+    await expect(scan(context.signal)).rejects.toThrow(/unresolved project ownership.*unconfirmed/)
     expect(await fs.readdir(root)).toEqual([path.basename(record.journalPath)])
   }, 30_000)
 
-  it.each(['reserved', 'ready'] as const)('rejects a released record whose snapshot is still %s', async (state) => {
+  it('rejects a released record whose snapshot is still reserved', async (context) => {
     const record = await createInventoryRecord(root)
     await writeManagedRecord({
       ...record,
       projectPath: path.join(record.journalPath, 'snapshots', record.id),
-      snapshot: { protocol: 'wechat-devtools-project-snapshot-v1', token: record.id, sourceProjectPath: path.join(root, 'source'), state },
+      snapshot: { protocol: 'wechat-devtools-project-snapshot-v1', token: record.id, sourceProjectPath: path.join(root, 'source'), state: 'reserved' },
     })
-    await expect(scan()).rejects.toThrow(/unresolved project ownership/)
+    await expect(scan(context.signal)).rejects.toThrow(/unresolved project ownership/)
   }, 30_000)
 
-  it('rejects invalid scope metadata instead of accepting an empty task', async () => {
+  it('rejects a released record whose snapshot is still ready', async (context) => {
+    const record = await createInventoryRecord(root)
+    await writeManagedRecord({
+      ...record,
+      projectPath: path.join(record.journalPath, 'snapshots', record.id),
+      snapshot: { protocol: 'wechat-devtools-project-snapshot-v1', token: record.id, sourceProjectPath: path.join(root, 'source'), state: 'ready' },
+    })
+    await expect(scan(context.signal)).rejects.toThrow(/unresolved project ownership/)
+  }, 30_000)
+
+  it('rejects invalid scope metadata instead of accepting an empty task', async (context) => {
     const record = await createInventoryRecord(root)
     await fs.writeFile(path.join(record.journalPath, '.ownership-scope'), '{')
-    await expect(scan()).rejects.toThrow(/exited unsuccessfully/)
+    await expect(scan(context.signal)).rejects.toThrow(/exited unsuccessfully/)
   }, 30_000)
 })

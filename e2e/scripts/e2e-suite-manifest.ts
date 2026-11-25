@@ -124,6 +124,7 @@ const IDE_TASK_TIMEOUT_MS_BY_LABEL = new Map([
   // 两个模式各保留 300 秒运行与 300 秒清理预算，额外预留 worker 启停。
   ['ide/issue-1140-mode-cache.runtime.test.ts', '1260000'],
   ['ide/devtools-cli-workflow.runtime.test.ts', '900000'],
+  ['ide/issue-1379-cold-start.runtime.test.ts', '900000'],
   ...IDE_GITHUB_ISSUES_AGGREGATE_LABELS.map(label => [label, '1800000'] as const),
   [IDE_TDESIGN_AGGREGATE_LABEL, '900000'],
   ['ide/github-issues.runtime.lifecycle.test.ts', '600000'],
@@ -286,6 +287,7 @@ const IDE_TEMPLATES_PATTERNS = [
   'ide/template-formatting.runtime.test.ts',
   'ide/template-retail-checkout.runtime.test.ts',
   'ide/devtools-cli-workflow.runtime.test.ts',
+  'ide/issue-1379-cold-start.runtime.test.ts',
   'ide/mcp-runtime-tools.runtime.test.ts',
   'ide/template-dev-open-all.runtime.test.ts',
   'ide/template-plugin-dev-open.runtime.test.ts',
@@ -323,6 +325,7 @@ const IDE_FULL_CORE_PATTERNS = [
   'ide/app-lifecycle.test.ts',
   'ide/auto-routes-define-app-json.runtime.test.ts',
   'ide/devtools-cli-workflow.runtime.test.ts',
+  'ide/issue-1379-cold-start.runtime.test.ts',
   ...IDE_GITHUB_ISSUES_AGGREGATE_LABELS,
   'ide/github-issues.runtime.issue621.test.ts',
   'ide/github-issues.runtime.issue1010.test.ts',

@@ -8,6 +8,7 @@ const DEFAULT_VIEWPORT_CONFIG: ResolvedWebViewportConfig = {
 }
 
 let resolvedConfig = { ...DEFAULT_VIEWPORT_CONFIG }
+const viewportChangeListeners = new Set<() => void>()
 
 function resolvePositiveNumber(value: number | undefined, fallback: number) {
   return typeof value === 'number' && Number.isFinite(value) && value > 0 ? value : fallback
@@ -34,7 +35,15 @@ export function setupWebViewport(config?: WebViewportConfig) {
     document.head?.append(style)
   }
   style.textContent = createWebViewportStyle(resolvedConfig)
+  for (const listener of viewportChangeListeners) {
+    listener()
+  }
   return resolvedConfig
+}
+
+export function onWebViewportChange(listener: () => void) {
+  viewportChangeListeners.add(listener)
+  return () => viewportChangeListeners.delete(listener)
 }
 
 export function getWebViewportWidth() {

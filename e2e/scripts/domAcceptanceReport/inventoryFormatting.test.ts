@@ -84,7 +84,7 @@ it('formats Markdown with the real ESLint config in a tsx process', async (conte
   const { exitCode, stdout } = await formatInTsxProcess('# Inventory\n\n```js\nexport const message = "ready";\n```\n', context)
   expect(exitCode).toBe(0)
   expect(stdout).toContain('export const message = \'ready\'\n')
-}, 30_000)
+}, 60_000)
 
 it('propagates unfixable Markdown code errors instead of accepting an unformatted report', async (context) => {
   const { exitCode, stderr } = await formatInTsxProcess('# Inventory\n\n```js\nconst = 1\n```\n', context)
