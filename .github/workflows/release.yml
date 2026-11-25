@@ -277,13 +277,14 @@ jobs:
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: npm-publish-progress-${{ github.run_id }}-${{ github.run_attempt }}
+          name: npm-publish-progress-${{ github.run_id }}
           path: |
             pnpm-publish-summary.json
             repoctl-publish-progress.json
             repoctl-release-progress.json
             repoctl-ci-progress.json
           if-no-files-found: ignore
+          overwrite: true
           retention-days: 14
 
   mirror:
@@ -313,10 +314,10 @@ jobs:
       - name: Install release tooling without lifecycle scripts
         run: pnpm install --frozen-lockfile --ignore-scripts
 
-      - name: Download this attempt's confirmed publication summary
+      - name: Download confirmed publication summary
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
-          name: npm-publish-progress-${{ github.run_id }}-${{ github.run_attempt }}
+          name: npm-publish-progress-${{ github.run_id }}
           path: ${{ runner.temp }}/confirmed-release
 
       - name: Sync only the confirmed publication
@@ -333,7 +334,7 @@ jobs:
           echo '::warning::npmmirror synchronization failed or timed out. Release completion and documentation deployment remain valid.'
           {
             echo '### npmmirror retry'
-            echo 'Download npm-publish-progress-${{ github.run_id }}-${{ github.run_attempt }} from this run, then use its pnpm-publish-summary.json:'
+            echo 'Download npm-publish-progress-${{ github.run_id }} from this run, then use its pnpm-publish-summary.json:'
             echo '`REPO_RELEASE_PUBLISH_SUMMARY=<downloaded-summary> pnpm release:sync-npmmirror`'
             echo 'Retry mirror synchronization only; do not republish npm packages or edit release records.'
           } >> "$GITHUB_STEP_SUMMARY"
@@ -429,7 +430,7 @@ jobs:
           fi
           # 质量检查共享 45 分钟，后续打包、上传、consumer 和诊断仍受 job 总预算约束。
           export REPOCTL_NIGHTLY_QUALITY_DEADLINE_EPOCH="$(( $(date +%s) + 2700 ))"
-          pnpm exec repo release nightly "${args[@]}"
+          node scripts/repoctl-nightly-native-artifacts.mjs "${args[@]}"
 
       - name: Preserve nightly diagnostics
         if: ${{ always() }}

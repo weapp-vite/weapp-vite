@@ -184,7 +184,7 @@ describe('strict native terminal process evidence', () => {
     expect(report.nativeFrames?.[2]?.rows.find(row => row.pid === 33)).toMatchObject({ before: null, after: null, rss: { bytes: null } })
   })
 
-  it.each(['selected-parent', 'unknown-parent', 'reused-parent', 'permission-denied', 'reused-pid', 'last-frame'] as const)('keeps a closure enumeration gap blocking with %s', async (reason) => {
+  it.each(['selected-parent', 'unknown-parent', 'reused-parent', 'permission-denied', 'reused-pid'] as const)('keeps a closure enumeration gap blocking with %s', async (reason) => {
     const gone = exited()
     if (reason === 'permission-denied') {
       gone.task.errno = 1
@@ -196,6 +196,49 @@ describe('strict native terminal process evidence', () => {
     gone.enumeratedIdentity.parentPid = parent.pid
     const report = await rejected([], [], reason === 'last-frame' ? [parent] : [gone, parent], reason === 'last-frame' ? [gone, parent] : reason === 'reused-pid' ? [entry(33, { identity: { startedMicroseconds: '1000' } })] : [])
     expect(report.closureOwnership?.status).toBe('unavailable')
+  })
+
+  it('closes a final-frame foreign process when every kernel query proves ESRCH', async () => {
+    const gone = exited()
+    const parent = entry(44, { parentPid: 22, rssBytes: null })
+    parent.gaps = ['rss-unavailable']
+    gone.enumeratedIdentity.parentPid = parent.pid
+    frames([], [], [parent], [gone, parent])
+    const report = await sample()
+    expect(report).toMatchObject({
+      installationRssBytes: { status: 'observed', value: 1000 },
+      closureOwnership: { status: 'observed', value: 'verified' },
+      verifiedTerminalProcessCount: 1,
+      uninspectedNewProcessCount: 0,
+    })
+    expect(report.newProcesses).toEqual(expect.arrayContaining([expect.objectContaining({ pid: 33, firstSeenRound: 3, classification: 'verified-terminal' })]))
+    expect(report.verifiedTerminalProcesses?.[0]).toMatchObject({
+      process: { pid: 33 },
+      terminalIdentity: { pid: 33, parentPid: 44 },
+      firstTerminalPhase: 'closure2',
+      proof: 'post-anchor-enumeration-then-kernel-exit',
+      phases: ['closure2'],
+      ancestry: [{ pid: 44 }, { pid: 22 }],
+    })
+  })
+
+  it.each(['selected-parent', 'unknown-parent', 'reused-parent', 'permission-denied'] as const)('keeps a final-frame exit unclassified with %s evidence', async (reason) => {
+    const gone = exited()
+    if (reason === 'permission-denied') {
+      gone.task.errno = 1
+    }
+    const parent = entry(44, {
+      parentPid: reason === 'selected-parent' ? 11 : reason === 'unknown-parent' ? 88 : 22,
+      identity: reason === 'reused-parent' ? { startedMicroseconds: '999999' } : undefined,
+    })
+    gone.enumeratedIdentity.parentPid = parent.pid
+    const report = await rejected([], [], [entry(44, { parentPid: 22, rssBytes: null })], [gone, parent])
+    expect(report.closureOwnership?.status).toBe('unavailable')
+  })
+
+  it('keeps a final-frame zombie unconfirmed without a later fixed frame', async () => {
+    const report = await rejected([], [], [], [zombie()])
+    expect(report).toMatchObject({ uninspectedNewProcessCount: 1, newProcesses: [{ pid: 33, classification: 'unclassified' }] })
   })
 
   it('keeps a separate proof for complete foreign prepare history terminating at the RSS anchor', async () => {

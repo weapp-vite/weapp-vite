@@ -140,7 +140,7 @@ describe('repoctl nightly workflow', () => {
     expect(publish.run).toContain('args=(--publish --output "$RUNNER_TEMP/repoctl-nightly" --json)')
     expect(publish.run).toContain('args+=(--dry-run)')
     expect(publish.run).toContain('export REPOCTL_NIGHTLY_QUALITY_DEADLINE_EPOCH="$(( $(date +%s) + 2700 ))"')
-    expect(publish.run).toContain('pnpm exec repo release nightly "$' + '{args[@]}"')
+    expect(publish.run).toContain('node scripts/repoctl-nightly-native-artifacts.mjs "$' + '{args[@]}"')
     expect(publish.run).not.toMatch(/npm publish|--filter|--tag latest|version -r/)
     expect(steps.some(step => step.uses?.startsWith('actions/cache/'))).toBe(false)
     const diagnostics = steps.find(step => step.name === 'Preserve nightly diagnostics')!
@@ -186,7 +186,10 @@ describe('repoctl nightly workflow', () => {
     const audit = workflow.jobs['oidc-audit']!.steps!.find(step => step.name === 'Audit selected publishable packages')!
     expect(audit.run).toBe('pnpm exec repo release ci --mode oidc-audit')
     for (const jobName of ['nightly', 'oidc-audit']) {
-      const command = workflow.jobs[jobName]!.steps!.find(step => step.run?.includes('pnpm exec repo release'))!
+      const command = workflow.jobs[jobName]!.steps!.find((step) => {
+        const run = step.run
+        return run !== undefined && run.includes(jobName === 'nightly' ? 'repoctl-nightly-native-artifacts' : 'pnpm exec repo release')
+      })!
       expect(command.env).toMatchObject({
         REPO_RELEASE_PACKAGE: expression('inputs.package'),
         REPO_RELEASE_VERSION: expression('inputs.version'),

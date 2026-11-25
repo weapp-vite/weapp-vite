@@ -48,15 +48,17 @@ describe('prepared project support identity', () => {
 
 describe('native addon identity', () => {
   it('resolves the current platform package binary', () => {
-    const target = {
+    const targets: Record<string, string> = {
       'darwin:arm64': 'darwin-arm64',
       'darwin:x64': 'darwin-x64',
       'linux:arm64': 'linux-arm64-gnu',
       'linux:x64': 'linux-x64-gnu',
       'win32:arm64': 'win32-arm64-msvc',
       'win32:x64': 'win32-x64-msvc',
-    }[`${process.platform}:${process.arch}`]
-    const supported = target && (process.platform !== 'linux' || Boolean(process.report?.getReport?.().header?.glibcVersionRuntime))
+    }
+    const target = targets[`${process.platform}:${process.arch}`]
+    const report = process.report?.getReport?.() as { header?: { glibcVersionRuntime?: string } } | undefined
+    const supported = target && (process.platform !== 'linux' || Boolean(report?.header?.glibcVersionRuntime))
     if (!supported) {
       expect(() => defaultAddonPath('/repo')).toThrow('Unsupported native platform')
       return
