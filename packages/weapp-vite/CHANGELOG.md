@@ -1,5 +1,101 @@
 # weapp-vite
 
+## 7.12.2
+
+### Patch Changes
+
+- chore(deps): 基于 pnpm-workspace.yaml 中 catalog 版本变更，自动补充发布记录。
+  默认 catalog 变更键：@ai-sdk/anthropic, @ai-sdk/openai, @ai-sdk/openai-compatible, @babel/core, @babel/generator, @babel/parser, @babel/traverse, @babel/types, @tanstack/vue-query, @vue/compiler-core, @vue/compiler-dom, @vue/reactivity, @vue/runtime-core, @vue/shared, ai, autoprefixer, cac, stylelint, tailwind-merge, vue。命名 catalog 变更键：无。
+
+- chore(deps): 基于 pnpm-workspace.yaml 中 catalog 版本变更，自动补充发布记录。
+  默认 catalog 变更键：@devframes/agentic, @devframes/hub, @devframes/hub-ui, @devframes/json-render, devframe。命名 catalog 变更键：无。
+
+- chore(deps): 基于 pnpm-workspace.yaml 中 catalog 版本变更，自动补充发布记录。
+  默认 catalog 变更键：oxc-parser。命名 catalog 变更键：无。
+
+- chore(deps): 自动补充依赖升级发布记录。
+  涉及包：
+  - @wevu/json-render：dependencies.@json-render/core
+  - create-weapp-vite：dependencies.@inquirer/prompts
+  - @weapp-vite/volar：dependencies.@vue/compiler-sfc
+  - weapp-vite：dependencies.@babel/plugin-transform-modules-commonjs
+
+- chore(deps): 自动补充依赖升级发布记录。
+  涉及包：
+  - @weapp-vite/glass-easel-web-adapter：dependencies.glass-easel-template-compiler
+  - @weapp-vite/dashboard：dependencies.@devframes/json-render
+
+- chore(deps): 自动补充依赖升级发布记录。
+  涉及包：
+  - @weapp-vite/ast：dependencies.@oxc-project/types
+
+- fix(weapp-vite): 修复 npm 裁剪遗漏跨包依赖。
+
+- fix(weapp-vite): 修复独立分包引用依赖包资源时的输出路径。
+
+  推荐显式设置 `build.assetsDir: '[subpackage]/assets'`，按实际使用范围组织资源。主包与普通分包继续支持不含占位符的 `assetsDir: 'assets'`，其路径相对 `outDir`。
+
+  使用 `[subpackage]` 命名时，独立分包构建会将资源输出到包内，主包同时使用同一资源时仍有自己的可访问产物。
+
+  同一张图片被 JS 导入与 WXML 静态引用时，若不再输出原始路径，WXML 会指向构建后的图片文件。
+
+  识别 bundler 以相对路径记录的资源来源，避免 WXSS 图片同时输出命名文件和额外的源码路径副本。
+
+  主包和普通分包仅在 WXML 静态引用的本地图片也遵循 `build.assetsDir` 与 `build.rolldownOptions.output.assetFileNames`，不再额外复制到源码相对路径。
+
+  正式构建中，仅由主包或普通分包 WXML 静态引用的本地图片按消费包命名；跨包共享时提升至主包，只发射一次。
+
+  独立分包的 WXML 静态图片也遵循包内资源命名。不同路径的图片在子构建中合并后，主构建会跳过已重写来源的原路径副本；多个独立分包仍各保留所需的包内图片。
+
+  只有独立分包 WXML 引用的公共源码目录图片也不再复制到主包，避免为包内不可见的资源占用主包体积。
+
+  独立分包显式配置普通 `assetsDir` 或 `assetFileNames` 时，资源仍输出到包内的指定目录；已包含分包根目录的模板不重复添加前缀。
+
+  正式构建使用 `[subpackage]` 时，仅由一个普通分包的 JS 或 WXSS 引用的依赖图片输出到该分包；多个包共用时只在主包输出一份。
+
+  原生 WXML 也能通过明确的文件路径引用项目 `node_modules` 中的图片：单包使用时输出到所在包，与其他普通包共用时提升至主包。
+
+  本地图片同样按 JS、WXSS 与原生 WXML 的实际消费者落位。主包与普通分包共用，或两个普通分包共用时，生成一份主包图片，所有引用指向该产物。
+
+  显式资源命名即使没有 `[subpackage]`，也会检查生成的引用能否跨包访问。校验沿脚本入口追踪实际消费者，诊断会指出不可访问的目标和引用文件。
+
+  经典开发服务器使用 `[subpackage]`（包括可能返回占位符的命名函数）时，会根据完整的消费者图刷新产物。新增或移除共享引用后，图片和各页面引用一并迁移，旧文件在成功写出后清理。
+
+  实验性状态保持开发模式由完整快照负责静态复制；原生增量输出不再重复复制已按归属命名的图片。
+
+  通过别名或软链接间接引入的图片也按使用它的页面落位；保留 Vite 的软链接解析设置，同时避免额外复制同一物理文件。
+
+  `build --watch` 会在消费者增删或图片修改后重新确定位置和引用，移除失效的命名产物。
+
+  不同路径的同内容图片也会在命名前合并 WXML 与样式的消费者，并跳过构建已经消费的源码副本。
+
+  进入小程序入口图的 Vue 页面和组件模板，也会参与图片归属计算。
+
+- Updated dependencies:
+  - @weapp-core/constants@0.6.3
+  - @weapp-core/init@6.1.7
+  - @weapp-core/logger@3.2.7
+  - @weapp-core/schematics@6.3.7
+  - @weapp-core/shared@3.5.3
+  - @weapp-vite/acceptance@0.2.7
+  - @weapp-vite/ast@7.12.2
+  - @weapp-vite/eslint@0.3.7
+  - @weapp-vite/hmr@0.3.7
+  - @weapp-vite/i18n@0.3.8
+  - @weapp-vite/language-service@0.1.8
+  - @weapp-vite/mcp@2.2.8
+  - @weapp-vite/miniprogram-automator@1.5.7
+  - @weapp-vite/tailwindcss@1.1.7
+  - @weapp-vite/volar@2.2.7
+  - @weapp-vite/web@2.2.8
+  - @weapp-vite/wxml@0.0.5
+  - @wevu/api@0.4.7
+  - @wevu/web-apis@1.5.4
+  - rolldown-require@2.1.7
+  - vite-plugin-performance@2.1.7
+  - weapp-ide-cli@6.4.7
+  - wevu@7.12.2
+
 ## 7.12.1
 
 ### Patch Changes

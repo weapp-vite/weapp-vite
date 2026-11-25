@@ -1,5 +1,48 @@
 # @weapp-vite/ast-native
 
+## 0.3.0
+
+### Minor Changes
+
+- feat(ast-native): 增加跨平台 native AST 预构建包。
+
+  为 `@weapp-vite/ast-native` 增加 macOS、Linux GNU/glibc 和 Windows 六个目标平台的预构建发布包。根包会按运行时自动选择平台依赖，native AST 仍保持显式启用和失败回退行为。
+
+### Patch Changes
+
+- chore(deps): 基于 pnpm-workspace.yaml 中 catalog 版本变更，自动补充发布记录。
+  默认 catalog 变更键：@ai-sdk/anthropic, @ai-sdk/openai, @ai-sdk/openai-compatible, @babel/core, @babel/generator, @babel/parser, @babel/traverse, @babel/types, @tanstack/vue-query, @vue/compiler-core, @vue/compiler-dom, @vue/reactivity, @vue/runtime-core, @vue/shared, ai, autoprefixer, cac, stylelint, tailwind-merge, vue。命名 catalog 变更键：无。
+
+- chore(deps): 基于 pnpm-workspace.yaml 中 catalog 版本变更，自动补充发布记录。
+  默认 catalog 变更键：@devframes/agentic, @devframes/hub, @devframes/hub-ui, @devframes/json-render, devframe。命名 catalog 变更键：无。
+
+- chore(deps): 基于 pnpm-workspace.yaml 中 catalog 版本变更，自动补充发布记录。
+  默认 catalog 变更键：oxc-parser。命名 catalog 变更键：无。
+
+- chore(deps): 自动补充依赖升级发布记录。
+  涉及包：
+  - @wevu/json-render：dependencies.@json-render/core
+  - create-weapp-vite：dependencies.@inquirer/prompts
+  - @weapp-vite/volar：dependencies.@vue/compiler-sfc
+  - weapp-vite：dependencies.@babel/plugin-transform-modules-commonjs
+
+- chore(deps): 自动补充依赖升级发布记录。
+  涉及包：
+  - @weapp-vite/glass-easel-web-adapter：dependencies.glass-easel-template-compiler
+  - @weapp-vite/dashboard：dependencies.@devframes/json-render
+
+- chore(deps): 自动补充依赖升级发布记录。
+  涉及包：
+  - @weapp-vite/ast：dependencies.@oxc-project/types
+
+- Updated dependencies:
+  - @weapp-vite/ast-native-darwin-arm64@0.3.0
+  - @weapp-vite/ast-native-darwin-x64@0.3.0
+  - @weapp-vite/ast-native-linux-arm64-gnu@0.3.0
+  - @weapp-vite/ast-native-linux-x64-gnu@0.3.0
+  - @weapp-vite/ast-native-win32-arm64-msvc@0.3.0
+  - @weapp-vite/ast-native-win32-x64-msvc@0.3.0
+
 ## 0.2.6
 
 ### Patch Changes
