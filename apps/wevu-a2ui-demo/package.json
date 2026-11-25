@@ -13,7 +13,7 @@
     "lint": "eslint ."
   },
   "dependencies": {
-    "@a2ui/web_core": "0.15.0",
+    "@a2ui/web_core": "0.16.1",
     "@wevu/a2ui": "workspace:*",
     "wevu": "workspace:*"
   },

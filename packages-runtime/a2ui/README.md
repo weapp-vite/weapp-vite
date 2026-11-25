@@ -1,6 +1,6 @@
 # @wevu/a2ui
 
-A2UI 1.0 的组件无关小程序渲染运行时。复用 `@a2ui/web_core@0.15.0` 的消息处理、数据绑定与节点解析，把 surface 投影为纯 JSON 节点树，由消费方决定组件外观与交互入口。
+A2UI 1.0 的组件无关小程序渲染运行时。复用 `@a2ui/web_core@0.16.1` 的消息处理、数据绑定与节点解析，把 surface 投影为纯 JSON 节点树，由消费方决定组件外观与交互入口。
 
 当前为实验性 workspace 包，尚未发布到 npm；只承诺 A2UI 1.0 的四种 surface 状态消息与微信小程序目标。不在 AppService 中生成模板、执行模型返回的代码，也不引入 lit。
 
@@ -14,14 +14,14 @@ A2UI 1.0 的组件无关小程序渲染运行时。复用 `@a2ui/web_core@0.15.0
 
 ## 安装与构建配置
 
-仓库内的消费项目添加 `"@wevu/a2ui": "workspace:*"` 与 `"@a2ui/web_core": "0.15.0"`，保留 `wevu` 依赖（渲染宿主使用）。原生 npm 依赖若打进小程序，需按应用的 npm 构建配置处理：
+仓库内的消费项目添加 `"@wevu/a2ui": "workspace:*"` 与 `"@a2ui/web_core": "0.16.1"`，保留 `wevu` 依赖（渲染宿主使用）。原生 npm 依赖若打进小程序，需按应用的 npm 构建配置处理：
 
 ```sh
 pnpm --filter @wevu/a2ui build
 pnpm --filter wevu-a2ui-demo build
 ```
 
-`src/compat.ts` 是刻意的全局副作用入口：Core 0.15 使用 `Object.hasOwn`，部分小程序基础库尚未提供该内建。包入口会先执行该兼容层，`sideEffects` 已声明对应文件，不要按无副作用模块裁剪。
+`src/compat.ts` 导出 `installA2uiRuntimeCompat()`，由 `createA2uiCatalog` 在进入 Core 前显式调用：Core 0.15 起使用 `Object.hasOwn`，0.16 起在动作解析路径构造 `AbortController`，而部分小程序基础库与 AppService 尚未提供这些内建。兼容层复用 `@wevu/web-apis/abort` 的 polyfill，宿主已有同名内建时保持原实现。这里刻意不用裸副作用导入，因为小程序构建会把无引用的副作用模块裁掉，`sideEffects` 声明并不能保证保留。
 
 ## 会话 API
 
@@ -141,7 +141,7 @@ Chat 消息编排的参考实现采用同样的 envelope 校验、generation 操
 - 不支持 catalog 函数、checks 与 RPC；动作只外发事件，不等待 agent 回写。
 - 不包含 Markdown 渲染、图片/勾选等目录扩展；catalog 能声明哪些组件由消费方决定，但视图层必须为每个类型提供宿主分支。
 - 运行时只接受 JSON 数据；投影会丢弃函数、`undefined`、`NaN`/`Infinity`（转为 `null`），组件节点出现在对象属性中时转换为 `componentId`。
-- 无 lit、无动态求值；兼容层只补齐 `Object.hasOwn`。
+- 无 lit、无动态求值；兼容层只补齐 `Object.hasOwn`、`AbortController` 与 `AbortSignal`。
 - 需要显式调用 `dispose()`；`receive` 不接管 transport、重连或排队。
 
 ## 验证与发布边界

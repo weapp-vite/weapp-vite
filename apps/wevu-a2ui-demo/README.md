@@ -1,6 +1,6 @@
 # Wevu × A2UI 示例
 
-本应用消费独立的 `@wevu/a2ui` workspace 包，验证服务端 A2UI 1.0 消息经 Wevu 递归宿主组件渲染、输入写回数据模型、动作外发给假 agent 并回包刷新的完整闭环。运行时包直接依赖 `@a2ui/web_core@0.15.0`；应用保留演示目录、售后 surface 消息、宿主组件和业务回包逻辑。
+本应用消费独立的 `@wevu/a2ui` workspace 包，验证服务端 A2UI 1.0 消息经 Wevu 递归宿主组件渲染、输入写回数据模型、动作外发给假 agent 并回包刷新的完整闭环。运行时包直接依赖 `@a2ui/web_core@0.16.1`；应用保留演示目录、售后 surface 消息、宿主组件和业务回包逻辑。
 
 包的完整 API 与协议范围见 [@wevu/a2ui README](../../packages-runtime/a2ui/README.md)。当前包尚未发布到 npm，也还没有预编译的通用宿主组件包，`a2ui-node` 由本应用自带。
 
@@ -65,9 +65,11 @@ pnpm exec cross-env WEAPP_VITE_E2E_RUNTIME_PROVIDER=devtools \
 
 页面度量通过 `page.callMethodWithOptions('readMetrics', { routeOnly: true })` 读取：2026-11-25 的 Nightly 实测中，开发者工具原生 `Page.callMethod` 协议在本页返回 `this.readMetrics is not a function`，`routeOnly` 改走 AppService 的 `getCurrentPages()` 路径，headless 与真实 IDE 双端一致，也与本仓库其他 Wevu IDE 用例的读法相同。
 
-包级单测 10 项、应用单测 6 项（含 noEval）；headless runtime suite 4 项全部通过，覆盖基础目录页、递归宿主与真实输入/点击事件、增量更新后的输入保留、异常消息保留上一版界面、失败重试与卸载取消。2026-11-25 固定场景实测：dist 总量 880588 字节（主包约 860 KB，包含 `@a2ui/web_core` 依赖图）。
+包级单测 12 项（含 `installA2uiRuntimeCompat` 2 项）、应用单测 6 项（含 noEval）；headless runtime suite 4 项全部通过，覆盖基础目录页、递归宿主与真实输入/点击事件、增量更新后的输入保留、异常消息保留上一版界面、失败重试与卸载取消。2026-11-25 在 `@a2ui/web_core@0.16.1` 下固定场景实测：dist 总量 1072446 字节（主包约 1.02 MB，包含 `@a2ui/web_core` 依赖图与包内兼容层）。
 
 同一天按维护者显式指定的 Nightly 2.02.2611232（基础库 3.18.1）在 Windows 上运行真实 IDE 分支：4 项断言全部通过，其中包含开发者工具截图路径与增量场景度量 8 次 / 53624 字节，与 headless 数值一致。该轮 teardown 暴露出 `weapp-ide-cli` 的平台缺口：活动 MAIN 日志识别仅在 macOS 生效（`windowClose/activeLog.ts` 在非 darwin 直接回退），Windows 回退为按目录扫描且要求同版本 MAIN 日志唯一，而同一 profile 会随每次启动累积多份 MAIN 日志，故关闭证据被判为歧义、机器租约与 journal 按策略保留待恢复——断言结果不受影响。已在同一提交内修复：非 macOS 回退按本轮受管项目会话令牌收窄候选日志，复用仓库恢复 API 释放本轮 scope 后重新核验得到唯一游标与完整的原生窗口销毁证据。
+
+升级到 `@a2ui/web_core@0.16.1` 后，Core 的动作解析路径会构造 `AbortController`，而真实 AppService 未提供该内建，页面 `model.error` 报 `AbortController is not a constructor`。修复放在包内：`createA2uiCatalog` 显式调用 `installA2uiRuntimeCompat()`，复用 `@wevu/web-apis/abort` 的 polyfill 补齐 `AbortController`、`AbortSignal` 与 `Object.hasOwn`，应用不需要额外的 `weapp.appPrelude.webRuntime` 配置。此前尝试的构建期注入虽然同样能让断言通过，但会为两个全局对象引入整份 request-globals 运行时，产物多出约 290 KB，故不采用。同一 Nightly 安装重跑真实 IDE 分支：4 项断言与度量（8 次 / 53624 字节）与 0.15.0 基线一致，teardown 直接命中本轮唯一的 MAIN 日志游标并拿到原生窗口销毁证据（`releasedReason=project-closed`），无需再走恢复流程。
 
 `src/runtime/metrics.ts` 仅统计当前应用页面的 `setData`，用于观察递归宿主的重渲染规模；runtime suite 输出本次产物总字节数、测量范围内的调用次数与 JSON UTF-8 字节数（增量场景实测 8 次 / 53624 字节），并断言卸载后 `lateSetData` 为 0、`cancelledTasks` 大于 0，即在途任务确实被取消且没有迟到的宿主写入。
 

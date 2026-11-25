@@ -20,10 +20,6 @@
     "generative-ui",
     "agent"
   ],
-  "sideEffects": [
-    "./src/compat.ts",
-    "./dist/compat.mjs"
-  ],
   "exports": {
     ".": {
       "types": "./dist/index.d.mts",
@@ -54,7 +50,8 @@
     "wevu": "workspace:*"
   },
   "dependencies": {
-    "@a2ui/web_core": "0.15.0"
+    "@a2ui/web_core": "0.16.1",
+    "@wevu/web-apis": "workspace:*"
   },
   "devDependencies": {
     "miniprogram-api-typings": "catalog:",

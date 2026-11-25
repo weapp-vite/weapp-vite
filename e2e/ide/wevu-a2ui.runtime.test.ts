@@ -11,6 +11,8 @@ import { resolveRuntimeProviderName } from '../utils/runtimeProvider'
 
 const APP_ROOT = path.resolve(import.meta.dirname, '../../apps/wevu-a2ui-demo')
 const route = '/pages/index/index'
+// 假 agent 固定 600 ms 回包，且 web_core 0.16 起动作按异步执行派发，回包驱动的轮询需要明确预算。
+const replyPoll = { timeout: 5_000 }
 let miniProgram: any
 
 async function element(page: any, tag: string, id: string) {
@@ -97,17 +99,17 @@ describe('Wevu A2UI runtime', { concurrent: false }, () => {
       await miniProgram.screenshot({ path: path.join(reportDir, `a2ui-after-sales-${randomUUID()}.png`) })
     }
     await (await element(page, 'button', 'inspect')).tap()
-    await expect.poll(async () => (await element(page, 'text', 'status')).text()).toBe('演示订单：DEMO-2026-001，实付 ¥129.00')
+    await expect.poll(async () => (await element(page, 'text', 'status')).text(), replyPoll).toBe('演示订单：DEMO-2026-001，实付 ¥129.00')
     await inputReason(page, '杯盖有划痕')
     await expect.poll(() => page.data('model.reason')).toBe('杯盖有划痕')
     const submit = await element(page, 'button', 'submit')
     await submit.tap()
     await submit.tap()
-    await expect.poll(() => page.data('model.pending')).toBe(false)
+    await expect.poll(() => page.data('model.pending'), replyPoll).toBe(false)
     expect(await page.data('model.submissions')).toBe(1)
     expect(await page.data('model.delivered')).toBe(2)
     expect(await page.data('model.actionNames')).toEqual(['inspect', 'submit'])
-    await expect.poll(async () => (await element(page, 'text', 'status')).text()).toBe('申请已提交，我们会尽快联系你')
+    await expect.poll(async () => (await element(page, 'text', 'status')).text(), replyPoll).toBe('申请已提交，我们会尽快联系你')
     expect(await page.data('model.steps')).toHaveLength(3)
     await dom.check('submitted', miniProgram, page)
   })
@@ -157,7 +159,7 @@ describe('Wevu A2UI runtime', { concurrent: false }, () => {
     let page = await miniProgram.reLaunch(route)
     await inputReason(page, '模拟失败')
     await (await element(page, 'button', 'submit')).tap()
-    await expect.poll(async () => (await element(page, 'text', 'error')).text()).toContain('暂不可用')
+    await expect.poll(async () => (await element(page, 'text', 'error')).text(), replyPoll).toContain('暂不可用')
     await inputReason(page, '修改后的申请')
     await (await element(page, 'button', 'submit')).tap()
     await expect.poll(async () => (await element(page, 'text', 'status')).text()).toBe('申请已提交，我们会尽快联系你')

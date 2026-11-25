@@ -1,7 +1,7 @@
-import './compat'
-
 export { A2UI_PROTOCOL_VERSION, createA2uiCatalog } from './catalog'
+
 export type { A2uiCatalog } from './catalog'
+export { installA2uiRuntimeCompat } from './compat'
 export { A2UI_STATE_MESSAGES, readA2uiEnvelope } from './envelope'
 export type { A2uiEnvelope, A2uiStateMessageType } from './envelope'
 export type { A2uiNodeOperation, A2uiProjectedSurface } from './projection'

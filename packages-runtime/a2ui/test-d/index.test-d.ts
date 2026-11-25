@@ -13,6 +13,7 @@ import {
   A2UI_STATE_MESSAGES,
   createA2uiCatalog,
   createA2uiSession,
+  installA2uiRuntimeCompat,
   readA2uiEnvelope,
 } from '@wevu/a2ui'
 import { expectAssignable, expectError, expectType } from 'tsd'
@@ -41,6 +42,9 @@ const catalog: A2uiCatalog = createA2uiCatalog({})
 expectType<string>(catalog.id)
 expectType<string>(catalog.catalog.id)
 expectError(createA2uiCatalog())
+
+expectType<void>(installA2uiRuntimeCompat())
+expectError(installA2uiRuntimeCompat({}))
 
 expectType<'1.0'>(A2UI_PROTOCOL_VERSION)
 expectType<A2uiStateMessageType[]>(A2UI_STATE_MESSAGES.filter(() => true))
