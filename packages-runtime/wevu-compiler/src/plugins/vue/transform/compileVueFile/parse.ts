@@ -8,6 +8,7 @@ import { createHash } from 'node:crypto'
 import process from 'node:process'
 import * as t from '@weapp-vite/ast/babelTypes'
 import MagicString from 'magic-string'
+import { WE_VU_PAGE_HOOK_TO_FEATURE, WE_VU_RUNTIME_MODULE_IDS } from '../../../../constants'
 import { mayContainPageDeclaration, mayContainPageMeta, prepareSfcScriptCompile } from '../../../../pageDeclaration'
 import { BABEL_TS_MODULE_PARSER_OPTIONS, parse as babelParse, traverse } from '../../../../utils/babel'
 import { composeSourceMapForSource, composeSourceMaps } from '../../../../utils/sourcemap'
@@ -246,16 +247,25 @@ function resolvePreprocessSourceMap(
   return sourceMap
 }
 
+function mayContainPageFeatureHints(code: string) {
+  return [...WE_VU_RUNTIME_MODULE_IDS, 'wevu/router', 'wevu/dev/router'].some(moduleId => code.includes(moduleId))
+    && Object.keys(WE_VU_PAGE_HOOK_TO_FEATURE).some(hook => code.includes(hook))
+}
+
 function hasSharedNativeAnalysis(
   descriptor: Pick<SFCDescriptor, 'script' | 'scriptSetup' | 'template'>,
   defineOptionsSource: SFCScriptBlock | undefined,
   isAppFile: boolean,
+  isPage: boolean,
 ) {
   // 多输入共享既有批次；普通脚本的单输入也可同时供局部组件与默认导出检查消费。
   return [descriptor.script, descriptor.scriptSetup, defineOptionsSource].filter(Boolean).length > 1
     || (process.env.WEAPP_VITE_NATIVE === '1' && Boolean(process.env.WEAPP_VITE_NATIVE_AST_PATH?.trim())
       && !isAppFile && !descriptor.scriptSetup
-      && Boolean(descriptor.script && mayShareNativeOptionsAnalysis(descriptor.script.content, descriptor.template)))
+      && Boolean(descriptor.script && (
+        mayShareNativeOptionsAnalysis(descriptor.script.content, descriptor.template)
+        || (isPage && mayContainPageFeatureHints(descriptor.script.content))
+      )))
 }
 
 export async function parseVueFile(
@@ -523,8 +533,8 @@ export async function parseVueFile(
   }
 
   const isAppFile = APP_VUE_FILE_RE.test(filename)
-  const nativeAnalysis = hasSharedNativeAnalysis(descriptorForCompile, defineOptionsSource, isAppFile)
-    ? analyzeNativeScriptBlocks(descriptorForCompile, filename, defineOptionsSource)
+  const nativeAnalysis = hasSharedNativeAnalysis(descriptorForCompile, defineOptionsSource, isAppFile, options?.isPage === true)
+    ? analyzeNativeScriptBlocks(descriptorForCompile, filename, defineOptionsSource, options?.isPage === true)
     : undefined
   const defineOptionsHash = defineOptionsSource
     ? extractDefineOptionsHash(defineOptionsSource.content, nativeAnalysis?.defineOptions)

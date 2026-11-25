@@ -5,11 +5,13 @@ import type { WevuBindingManifestV1 } from '../../../../types/bindingManifest'
 import type { ComponentStyleOptions } from '../../../../types/componentStyleOptions'
 import type { CompilerDiagnostic } from '../../../../types/diagnostics'
 import type { EncodedSourceMapLike } from '../../../../utils/sourcemap'
+import type { WevuPageFeatureFlag } from '../../../wevu/pageFeatures/types'
 import type { TemplateCompileResult } from '../../compiler/template'
 import type { ComponentSourceInfo } from './componentSources'
 import type { AutoUsingComponentsOptions, CompileVueFileOptions } from './types'
 import * as t from '@weapp-vite/ast/babelTypes'
 import { compileScript } from 'vue/compiler-sfc'
+import { WE_VU_PAGE_HOOK_TO_FEATURE } from '../../../../constants'
 import { createWevuRuntimeCapabilityMetadata, createWevuRuntimeCapabilityMetadataFromBindingManifest, mergeWevuRuntimeCapabilityMetadata } from '../../../../runtimeCapabilities'
 import { parseJsLike, traverse } from '../../../../utils/babel'
 import { composeSourceMaps } from '../../../../utils/sourcemap'
@@ -25,9 +27,24 @@ import { remapJsxBindingManifestLocations } from './bindingManifestLocations'
 import { hasDefaultExport } from './defaultExport'
 import { attachNativeDom, isNativeDomCompilation } from './nativeDom'
 import { applyCompilerTemplateWrappers } from './pageLayout'
+import { withCompilerPhase } from './profile'
 import { warnReservedScriptSetupProps } from './reservedProps'
 
 const TYPE_ONLY_DEFINE_PROPS_RE = /\bdefineProps\s*</
+
+function readNativePageFeatureFlags(
+  analysis: NativeCompilerScriptAnalysis | undefined,
+): readonly WevuPageFeatureFlag[] | undefined {
+  const flags = analysis?.pageFeatureFlags
+  if (!flags) {
+    return undefined
+  }
+  const knownFlags = new Set(Object.values(WE_VU_PAGE_HOOK_TO_FEATURE))
+  if (!flags.every(flag => knownFlags.has(flag as WevuPageFeatureFlag))) {
+    return undefined
+  }
+  return flags as WevuPageFeatureFlag[]
+}
 
 export interface ScriptPhaseResult {
   script?: string
@@ -381,7 +398,7 @@ export async function compileScriptPhase(
       templateRuntimeCapabilities,
       nativeSlotContext ? createWevuRuntimeCapabilityMetadata(['scopedSlots']) : undefined,
     )
-    const transformed = transformScript(jsxTransformed.code, {
+    const transformed = withCompilerPhase('transformScript', () => transformScript(jsxTransformed.code, {
       isTypeScript: descriptor.script?.lang === 'ts'
         || descriptor.script?.lang === 'tsx'
         || descriptor.scriptSetup?.lang === 'ts'
@@ -389,6 +406,9 @@ export async function compileScriptPhase(
       skipComponentTransform: nativeDom || (options?.skipComponentTransform ?? isAppFile),
       isApp: isAppFile,
       isPage: options?.isPage === true,
+      nativePageFeatureFlags: scriptCode === descriptorForCompile.script?.content
+        ? readNativePageFeatureFlags(nativeScriptAnalysis?.script)
+        : undefined,
       minify: options?.minify,
       sourceMap: options?.sourceMap,
       warn: options?.warn,
@@ -419,7 +439,7 @@ export async function compileScriptPhase(
           templateCompiled?.hasSlotOutlet
           || (templateCompiled?.componentGenerics && Object.keys(templateCompiled.componentGenerics).length > 0),
         ),
-    })
+    }))
     const nativeResult = nativeDom
       ? attachNativeDom({
           script: transformed.code,

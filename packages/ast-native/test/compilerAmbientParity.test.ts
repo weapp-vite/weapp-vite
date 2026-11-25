@@ -33,7 +33,7 @@ function sourceFor(script: string) {
   return `<script lang="ts">${script}</script><script setup lang="ts">${setup}</script><template><Card /><text>{{ title }}</text></template>`
 }
 
-async function compile(source: string, native: boolean) {
+async function compile(source: string, native: boolean, options?: { isPage?: boolean }) {
   vi.stubEnv('WEAPP_VITE_NATIVE', native ? '1' : '0')
   vi.stubEnv('WEAPP_VITE_NATIVE_AST_PATH', bindingPath)
   const warnings: string[] = []
@@ -41,6 +41,7 @@ async function compile(source: string, native: boolean) {
     const output = await compileVueFile(source, 'src/ambient.vue', {
       autoUsingComponents: { enabled: true, resolveUsingComponentPath: async value => value },
       warn: value => warnings.push(value),
+      ...options,
     })
     return { output, warnings }
   }
@@ -56,6 +57,23 @@ beforeEach(() => {
 afterEach(() => vi.unstubAllEnvs())
 
 describe('native compiler ambient module fallback parity', () => {
+  it('preserves page feature injection while sharing the compiler batch traversal', async () => {
+    const code = `import { onResize as resize } from 'wevu/router'; resize(() => {}); export default {}`
+    const source = `<script lang="ts">${code}</script><template><view /></template>`
+    const baseline = await compile(source, false, { isPage: true })
+    const current = await compile(source, true, { isPage: true })
+
+    expect(current).toEqual(baseline)
+    const [summary] = analyzeCompilerScriptsNative([{
+      code,
+      filename: 'page.ts',
+      pageFeatureModules: ['wevu', 'wevu/router', 'wevu/dev/router'],
+      pageFeatureHookToFeatureJson: JSON.stringify({ onResize: 'enableOnResize' }),
+    }])
+    expect(summary?.pageFeatureFlags).toEqual(['enableOnResize'])
+    expect(nativeAnalysis).toHaveBeenCalledTimes(1)
+  })
+
   it.each(scripts)('preserves the complete compiler output, maps and warnings: %s', async (script) => {
     const source = sourceFor(script)
     const baseline = await compile(source, false)

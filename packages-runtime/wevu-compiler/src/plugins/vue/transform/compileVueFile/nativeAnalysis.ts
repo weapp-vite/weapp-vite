@@ -4,6 +4,7 @@ import type { SFCDescriptor, SFCScriptBlock, SFCTemplateBlock } from 'vue/compil
 import { NodeTypes } from '@vue/compiler-core'
 import { analyzeCompilerScriptsWithNative } from '@weapp-vite/ast'
 import { isBuiltinComponent } from '../../../../auto-import-components/builtin'
+import { WE_VU_PAGE_HOOK_TO_FEATURE, WE_VU_RUNTIME_MODULE_IDS } from '../../../../constants'
 import { RESERVED_VUE_COMPONENT_TAGS } from '../../../../utils/vueTemplateTags'
 import { mayHaveDefaultExport } from './defaultExport'
 
@@ -35,6 +36,7 @@ export function analyzeNativeScriptBlocks(
   descriptor: SFCDescriptor,
   filename: string,
   defineOptionsSource?: SFCScriptBlock,
+  collectPageFeatures = false,
 ) {
   const blocks = ([
     ['script', descriptor.script],
@@ -45,9 +47,15 @@ export function analyzeNativeScriptBlocks(
     return undefined
   }
   try {
-    const results = analyzeCompilerScriptsWithNative(blocks.map(([, block]) => ({
+    const results = analyzeCompilerScriptsWithNative(blocks.map(([key, block]) => ({
       code: block.content,
       filename: resolveScriptFilename(filename, block.lang),
+      ...(collectPageFeatures && key === 'script' && !descriptor.scriptSetup
+        ? {
+            pageFeatureModules: [...WE_VU_RUNTIME_MODULE_IDS, 'wevu/router', 'wevu/dev/router'],
+            pageFeatureHookToFeatureJson: JSON.stringify(WE_VU_PAGE_HOOK_TO_FEATURE),
+          }
+        : {}),
     })))
     if (!results || results.length !== blocks.length) {
       return undefined

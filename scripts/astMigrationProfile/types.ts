@@ -27,17 +27,41 @@ export type Outcome
 
 export interface Counters {
   crossings: Record<string, number>
+  crossingDurationMs: Record<string, number>
   compilerBatchCalls: number
   compilerBatchInputs: number
   compilerBatchUniqueInputs: number
+  compilerBatchInputUtf8Bytes: number
+  compilerBatchUniqueInputUtf8Bytes: number
   compilerBatchRejectedInputs: number
+  compilerBatchDurationMs: number
   nativeThrownCalls: number
   rustParseCount: null
   babelParseCount: number
+  babelParseDurationMs: number
   babelTraverseCount: number
+  babelTraverseDurationMs: number
   babelGenerateCount: number
+  babelGenerateDurationMs: number
   sfcParseCount: number
+  sfcParseDurationMs: number
+  sfcCompileScriptCount: number
+  sfcCompileScriptDurationMs: number
   fallbackCount: null
+}
+
+export interface RetainedHeapSample {
+  iteration: number
+  compileMs: number
+  heapUsedAfterGc: number
+  retainedHeapDeltaBytes: number
+  rssAfterGc: number
+}
+
+export interface RetainedHeapMeasurement {
+  baselineHeapUsed: number
+  baselineRss: number
+  samples: RetainedHeapSample[]
 }
 
 export interface Measurement {
@@ -52,10 +76,13 @@ export interface Measurement {
   rssAfter: number
   peakRssBytes: number
   warmupCount: number
+  phaseCalls: Record<string, number> | null
+  phaseDurationMs: Record<string, number> | null
   counters: Counters | null
   cpu: { user: number, system: number } | null
   gc: { count: number, durationMs: number } | null
   sampledAllocationBytes: number | null
+  retainedHeap: RetainedHeapMeasurement | null
   identity: { compilerSha256: string, addonSha256: string | null, sourceSha256: string }
 }
 

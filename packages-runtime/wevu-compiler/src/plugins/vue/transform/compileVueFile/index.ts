@@ -16,6 +16,7 @@ import { isNativeDomCompilation } from './nativeDom'
 import { analyzeNativeSlotContext } from './nativeSlotContext/index'
 import { applyCompilerTemplateWrappers, mergeCompilerLayoutUsingComponents } from './pageLayout'
 import { parseVueFile } from './parse'
+import { withCompilerPhase } from './profile'
 import { resolveSetupPropConflicts } from './propsProjection'
 import { compileScriptPhase, resolveEffectivePropsDerivedKeys, resolveScriptSetupPropsAliases } from './script'
 import { compileStylePhase } from './style'
@@ -41,7 +42,7 @@ export async function compileVueFile(
   filename: string,
   options?: CompileVueFileOptions,
 ): Promise<VueTransformResult> {
-  const parsed = await parseVueFile(source, filename, options)
+  const parsed = await withCompilerPhase('parse', () => parseVueFile(source, filename, options))
   const sfcId = generateScopedId(filename)
 
   const result: VueTransformResult = {
@@ -65,7 +66,7 @@ export async function compileVueFile(
     ? options.autoImportTags
     : undefined
 
-  const componentSourceInfo = await collectComponentSourceInfo({
+  const componentSourceInfo = await withCompilerPhase('componentSource', () => collectComponentSourceInfo({
     descriptor: parsed.descriptor,
     descriptorForCompile: parsed.descriptorForCompile,
     filename,
@@ -73,19 +74,19 @@ export async function compileVueFile(
     autoUsingComponents,
     autoImportTags,
     nativeScriptAnalysis: parsed.nativeScriptAnalysis,
-  })
+  }))
 
   if (!parsed.isAppFile && usesNativeDeclarationContext({
     platform: options?.template?.platform ?? getMiniProgramTemplatePlatform(),
     scopedSlotsRequireProps: options?.template?.scopedSlotsRequireProps ?? options?.template?.scopedSlotsCompiler !== 'augmented',
     nativeSlotContext: options?.template?.nativeSlotContext === true,
   })) {
-    const participation = await analyzeNativeSlotContext({
+    const participation = await withCompilerPhase('nativeSlotContext', () => analyzeNativeSlotContext({
       descriptor: parsed.descriptor,
       filename,
       options,
       components: componentSourceInfo,
-    })
+    }))
     options = {
       ...options,
       template: {
@@ -98,10 +99,10 @@ export async function compileVueFile(
   }
 
   const scriptCompiled = parsed.descriptor.script || parsed.descriptor.scriptSetup
-    ? compileScript(parsed.descriptorForCompile, {
+    ? withCompilerPhase('compileScriptSfc', () => compileScript(parsed.descriptorForCompile, {
         id: sfcId,
         isProd: false,
-      })
+      }))
     : undefined
   let compiledScriptAst: ReturnType<typeof parseJsLike> | undefined
   const getCompiledScriptAst = () => compiledScriptAst ??= parseJsLike(scriptCompiled!.content)
@@ -112,20 +113,20 @@ export async function compileVueFile(
     ? resolveEffectivePropsDerivedKeys(scriptCompiled.bindings as Record<string, any> | undefined, scriptCompiled.content, getCompiledScriptAst)
     : undefined
   const propsAnalysis = scriptCompiled
-    ? await resolveSetupPropConflicts({
+    ? await withCompilerPhase('scriptPreparation', () => resolveSetupPropConflicts({
         script: scriptCompiled.content,
         bindings: scriptCompiled.bindings,
         getScriptAst: getCompiledScriptAst,
         filename,
         source: options?.sfcSrc,
-      })
+      }))
     : undefined
   const scriptSetupPropConflicts = propsAnalysis?.conflicts
   if (propsAnalysis?.dependencies.length) {
     result.meta!.propsAnalysisDeps = propsAnalysis.dependencies
   }
 
-  const styleCompiled = await compileStylePhase(parsed.descriptor, filename, result, options?.style)
+  const styleCompiled = await withCompilerPhase('style', () => compileStylePhase(parsed.descriptor, filename, result, options?.style))
   const hasCssVarsRuntime = parsed.descriptor.cssVars.length > 0 || options?.stabilizeCssVarsRuntime === true
 
   const scopedId = parsed.descriptor.styles.some(style => style.scoped)
@@ -172,7 +173,7 @@ export async function compileVueFile(
         miniProgramComponentTags: componentSourceInfo.miniProgramComponentTags,
       }
 
-  const templateCompiled = compileTemplatePhase(
+  const templateCompiled = withCompilerPhase('template', () => compileTemplatePhase(
     parsed.descriptor,
     filename,
     source,
@@ -180,7 +181,7 @@ export async function compileVueFile(
     templateOptions,
     result,
     options?.bindingManifestSourceFile,
-  )
+  ))
   if (templateCompiled?.diagnostics.length) {
     let fatalDiagnostic: CompilerDiagnostic | undefined
     for (const diagnostic of templateCompiled.diagnostics) {
@@ -212,7 +213,7 @@ export async function compileVueFile(
     && !isNativeDomCompilation(options)
     && templateCompiled
     && guardInitialSetupRender(templateCompiled, scriptCompiled?.bindings)
-  const scriptPhase = await compileScriptPhase(
+  const scriptPhase = await withCompilerPhase('script', () => compileScriptPhase(
     parsed.descriptor,
     parsed.descriptorForCompile,
     filename,
@@ -230,7 +231,7 @@ export async function compileVueFile(
     source,
     parsed.scriptPreprocessMap,
     parsed.nativeScriptAnalysis,
-  )
+  ))
   result.script = scriptPhase.script
   result.scriptMap = scriptPhase.scriptMap
   if (scriptPhase.componentStyleOptions) {
@@ -249,7 +250,7 @@ export async function compileVueFile(
     result.diagnostics = [...(result.diagnostics ?? []), ...scriptPhase.diagnostics]
   }
 
-  await compileConfigPhase({
+  await withCompilerPhase('config', () => compileConfigPhase({
     descriptor: parsed.descriptor,
     filename,
     autoUsingComponentsMap: scriptPhase.autoUsingComponentsMap,
@@ -261,7 +262,7 @@ export async function compileVueFile(
     scriptSetupMacroConfig: parsed.scriptSetupMacroConfig,
     result,
     warn: options?.warn,
-  })
+  }))
   result.config = mergeCompilerLayoutUsingComponents(
     result.config,
     options?.pageLayout,
@@ -275,10 +276,10 @@ export async function compileVueFile(
       : undefined,
   }
 
-  finalizeResult(result, {
+  withCompilerPhase('finalize', () => finalizeResult(result, {
     scriptSetupMacroHash: parsed.scriptSetupMacroHash,
     defineOptionsHash: parsed.defineOptionsHash,
-  })
+  }))
 
   if (!parsed.isAppFile && isNativeDomCompilation(options) && options?.isPage && result.template) {
     result.template = `<block tt:if="{{${WEVU_LEGACY_RENDERER_KEY}}}">${result.template}</block>`

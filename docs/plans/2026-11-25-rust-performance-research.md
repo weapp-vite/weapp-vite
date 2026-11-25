@@ -59,6 +59,14 @@ native 入口要求显式配置 `WEAPP_VITE_NATIVE=1` 和 `WEAPP_VITE_NATIVE_AST
 
 正式 HMR 记录中的功能场景可以全部通过，而 bundler 计时仍有失败场景。`compileVueFile` 的局部收益无法直接转换为 HMR 总耗时收益，后续需要在同一入口中分别记录 native 命中率、脚本阶段、模板阶段、bundler 和 watcher 时间。
 
+### 2026-11-25 编译器批量页面特性 POC
+
+本轮在当前主线输入上重新执行了 8 个真实 SFC、cold/warm、sourcemap 开关和 native on/off 的 40 对交替采样，共 2,560 个 wall 样本和 64 个 diagnostic 样本。Rust visitor 在同一次 Oxc parse/traverse 中收集页面特性 import、调用顺序和去重后的 feature flags，`transformScript` 直接消费摘要。native 不可用、摘要校验失败或输入不支持时仍走原有 Babel 路径。
+
+主要 warm fixture 的 14 个条件（7 个 fixture、2 个 sourcemap 设置）中，7 个条件的 P50 至少改善 5%，改善范围为 5.30%–16.04%；其余条件在 -3.32% 到 4.16% 之间。最大 P95 回退为 16.60%，出现在 `script-setup` 的 warm sourcemap 条件，另有 `goods-card` 和 `kpi-board` 条件出现约 15.05% 和 7.38% 的 P95 回退，需要后续重复采样定位。native on 的 peak RSS 中位数相对 off 的最大增长为 1.05%，但 diagnostic 的 64 个 retained heap slope 仍全部为正，当前不能据此宣称内存持续改善。
+
+本轮严格比较完整编译输出、sourcemap、`sourcesContent`、metadata、warning 顺序和错误结构，所有样本 parity 通过。profile 报告和 raw 证据保存在本地 ignored 目录，未纳入提交。结果支持继续保留 opt-in batch POC，不支持扩大默认启用范围，也不能外推为完整 CLI、HMR 或多平台构建的固定百分比收益。
+
 ### 内存和跨平台
 
 现有 profile 同时记录进程 peak RSS，但 RSS 包含 import、配置准备和编译器依赖初始化，不能解释为 Rust 独占内存。正确性、release 构建和 fallback 已有多轮 Windows、macOS、Linux 验证。性能 profile 仍以单机或有限平台为主，跨平台性能结论需要新的统一采样。
@@ -130,7 +138,7 @@ native 入口要求显式配置 `WEAPP_VITE_NATIVE=1` 和 `WEAPP_VITE_NATIVE_AST
 - [2026-06-30 阶段占比与 Amdahl 情景基线](../reports/2026-06-30-ast-native-migration-assessment.md)
 - 历史 TDesign smoke：commit `0306700fd`，仅作为未通过门禁的反例保存。
 
-本轮尝试在冻结的 `origin/main` 上重跑 40 对 SFC profile。profile 前置检查发现机器租约中存在未完成的 E2E scope，因此没有启动采样，也没有接管或清理该 scope。本轮没有产生新的性能数据。profile 工具的单测、ESLint 和独立 TypeScript 检查在本 PR 的工具边界修正后均通过。
+本轮 profile 使用 release addon 和新鲜下游构建完成，报告状态为 `passed`。profile 工具的单测、ESLint 和独立 TypeScript 检查，以及 Rust、native addon 和 compiler 包测试均通过。诊断结果中的正 retained heap slope 与部分 P95 回退仍是未完成的性能门禁项，后续应在同一冻结输入上重复采样并补充更长的持续编译 session。
 
 ## 可复现入口
 

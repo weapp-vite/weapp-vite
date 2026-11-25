@@ -82,6 +82,42 @@ describe('native compiler statement summaries', () => {
     expect(summary?.defineOptionsStatements).toEqual(expected)
   })
 
+  it('collects opt-in page feature flags in first-call order with the compiler summary', () => {
+    const code = `
+import { onResize as resize, onPageScroll } from 'wevu/router'
+import * as router from 'wevu/dev/router'
+import { onPullDownRefresh as refresh } from 'another-router'
+resize(() => {})
+router.onShareTimeline?.(() => {})
+onPageScroll(() => {})
+refresh(() => {})
+`
+    const summary = analyzeCompilerScriptsNative([{
+      code,
+      filename: 'page.ts',
+      pageFeatureModules: ['wevu', 'wevu/router', 'wevu/dev/router'],
+      pageFeatureHookToFeatureJson: JSON.stringify({
+        onResize: 'enableOnResize',
+        onPageScroll: 'enableOnPageScroll',
+        usePageScrollRestoration: 'enableOnPageScroll',
+        onPullDownRefresh: 'enableOnPullDownRefresh',
+        onReachBottom: 'enableOnReachBottom',
+        onRouteDone: 'enableOnRouteDone',
+        onTabItemTap: 'enableOnTabItemTap',
+        onShareAppMessage: 'enableOnShareAppMessage',
+        onShareTimeline: 'enableOnShareTimeline',
+        onAddToFavorites: 'enableOnAddToFavorites',
+        onSaveExitState: 'enableOnSaveExitState',
+      }),
+    }])[0]
+
+    expect(summary?.pageFeatureFlags).toEqual([
+      'enableOnResize',
+      'enableOnShareTimeline',
+      'enableOnPageScroll',
+    ])
+  })
+
   it('returns null per failed item without losing successful neighbors or input order', () => {
     const code = 'export default <view />'
     const results = analyzeCompilerScriptsNative([

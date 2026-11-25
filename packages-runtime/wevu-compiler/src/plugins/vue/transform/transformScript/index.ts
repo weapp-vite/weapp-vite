@@ -60,7 +60,9 @@ export function transformScript(source: string, options?: TransformScriptOptions
   }
 
   const enabledPageFeatures: Set<WevuPageFeatureFlag> = options?.isPage
-    ? collectWevuPageFeatureFlags(ast)
+    ? options.nativePageFeatureFlags
+      ? new Set(options.nativePageFeatureFlags)
+      : collectWevuPageFeatureFlags(ast)
     : new Set<WevuPageFeatureFlag>()
   const serializedWevuDefaults = options?.wevuDefaults && Object.keys(options.wevuDefaults).length > 0
     ? serializeWevuDefaults(options.wevuDefaults, warn)

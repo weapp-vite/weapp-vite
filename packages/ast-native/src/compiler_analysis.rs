@@ -1,10 +1,10 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use napi::bindgen_prelude::Utf16String;
 use napi_derive::napi;
 use oxc_ast::ast::{
-    Expression, ImportDeclarationSpecifier, ImportOrExportKind, ModuleExportName, Program,
-    Statement,
+    Expression, ImportDeclaration, ImportDeclarationSpecifier, ImportOrExportKind,
+    ModuleExportName, Program, Statement,
 };
 use oxc_ast_visit::{Visit, walk};
 
@@ -19,6 +19,8 @@ use reserved_props::{NativeReservedPropsDiagnostic, ReservedPropsAnalysis};
 pub struct NativeCompilerScriptInput {
     pub code: Utf16String,
     pub filename: Option<String>,
+    pub page_feature_modules: Option<Vec<String>>,
+    pub page_feature_hook_to_feature_json: Option<String>,
 }
 
 #[napi(object)]
@@ -45,6 +47,7 @@ pub struct NativeCompilerScriptAnalysis {
     pub has_default_export: bool,
     pub define_options_statements: Vec<NativeCompilerScriptSpan>,
     pub registered_components: Option<Vec<NativeCompilerRegisteredComponent>>,
+    pub page_feature_flags: Option<Vec<String>>,
     pub reserved_props_diagnostic: Option<NativeReservedPropsDiagnostic>,
 }
 
@@ -54,6 +57,16 @@ struct CompilerDiagnosticVisitor {
     has_default_export: bool,
     has_ts_module_declaration: bool,
     reserved_props: ReservedPropsAnalysis,
+    page_feature_named_hook_locals: HashMap<String, String>,
+    page_feature_namespace_locals: HashSet<String>,
+    page_feature_modules: HashSet<String>,
+    page_feature_hook_to_feature: HashMap<String, String>,
+    page_feature_calls: Vec<PageFeatureCall>,
+}
+
+enum PageFeatureCall {
+    Named(String),
+    Namespace { namespace: String, hook: String },
 }
 
 impl<'a> Visit<'a> for CompilerDiagnosticVisitor {
@@ -92,8 +105,56 @@ impl<'a> Visit<'a> for CompilerDiagnosticVisitor {
         self.has_lone_surrogate_literal |= !literal.is_string_well_formed_unicode();
     }
 
+    fn visit_import_declaration(&mut self, import: &ImportDeclaration<'a>) {
+        let Some(source) = import.source.value.as_str() else {
+            walk::walk_import_declaration(self, import);
+            return;
+        };
+        if self.page_feature_modules.contains(source) {
+            for specifier in import.specifiers.iter().flatten() {
+                match specifier {
+                    ImportDeclarationSpecifier::ImportNamespaceSpecifier(specifier) => {
+                        self.page_feature_namespace_locals
+                            .insert(specifier.local.name.to_string());
+                    }
+                    ImportDeclarationSpecifier::ImportSpecifier(specifier) => {
+                        let ModuleExportName::IdentifierName(imported) = &specifier.imported else {
+                            continue;
+                        };
+                        if self
+                            .page_feature_hook_to_feature
+                            .contains_key(imported.name.as_str())
+                        {
+                            self.page_feature_named_hook_locals.insert(
+                                specifier.local.name.to_string(),
+                                imported.name.to_string(),
+                            );
+                        }
+                    }
+                    ImportDeclarationSpecifier::ImportDefaultSpecifier(_) => {}
+                }
+            }
+        }
+        walk::walk_import_declaration(self, import);
+    }
+
     fn visit_call_expression(&mut self, call: &oxc_ast::ast::CallExpression<'a>) {
         self.reserved_props.inspect_call(call);
+        match call.callee.without_parentheses() {
+            Expression::Identifier(identifier) => {
+                self.page_feature_calls
+                    .push(PageFeatureCall::Named(identifier.name.to_string()));
+            }
+            Expression::StaticMemberExpression(member) => {
+                if let Expression::Identifier(object) = &member.object {
+                    self.page_feature_calls.push(PageFeatureCall::Namespace {
+                        namespace: object.name.to_string(),
+                        hook: member.property.name.to_string(),
+                    });
+                }
+            }
+            _ => {}
+        }
         walk::walk_call_expression(self, call);
     }
 }
@@ -150,8 +211,22 @@ fn collect_imports(program: &Program<'_>) -> Option<Vec<NativeCompilerScriptImpo
 fn analyze_compiler_script_program(
     program: &Program<'_>,
     code: &str,
+    page_feature_modules: Option<&[String]>,
+    page_feature_hook_to_feature_json: Option<&str>,
 ) -> Option<NativeCompilerScriptAnalysis> {
+    let page_feature_config = page_feature_modules
+        .zip(page_feature_hook_to_feature_json)
+        .and_then(|(modules, json)| {
+            serde_json::from_str::<HashMap<String, String>>(json)
+                .ok()
+                .map(|hook_to_feature| (modules, hook_to_feature))
+        });
+    let collect_page_feature_flags = page_feature_config.is_some();
     let mut diagnostics = CompilerDiagnosticVisitor::default();
+    if let Some((modules, hook_to_feature)) = page_feature_config {
+        diagnostics.page_feature_modules = modules.iter().cloned().collect();
+        diagnostics.page_feature_hook_to_feature = hook_to_feature;
+    }
     diagnostics.visit_program(program);
     if diagnostics.has_lone_surrogate_literal || diagnostics.has_ts_module_declaration {
         return None;
@@ -161,8 +236,37 @@ fn analyze_compiler_script_program(
         has_default_export: diagnostics.has_default_export,
         define_options_statements: collect_define_options_statements(program, code),
         registered_components: collect_registered_components(program),
+        page_feature_flags: collect_page_feature_flags
+            .then(|| diagnostics.collect_page_feature_flags()),
         reserved_props_diagnostic: diagnostics.reserved_props.finish(code),
     })
+}
+
+impl CompilerDiagnosticVisitor {
+    fn collect_page_feature_flags(&self) -> Vec<String> {
+        let mut seen = HashSet::new();
+        let mut flags = Vec::new();
+        for call in &self.page_feature_calls {
+            let feature = match call {
+                PageFeatureCall::Named(local) => self
+                    .page_feature_named_hook_locals
+                    .get(local)
+                    .and_then(|hook| self.page_feature_hook_to_feature.get(hook)),
+                PageFeatureCall::Namespace { namespace, hook }
+                    if self.page_feature_namespace_locals.contains(namespace) =>
+                {
+                    self.page_feature_hook_to_feature.get(hook)
+                }
+                PageFeatureCall::Namespace { .. } => None,
+            };
+            if let Some(feature) = feature
+                && seen.insert(feature.clone())
+            {
+                flags.push(feature.clone());
+            }
+        }
+        flags
+    }
 }
 
 fn collect_define_options_statements(
@@ -206,22 +310,40 @@ pub fn analyze_compiler_scripts_native(
 ) -> Vec<Option<NativeCompilerScriptAnalysis>> {
     let mut results: Vec<Option<NativeCompilerScriptAnalysis>> =
         (0..inputs.len()).map(|_| None).collect();
-    let mut groups: HashMap<(String, Option<String>), Vec<usize>> = HashMap::new();
+    let mut groups: HashMap<
+        (
+            String,
+            Option<String>,
+            Option<Vec<String>>,
+            Option<String>,
+        ),
+        Vec<usize>,
+    > = HashMap::new();
     for (index, input) in inputs.iter().enumerate() {
         let Ok(code) = String::from_utf16(&input.code) else {
             continue;
         };
-        let key = (code, input.filename.clone());
+        let key = (
+            code,
+            input.filename.clone(),
+            input.page_feature_modules.clone(),
+            input.page_feature_hook_to_feature_json.clone(),
+        );
         groups.entry(key).or_default().push(index);
     }
 
-    for ((code, filename), matching) in groups {
+    for ((code, filename, page_feature_modules, page_feature_hook_to_feature_json), matching) in groups {
         let allocator = oxc_allocator::Allocator::default();
         // 有恢复诊断的 AST 不能证明宏诊断完整，逐项交回原编译器处理。
         let Some(program) = parse_program(&allocator, &code, filename, true) else {
             continue;
         };
-        let analysis = analyze_compiler_script_program(&program, &code);
+        let analysis = analyze_compiler_script_program(
+            &program,
+            &code,
+            page_feature_modules.as_deref(),
+            page_feature_hook_to_feature_json.as_deref(),
+        );
         for index in matching {
             results[index] = analysis.clone();
         }

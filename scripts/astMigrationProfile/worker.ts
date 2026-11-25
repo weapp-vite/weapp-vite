@@ -6,6 +6,7 @@ import path from 'node:path'
 import { performance } from 'node:perf_hooks'
 import process from 'node:process'
 import { pathToFileURL } from 'node:url'
+import { isDeepStrictEqual } from 'node:util'
 import { deserialize, serialize } from 'node:v8'
 import { installDiagnostics } from './diagnostics'
 import { measureRealEntry } from './entry'
@@ -13,6 +14,69 @@ import { hashFile } from './identity'
 
 interface Request { root: string, addon: string, fixture: ProfileCase, cell: Cell, output: string, diagnosticProxy: string }
 interface AllocationNode { selfSize: number, children: AllocationNode[] }
+interface PhaseRecorder {
+  calls: Record<string, number>
+  durationMs: Record<string, number>
+  record: (name: string, durationMs: number) => void
+  reset: () => void
+  snapshot: () => { calls: Record<string, number>, durationMs: Record<string, number> }
+}
+type CompileEntry = typeof import('../../packages-runtime/wevu-compiler/src/index').compileVueFile
+
+async function measureRetainedHeapIteration(
+  compile: CompileEntry,
+  source: string,
+  filename: string,
+  options: NonNullable<Parameters<CompileEntry>[2]>,
+  expectedOutcome: Measurement['outcome'],
+  gc: () => void,
+  baselineHeapUsed: number,
+) {
+  gc()
+  let measured: Awaited<ReturnType<typeof measureRealEntry>> | undefined = await measureRealEntry(compile, source, filename, options)
+  if (measured.outcome.status !== 'success' || !isDeepStrictEqual(expectedOutcome, measured.outcome)) {
+    throw new Error('Compiler output changed during retained-heap sampling.')
+  }
+  const compileMs = measured.compileMs
+  measured = undefined
+  gc()
+  const memory = process.memoryUsage()
+  return {
+    compileMs,
+    heapUsedAfterGc: memory.heapUsed,
+    retainedHeapDeltaBytes: memory.heapUsed - baselineHeapUsed,
+    rssAfterGc: memory.rss,
+  }
+}
+
+async function measureRetainedHeap(
+  compile: CompileEntry,
+  source: string,
+  filename: string,
+  options: NonNullable<Parameters<CompileEntry>[2]>,
+  expectedOutcome: Measurement['outcome'],
+) {
+  const gc = Reflect.get(globalThis, 'gc') as (() => void) | undefined
+  if (!gc) {
+    throw new Error('Retained-heap sampling requires --expose-gc.')
+  }
+  gc()
+  const baseline = process.memoryUsage()
+  const samples: NonNullable<Measurement['retainedHeap']>['samples'] = []
+  for (let iteration = 1; iteration <= 8; iteration++) {
+    const sample = await measureRetainedHeapIteration(
+      compile,
+      source,
+      filename,
+      options,
+      expectedOutcome,
+      gc,
+      baseline.heapUsed,
+    )
+    samples.push({ iteration, ...sample })
+  }
+  return { baselineHeapUsed: baseline.heapUsed, baselineRss: baseline.rss, samples }
+}
 
 export async function runWorker(request: Request): Promise<Measurement> {
   const { root, cell, fixture, addon } = request
@@ -31,6 +95,25 @@ export async function runWorker(request: Request): Promise<Measurement> {
   }
   const diagnostic = cell.metric === 'diagnostic' ? installDiagnostics(binding) : undefined
   const inspector = cell.metric === 'diagnostic' ? new Session() : undefined
+  let phaseRecorder: PhaseRecorder | undefined
+  if (diagnostic) {
+    phaseRecorder = {
+      calls: {},
+      durationMs: {},
+      record(name, durationMs) {
+        this.calls[name] = (this.calls[name] ?? 0) + 1
+        this.durationMs[name] = (this.durationMs[name] ?? 0) + durationMs
+      },
+      reset() {
+        this.calls = {}
+        this.durationMs = {}
+      },
+      snapshot() {
+        return { calls: { ...this.calls }, durationMs: { ...this.durationMs } }
+      },
+    }
+    Reflect.set(globalThis, '__weappCompilerProfilePhaseRecorder', phaseRecorder)
+  }
   try {
     if (cell.arm === 'on') {
       process.env.WEAPP_VITE_NATIVE = '1'
@@ -68,6 +151,7 @@ export async function runWorker(request: Request): Promise<Measurement> {
       }
       gc()
       diagnostic.reset()
+      phaseRecorder!.reset()
       inspector!.connect()
       await inspector!.post('HeapProfiler.startSampling', {
         samplingInterval: 16384,
@@ -87,6 +171,13 @@ export async function runWorker(request: Request): Promise<Measurement> {
       sampledAllocationBytes = total(profile.head)
       await diagnostic.finish(measured.startedAt, measured.endedAt)
     }
+    const peakRssBytes = process.resourceUsage().maxRSS * 1024
+    const diagnosticCounters = diagnostic ? structuredClone(diagnostic.counters) : null
+    const phase = diagnostic ? phaseRecorder!.snapshot() : null
+    const diagnosticGc = diagnostic ? { ...diagnostic.gc } : null
+    const retainedHeap = diagnostic
+      ? await measureRetainedHeap(compiler.compileVueFile, source, filename, options, measured.outcome)
+      : null
     if (identity.compilerSha256 !== await hashFile(compilerEntry)
       || identity.sourceSha256 !== await hashFile(filename)
       || (cell.arm === 'on' && identity.addonSha256 !== await hashFile(addon))) {
@@ -102,18 +193,22 @@ export async function runWorker(request: Request): Promise<Measurement> {
       optionsSummary: JSON.parse(JSON.stringify(manifestOptions, (_key, value: unknown) => typeof value === 'function' ? '<function>' : value)) as Record<string, unknown>,
       identity,
       warmupCount,
+      phaseCalls: phase?.calls ?? null,
+      phaseDurationMs: phase?.durationMs ?? null,
       rssBefore: before.rss,
       rssAfter: after.rss,
-      peakRssBytes: process.resourceUsage().maxRSS * 1024,
-      counters: diagnostic?.counters ?? null,
-      gc: diagnostic?.gc ?? null,
+      peakRssBytes,
+      counters: diagnosticCounters,
+      gc: diagnosticGc,
       cpu,
       sampledAllocationBytes,
+      retainedHeap,
     }
   }
   finally {
     inspector?.disconnect()
     diagnostic?.close()
+    Reflect.deleteProperty(globalThis, '__weappCompilerProfilePhaseRecorder')
     Reflect.deleteProperty(globalThis, '__weappCompilerProfileBinding')
   }
 }

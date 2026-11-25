@@ -5,6 +5,7 @@ import type { ComponentStyleOptions } from '../../../../types/componentStyleOpti
 import type { CompilerPageLayoutPlan } from '../../../../types/pageLayout'
 import type { WevuDefaults } from '../../../../types/wevu'
 import type { EncodedSourceMapLike } from '../../../../utils/sourcemap'
+import type { WevuPageFeatureFlag } from '../../../wevu/pageFeatures/types'
 import type { ClassStyleBinding, ClassStyleRuntime, InlineExpressionAsset, LayoutHostBinding, TemplateRefBinding } from '../../compiler/template/types'
 import * as t from '@weapp-vite/ast/babelTypes'
 
@@ -42,6 +43,8 @@ export interface TransformScriptOptions {
    * 是否是 Page 入口（仅 Page 才需要注入 features 以启用按需派发的页面事件）
    */
   isPage?: boolean
+  /** 由同一份原始脚本的 native batch 摘要提供的页面特性；缺失时回退 Babel 收集。 */
+  nativePageFeatureFlags?: readonly WevuPageFeatureFlag[]
   /**
    * <script setup> 中仅由模板使用的导入组件：编译时移除 import 与 Vue 编译器自动返回的 getter。
    * key: 组件别名（需与模板标签一致），value: usingComponents 的 from（如 `/components/foo/index`）

@@ -12,6 +12,8 @@ function sample(cell: Cell): Measurement {
     counters.compilerBatchCalls = 1
     counters.compilerBatchInputs = 2
     counters.compilerBatchUniqueInputs = 1
+    counters.compilerBatchInputUtf8Bytes = 20
+    counters.compilerBatchUniqueInputUtf8Bytes = 10
   }
   return {
     cell,
@@ -24,10 +26,25 @@ function sample(cell: Cell): Measurement {
     rssAfter: 110,
     peakRssBytes: 120,
     warmupCount: cell.condition === 'warm' ? 2 : 0,
+    phaseCalls: counters ? { parse: 1 } : null,
+    phaseDurationMs: counters ? { parse: 2 } : null,
     counters,
     cpu: counters ? { user: 1, system: 0 } : null,
     gc: counters ? { count: 0, durationMs: 0 } : null,
     sampledAllocationBytes: counters ? 10 : null,
+    retainedHeap: counters
+      ? {
+          baselineHeapUsed: 100,
+          baselineRss: 110,
+          samples: Array.from({ length: 8 }, (_, index) => ({
+            iteration: index + 1,
+            compileMs: 1,
+            heapUsedAfterGc: 100 + index,
+            retainedHeapDeltaBytes: index,
+            rssAfterGc: 110 + index,
+          })),
+        }
+      : null,
     identity: { compilerSha256: 'compiler', addonSha256: cell.arm === 'on' ? 'addon' : null, sourceSha256: 'source' },
   }
 }

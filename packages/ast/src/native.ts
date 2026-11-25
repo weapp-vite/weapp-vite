@@ -31,6 +31,8 @@ export interface NativeScriptAnalysisInput {
 export interface NativeCompilerScriptInput {
   code: string
   filename?: string
+  pageFeatureModules?: string[]
+  pageFeatureHookToFeatureJson?: string
 }
 
 export interface NativeCompilerScriptImport {
@@ -57,6 +59,8 @@ export interface NativeCompilerScriptAnalysis {
   hasDefaultExport?: boolean
   defineOptionsStatements: NativeCompilerScriptSpan[]
   registeredComponents?: NativeCompilerRegisteredComponent[]
+  /** 旧 binding 缺失该事实时，由编译阶段执行原有页面特性收集。 */
+  pageFeatureFlags?: string[]
   /** 缺失表示旧 binding 或需由 Babel 完成诊断；空对象表示已确认无警告。 */
   reservedPropsDiagnostic?: { warningOffset?: number }
 }
@@ -241,9 +245,15 @@ export function analyzeCompilerScriptsWithNative(inputs: NativeCompilerScriptInp
     return inputs.map(fallback)
   }
 
+  const nativeInputs = inputs.map(input => ({
+    code: input.code,
+    filename: input.filename ?? 'inline.ts',
+    pageFeatureModules: input.pageFeatureModules,
+    pageFeatureHookToFeatureJson: input.pageFeatureHookToFeatureJson,
+  }))
   let results: unknown
   try {
-    results = analyzeNative(inputs)
+    results = analyzeNative(nativeInputs)
   }
   catch {
     return inputs.map(fallback)

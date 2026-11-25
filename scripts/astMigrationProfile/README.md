@@ -20,7 +20,7 @@ prepare 串行执行 `pnpm --filter @weapp-vite/ast-native native:build`、相�
 
 ## 采样边界
 
-每个 cell 使用新鲜子进程，偶数 trial 先 off 后 on，奇数反转，所有 worker 串行运行。native on 使用真实 release `.node`；wall 进程没有代理、强制 GC、inspector 或调用计数钩子。
+每个 cell 使用新鲜子进程，偶数 trial 先 off 后 on，奇数反转，所有 worker 串行运行。native on 使用真实 release `.node`；wall 进程不安装 recorder、代理、强制 GC、inspector 或调用计数钩子。编译器源码中的 phase helper 在 recorder 缺席时直接调用原阶段函数，但每个阶段仍有一次轻量 recorder 检查。该固定检查同时存在于两组 wall 样本和后续 POC 样本，报告针对仓库基线的相对变化，不把 profile 的绝对耗时当作未改动发行版耗时。
 
 生产 options 来自真实项目配置、`createCompileVueFileOptions`、Vite resolver 和其他项目组件的 auto-import registry；支持文件输出被禁用。registry 明确排除目标组件，准备阶段没有调用目标的 `compileVueFile` 或 compiler 私有 `readAndParseSfc` descriptor cache。其他组件的 Vue parse/props/config 分析可能预热共享依赖，因此 cold 表示完成配置和 registry 准备后的目标首次完整编译，不是全进程或整个工程冷启动，也不清空 OS 文件缓存。
 
@@ -38,7 +38,9 @@ summary 按 fixture、cold/warm 和 sourcemap 分组给出两 arm 的 compile P5
 
 原始 outcome 保存为报告旁的 `.raw/*.bin` 内容寻址文件，报告引用 hash。这些本地原始结果可能含机器路径，发布前必须单独隐私检查；JSON 报告脱敏不等于 raw 文件已脱敏。
 
-诊断 pass 代理实际 CJS Babel/SFC export 和真实 native binding，记录可观察的 parse/traverse/generate 调用、跨界次数、batch 输入/唯一输入/校验拒绝项与 native thrown calls。诊断输出必须与 wall 原始 addon 输出精确一致；hook 未覆盖的 ESM/internal 调用不计入这些可观察计数，正式采样前需要实际 worker preflight 确认覆盖范围。
+诊断 pass 代理实际 CJS Babel/SFC export 和真实 native binding，记录 parse/traverse/generate、SFC parse/compileScript 的调用次数和耗时，native batch 跨界耗时、输入数量与 UTF-8 字节数、唯一输入与拒绝项以及 native thrown calls。profile worker 另对 compileVueFile 的 parse、component discovery、SFC script compile、style、template、script、transformScript、config 和 finalize 阶段计时。阶段与依赖调用计时只用于诊断，不参与 wall 百分位。
+
+每个诊断样本在主测量后进行 8 次相同源码的完整编译。每轮前后强制 GC，记录 post-GC heap 与 RSS 相对基线的变化，并比较完整输出。`slopeBytesPerCompile` 是 8 个 post-GC heap 点的线性拟合斜率，可用于观察该 fixture 在当前进程中的 retained heap 趋势；它不等同于持续 HMR session 的 heap 增长。wall 样本仍使用不带 profiler、代理、强制 GC 或阶段 recorder 的新鲜进程。
 
 GC 只统计 `startTime` 位于实际 awaited 编译起止区间的事件，排除异步送达的准备或强制 GC。CPU 和 V8 sampled allocation 仅来自独立诊断 pass。
 

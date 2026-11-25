@@ -84,9 +84,14 @@ export function readNativeCompilerScriptAnalysis(value: unknown, code: string): 
     })
     const rawComponents = raw.registeredComponents
     const registeredComponents = rawComponents === undefined ? undefined : readDenseArray(rawComponents, readComponent)
+    const rawPageFeatureFlags = raw.pageFeatureFlags
+    const pageFeatureFlags = rawPageFeatureFlags === undefined
+      ? undefined
+      : readDenseArray(rawPageFeatureFlags, value => typeof value === 'string' ? value : undefined)
     if (imports === undefined || defineOptionsStatements === undefined
       || (hasDefaultExport !== undefined && typeof hasDefaultExport !== 'boolean')
-      || (rawComponents !== undefined && registeredComponents === undefined)) {
+      || (rawComponents !== undefined && registeredComponents === undefined)
+      || (rawPageFeatureFlags !== undefined && pageFeatureFlags === undefined)) {
       return undefined
     }
     const rawDiagnostic = raw.reservedPropsDiagnostic
@@ -108,6 +113,7 @@ export function readNativeCompilerScriptAnalysis(value: unknown, code: string): 
       ...(hasDefaultExport === undefined ? {} : { hasDefaultExport }),
       defineOptionsStatements,
       ...(registeredComponents === undefined ? {} : { registeredComponents }),
+      ...(pageFeatureFlags === undefined ? {} : { pageFeatureFlags }),
       ...(reservedPropsDiagnostic === undefined ? {} : { reservedPropsDiagnostic }),
     }
   }

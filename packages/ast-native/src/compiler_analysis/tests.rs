@@ -5,6 +5,23 @@ fn input(code: &str, filename: &str) -> NativeCompilerScriptInput {
     NativeCompilerScriptInput {
         code: code.to_string().into(),
         filename: Some(filename.to_string()),
+        page_feature_modules: None,
+        page_feature_hook_to_feature_json: None,
+    }
+}
+
+fn page_feature_input(code: &str) -> NativeCompilerScriptInput {
+    NativeCompilerScriptInput {
+        code: code.to_string().into(),
+        filename: Some("page.ts".to_string()),
+        page_feature_modules: Some(vec![
+            "wevu".to_string(),
+            "wevu/router".to_string(),
+            "wevu/dev/router".to_string(),
+        ]),
+        page_feature_hook_to_feature_json: Some(
+            r#"{"onPageScroll":"enableOnPageScroll","usePageScrollRestoration":"enableOnPageScroll","onPullDownRefresh":"enableOnPullDownRefresh","onReachBottom":"enableOnReachBottom","onRouteDone":"enableOnRouteDone","onTabItemTap":"enableOnTabItemTap","onResize":"enableOnResize","onShareAppMessage":"enableOnShareAppMessage","onShareTimeline":"enableOnShareTimeline","onAddToFavorites":"enableOnAddToFavorites","onSaveExitState":"enableOnSaveExitState"}"#.to_string(),
+        ),
     }
 }
 
@@ -242,6 +259,43 @@ fn compiler_batch_reuses_identical_summary_and_returns_owned_values() {
         second.registered_components.as_ref().unwrap()[0].name,
         "Card"
     );
+}
+
+#[test]
+fn compiler_batch_collects_page_feature_flags_in_call_order_from_the_same_walk() {
+    let code = r#"
+import { onResize as resize, onPageScroll } from 'wevu/router';
+import * as router from 'wevu/dev/router';
+import { onPullDownRefresh as refresh } from 'other-router';
+resize(() => {});
+router.onShareTimeline?.(() => {});
+onPageScroll(() => {});
+refresh(() => {});
+"#;
+    let result = analyze_compiler_scripts_native(vec![page_feature_input(code)]);
+    assert_eq!(
+        result[0]
+            .as_ref()
+            .unwrap()
+            .page_feature_flags
+            .as_ref()
+            .unwrap(),
+        &[
+            "enableOnResize".to_string(),
+            "enableOnShareTimeline".to_string(),
+            "enableOnPageScroll".to_string(),
+        ]
+    );
+
+    let mut input = page_feature_input(code);
+    input.page_feature_modules = None;
+    input.page_feature_hook_to_feature_json = None;
+    let without_page_features = analyze_compiler_scripts_native(vec![input]);
+    assert!(without_page_features[0]
+        .as_ref()
+        .unwrap()
+        .page_feature_flags
+        .is_none());
 }
 
 #[test]
