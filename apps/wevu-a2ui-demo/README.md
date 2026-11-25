@@ -66,7 +66,7 @@ pnpm exec cross-env WEAPP_VITE_E2E_RUNTIME_PROVIDER=devtools \
 
 页面度量通过 `page.callMethodWithOptions('readMetrics', { routeOnly: true })` 读取：2026-11-25 的 Nightly 实测中，开发者工具原生 `Page.callMethod` 协议在本页返回 `this.readMetrics is not a function`，`routeOnly` 改走 AppService 的 `getCurrentPages()` 路径，headless 与真实 IDE 双端一致，也与本仓库其他 Wevu IDE 用例的读法相同。
 
-包级单测 21 项，覆盖多绑定/多动作选择、`Tabs.tabs[].child` 嵌套投影、异步动作隔离、本地 `functionCall`、catalog 函数错误与继承成员边界、数据回滚与幂等销毁；应用单测 6 项，noEval 探针同时检查售后输入与嵌套基础页文本。headless runtime suite 4 项全部通过，覆盖基础目录页、递归宿主与真实输入/点击事件、增量更新后的输入保留、异常消息保留上一版界面、失败重试与卸载取消。2026-11-25 在 `@a2ui/web_core@0.16.1` 下固定场景实测：dist 总量 1077052 字节（主包约 1.03 MB，包含 `@a2ui/web_core` 依赖图与包内兼容层）。
+包级单测 22 项，覆盖多绑定/多动作选择、`Tabs.tabs[].child` 嵌套投影、异步动作隔离、本地 `functionCall`、catalog 函数错误与继承成员边界、路径删除、数据回滚与幂等销毁；应用单测 6 项，noEval 探针同时检查售后输入与嵌套基础页文本。headless runtime suite 4 项全部通过，覆盖基础目录页、递归宿主与真实输入/点击事件、增量更新后的输入保留、异常消息保留上一版界面、失败重试与卸载取消。2026-11-25 在 `@a2ui/web_core@0.16.1` 下固定场景实测：dist 总量 1077072 字节（主包约 1.03 MB，包含 `@a2ui/web_core` 依赖图与包内兼容层）。
 
 同一天按维护者显式指定的 Nightly 2.02.2611232（基础库 3.18.1）在 Windows 上运行真实 IDE 分支：4 项断言全部通过，基础目录页包含 `Tabs.tabs[].child` 嵌套渲染，其中还包含开发者工具截图路径与增量场景度量 8 次 / 53624 字节，与 headless 数值一致。该轮 teardown 暴露出 `weapp-ide-cli` 的平台缺口：活动 MAIN 日志识别仅在 macOS 生效（`windowClose/activeLog.ts` 在非 darwin 直接回退），Windows 回退为按目录扫描且要求同版本 MAIN 日志唯一，而同一 profile 会随每次启动累积多份 MAIN 日志，故关闭证据被判为歧义、机器租约与 journal 按策略保留待恢复——断言结果不受影响。已在同一提交内修复：非 macOS 回退按本轮受管项目会话令牌收窄候选日志，复用仓库恢复 API 释放本轮 scope 后重新核验得到唯一游标与完整的原生窗口销毁证据。
 

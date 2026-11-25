@@ -169,7 +169,9 @@ describe('Wevu A2UI runtime', { concurrent: false }, () => {
     await (await page.$('#reset')).tap()
     await expect.poll(() => reasonValue(page)).toBe('')
     await inputReason(page, '卸载前提交')
+    const deliveredBefore = Number(await page.data('model.delivered'))
     await (await element(page, 'button', 'submit')).tap()
+    await expect.poll(async () => Number(await page.data('model.delivered'))).toBe(deliveredBefore + 1)
     await (await page.$('#play')).tap()
     const blank = await miniProgram.reLaunch('/pages/blank/index')
     // 等待超过假 agent 回包和首批增量任务的期限，检查卸载后没有宿主写入。

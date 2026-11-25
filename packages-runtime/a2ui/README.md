@@ -161,7 +161,7 @@ Chat 消息编排的参考实现采用同样的 envelope 校验、generation 操
 
 ## 验证与发布边界
 
-包级 21 项单测覆盖投影绑定、多绑定/多动作选择、嵌套槽位、输入回写、动作外发、异步动作隔离、本地 `functionCall`、函数错误与继承成员边界、模板列表 respawn、消息校验、失败回滚与幂等销毁；tsd 锁定公开类型。构建产物为 ESM + d.mts，`@a2ui/web_core` 作为外部依赖由宿主应用打包。
+包级 22 项单测覆盖投影绑定、多绑定/多动作选择、嵌套槽位、输入回写、动作外发、异步动作隔离、本地 `functionCall`、函数错误与继承成员边界、模板列表 respawn、路径删除、消息校验、失败回滚与幂等销毁；tsd 锁定公开类型。构建产物为 ESM + d.mts，`@a2ui/web_core` 作为外部依赖由宿主应用打包。
 
 `apps/wevu-a2ui-demo` 与 `e2e/ide/wevu-a2ui.runtime.test.ts` 提供 headless 与真实微信 DevTools 的同场景验收，覆盖基础目录页、递归宿主、输入写回、增量替换后的输入保留、异常消息保留上一版界面和卸载清理。应用的 `test/noEval.test.ts` 从公共入口打包，在禁用 `Function` / `eval` 的 `vm` 上下文执行。
 

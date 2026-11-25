@@ -127,13 +127,13 @@ describe('createA2uiSession', () => {
   })
 
   it('removes a data model path without replacing bound nodes', () => {
-    const result = setup()
-    result.session.receive(createSurface('s1', [
+    const result = setupSession()
+    result.session.receive(createSurfaceMessage('s1', [
       { id: 'root', component: 'Text', text: { '@path': '/status' } },
     ], { status: 'idle' }))
     const previous = rootOf(result)
 
-    result.session.receive(surface('updateDataModel', { surfaceId: 's1', path: '/status', value: null }))
+    result.session.receive(surfaceMessage('updateDataModel', { surfaceId: 's1', path: '/status', value: null }))
 
     const updated = rootOf(result)
     expect(updated?.props.text).toBeNull()
