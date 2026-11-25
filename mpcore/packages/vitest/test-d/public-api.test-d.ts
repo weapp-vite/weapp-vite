@@ -9,6 +9,12 @@ expectType<string>(mpcoreTest().name)
 expectType<void>(test('default fixture type', async ({ mpcore }) => {
   expectType<Promise<void>>(mpcore.close())
 }))
+test.skip.each([{ value: 'skipped' }])('native skip.each type %s', ({ value }) => {
+  expectType<string>(value)
+})
+test.concurrent.each([{ value: 'parallel' }])('native concurrent.each type %s', ({ value }) => {
+  expectType<string>(value)
+})
 expectType<typeof test>(it)
 expectType<typeof expect>(mpcoreExpect)
 expectType<string>(inject('mpcoreArtifact').projectPath)

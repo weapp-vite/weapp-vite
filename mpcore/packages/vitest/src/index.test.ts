@@ -7,6 +7,8 @@ describe('@mpcore/vitest', () => {
   it('exports a Vitest-compatible test with the mpcore fixture', () => {
     expect(test).toBeTypeOf('function')
     expect(test.extend).toBeTypeOf('function')
+    expect(test.skip.each).toBeTypeOf('function')
+    expect(test.concurrent.each).toBeTypeOf('function')
     expect(it).toBe(test)
   })
 

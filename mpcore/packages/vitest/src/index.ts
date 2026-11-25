@@ -40,26 +40,8 @@ export function createMpcoreTest(options?: MpcoreTestProjectOptions) {
   })
 }
 
-function createLazyMpcoreTest() {
-  let resolved: ReturnType<typeof createMpcoreTest> | undefined
-  const resolve = () => resolved ??= createMpcoreTest()
-  return new Proxy(vitestTest, {
-    apply(_target, thisArg, argumentsList) {
-      return Reflect.apply(resolve(), thisArg, argumentsList)
-    },
-    get(_target, property, receiver) {
-      const test = resolve()
-      const value = Reflect.get(test, property, receiver)
-      if (typeof value === 'function') {
-        return (...argumentsList: unknown[]) => Reflect.apply(value, test, argumentsList)
-      }
-      return value
-    },
-  }) as ReturnType<typeof createMpcoreTest>
-}
-
-/** 默认的 Vitest 入口，首次使用时提供隔离的 mpcore fixture。 */
-const test = createLazyMpcoreTest()
+/** 默认 Vitest 入口提供隔离的 mpcore fixture，并保留原生测试 API。 */
+const test = createMpcoreTest()
 const it = test
 
 export function createVitestProject(options?: MpcoreTestProjectOptions) {
