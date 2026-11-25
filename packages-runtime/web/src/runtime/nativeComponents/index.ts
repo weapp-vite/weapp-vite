@@ -1,61 +1,11 @@
 import type { NativeComponentWebTag } from '../../shared/nativeComponents'
 import { NATIVE_COMPONENT_DESCRIPTORS } from '../../shared/nativeComponents'
-import { WeappButton } from '../button'
-import { WeappCanvas } from './canvas'
-import { WeappCheckbox, WeappCheckboxGroup } from './checkbox'
-import { WeappCoverImage, WeappCoverView } from './cover'
-import { WeappForm } from './form'
-import { WeappIcon } from './icon'
-import { WeappImage } from './image'
-import { WeappInput } from './input'
-import { WeappLabel } from './label'
-import { WeappMovableArea, WeappMovableView } from './movable'
 import { WeappNavigator } from './navigator'
-import { WeappPicker } from './picker'
-import { WeappPickerView, WeappPickerViewColumn } from './pickerView'
-import { WeappText, WeappView } from './primitives'
-import { WeappProgress } from './progress'
-import { WeappRadio, WeappRadioGroup } from './radio'
-import { WeappRichText } from './richText'
-import { WeappScrollView } from './scrollView'
-import { WeappSlider } from './slider'
-import { WeappSwiper } from './swiper'
-import { WeappSwiperItem } from './swiper/item'
-import { WeappSwitch } from './switch'
-import { WeappTextarea } from './textarea'
-import { WeappVideo } from './video'
+import { VISUAL_WEB_COMPONENT_CONSTRUCTORS } from './registry'
 
 const constructors = {
-  'weapp-view': WeappView,
-  'weapp-text': WeappText,
-  'weapp-image': WeappImage,
-  'weapp-button': WeappButton,
-  'weapp-input': WeappInput,
-  'weapp-textarea': WeappTextarea,
-  'weapp-form': WeappForm,
-  'weapp-label': WeappLabel,
-  'weapp-checkbox-group': WeappCheckboxGroup,
-  'weapp-checkbox': WeappCheckbox,
-  'weapp-radio-group': WeappRadioGroup,
-  'weapp-radio': WeappRadio,
-  'weapp-switch': WeappSwitch,
-  'weapp-picker': WeappPicker,
-  'weapp-picker-view': WeappPickerView,
-  'weapp-picker-view-column': WeappPickerViewColumn,
-  'weapp-slider': WeappSlider,
-  'weapp-icon': WeappIcon,
-  'weapp-progress': WeappProgress,
-  'weapp-rich-text': WeappRichText,
-  'weapp-scroll-view': WeappScrollView,
+  ...VISUAL_WEB_COMPONENT_CONSTRUCTORS,
   'weapp-navigator': WeappNavigator,
-  'weapp-swiper': WeappSwiper,
-  'weapp-swiper-item': WeappSwiperItem,
-  'weapp-canvas': WeappCanvas,
-  'weapp-video': WeappVideo,
-  'weapp-cover-view': WeappCoverView,
-  'weapp-cover-image': WeappCoverImage,
-  'weapp-movable-area': WeappMovableArea,
-  'weapp-movable-view': WeappMovableView,
 } satisfies Record<NativeComponentWebTag, CustomElementConstructor>
 
 export function ensureNativeComponentsDefined() {

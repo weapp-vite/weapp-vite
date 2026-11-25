@@ -36,6 +36,30 @@ keywords:
 pnpm add -D @weapp-vite/web
 ```
 
+## 在纯 Web 项目中使用视觉元素
+
+`@weapp-vite/web/elements` 只提供原生组件的自定义元素、基础样式与交互，不安装小程序全局对象，也不引入模板编译器、页面栈或 `wx.*` API，因此可以在任意 Web 项目中按标签注册：
+
+```ts
+import { defineElements, setupRpx } from '@weapp-vite/web/elements'
+
+defineElements(['weapp-view', 'weapp-scroll-view', 'weapp-swiper'])
+// 模板里沿用 rpx 单位时同步 --rpx 变量，designWidth 默认 750
+setupRpx()
+```
+
+元素是标准 `HTMLElement` 子类，属性用 HTML attribute 配置，事件是标准 `CustomEvent`，`detail` 保持小程序命名习惯（`change`、`scroll`、`pickstart`、`animationfinish` 等）：
+
+```ts
+document.querySelector('weapp-swiper')?.addEventListener('change', (event) => {
+  console.log((event as CustomEvent<{ current: number }>).detail.current)
+})
+```
+
+Vue、React、Lit 都可以直接使用这些标签；元素不封装 shadow DOM，外层可通过普通 CSS 覆盖 `NATIVE_COMPONENT_STYLE` 提供的默认样式。
+
+`weapp-navigator` 需要页面栈与路由宿主，不在该入口的注册表内；它仍由 `@weapp-vite/web/runtime` 提供，类型层面调用 `defineElements(['weapp-navigator'])` 会直接报错。需要表单联动、`triggerEvent`、`dataset` 或 `wx.*` 时，请继续使用完整的 Web runtime 入口。
+
 ## 在 weapp-vite 项目中运行
 
 项目根目录提供 `index.html` 后，可直接让 CLI 从原有 `app.json`、WXML/WXSS/TS 或 Vue SFC 源码生成 Web 入口，无需维护第二套路由：
