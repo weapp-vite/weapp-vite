@@ -18,14 +18,17 @@ describe('DevTools version matrix', () => {
     expect(result.entries.map(entry => entry.status)).toEqual(['passed', 'failed', 'passed'])
     expect(result.exitCode).toBe(1)
   })
-  it('records a missing installation and continues other installed targets', async () => {
+  it.each([
+    { channel: 'rc', code: 'WECHAT_DEVTOOLS_INSTALLATION_NOT_FOUND', statuses: ['passed', 'blocked', 'passed'] },
+    { channel: 'stable', code: 'DEVTOOLS_OFFICIAL_LATEST_REQUIRED', statuses: ['blocked', 'passed', 'passed'] },
+  ])('blocks $channel for $code and continues other targets', async ({ channel, code, statuses }) => {
     const result = await runDevtoolsMatrix(requests, { resolve: async (request) => {
-      if (request.devtoolsChannel === 'rc') {
-        throw Object.assign(new Error('not installed'), { code: 'WECHAT_DEVTOOLS_INSTALLATION_NOT_FOUND' })
+      if (request.devtoolsChannel === channel) {
+        throw Object.assign(new Error(code), { code })
       }
       return await resolve(request)
     }, run: async target => observed(target.installationId) })
-    expect(result.entries.map(entry => entry.status)).toEqual(['passed', 'blocked', 'passed'])
+    expect(result.entries.map(entry => entry.status)).toEqual(statuses)
   })
   it('halts after unsafe cleanup and lists remaining targets as not executed', async () => {
     const run = vi.fn(async () => ({ exitCode: 1, unsafeReason: 'host still alive' }))
@@ -84,15 +87,6 @@ describe('DevTools version matrix', () => {
     expect(run).toHaveBeenCalledTimes(1)
     expect(result.entries[0]!.status).toBe('blocked')
     expect(result.entries.slice(1).map(entry => entry.status)).toEqual(['not-executed', 'not-executed'])
-  })
-  it('continues after a strict official selection check blocks a target', async () => {
-    const result = await runDevtoolsMatrix(requests, { resolve: async (request) => {
-      if (request.devtoolsChannel === 'stable') {
-        throw new Error('DEVTOOLS_OFFICIAL_LATEST_REQUIRED')
-      }
-      return resolve(request)
-    }, run: async target => observed(target.installationId) })
-    expect(result.entries.map(entry => entry.status)).toEqual(['blocked', 'passed', 'passed'])
   })
   it.each(['', 'stable,stable', 'beta', 'nightly@latest'])('rejects malformed target lists %s', (value) => {
     expect(() => parseDevtoolsMatrixTargets(value)).toThrow()

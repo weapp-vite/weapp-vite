@@ -1,117 +1,39 @@
-## 4. Test and E2E Requirements
+## 4. Tests and Runtime Acceptance
 
-- Co-locate tests with source and use `*.test.ts` or `*.spec.ts`.
-- Update snapshots/assertions together with behavior changes.
-- Global E2E serialization is mandatory:
-  - Treat every repository-level E2E entry command as mutually exclusive, including `pnpm e2e:ci`, `pnpm e2e`, `pnpm e2e:ide`, `pnpm e2e:ide:full`, other `pnpm e2e:*` variants, and direct `vitest` invocations that target `e2e/**`.
-  - Run every repository-level E2E entry command outside the sandbox by default, including `pnpm e2e:ci`, `pnpm e2e`, `pnpm e2e:ide`, `pnpm e2e:ide:full`, other `pnpm e2e:*` variants, and direct `vitest` invocations that target `e2e/**`; request escalation before launching these commands instead of trying the sandbox first.
-  - Never run more than one of the above commands at the same time in the same workspace or on the same machine/user session.
-  - `pnpm e2e:ci` must not overlap with any `pnpm e2e:ide*`, `pnpm e2e`, other `pnpm e2e:*`, or other long-lived E2E/dev-watch commands.
-  - `pnpm e2e:ide` / `pnpm e2e:ide:full` must not overlap with `pnpm e2e:ci`, other DevTools E2E commands, or any other command that may start DevTools, automator bridges, dev servers, file watchers, or local verification servers for E2E.
-  - For long-running E2E commands, especially `pnpm e2e:ide:full`, keep the computer awake for the whole run. On macOS, prefer wrapping the command with `caffeinate -dimsu -- pnpm e2e:ide:full`; on other platforms, use the equivalent OS-level sleep inhibitor before starting the task and release it after the command exits.
-  - Before starting any E2E command, inspect active E2E/dev-watch processes. Stop only resources explicitly owned by this task; wait for another task's active run. Preserve manually opened IDEs and processes with unknown ownership. Never use process-name, command-substring, or image-name matching as permission for global cleanup.
-  - When diagnosing flaky HMR, dev-watch, DevTools, or automator failures, treat concurrent or residual E2E processes as the first suspect and eliminate concurrency before changing product code or test assertions.
-  - 启动失败、超时、恢复与 teardown 只能释放当前会话登记且仍持有的资源；禁止全局删除 session、port-lease、登录信息或用户缓存。已退出的 CLI PID 不能被当作宿主 PID，释放操作应幂等。恢复回归须覆盖手动实例、另一项目、不同安装版本和重复清理均不受影响。
-  - 真实 IDE E2E 默认使用执行时官方最新稳定版微信开发者工具；每轮核对官方下载页的渠道、版本和查询时间，并核对所选安装及实际连接宿主版本。通过 `WEAPP_VITE_E2E_DEVTOOLS_CLI_PATH` 显式选择，预检、启动、构建与恢复共用同一 CLI，报告记录实际 IDE 与基础库版本。默认安装路径、已登录状态或较大版本号不证明属于最新稳定版。
-  - 只有用户明确指定才使用 RC、nightly、开发版或旧稳定版；不得为求绿自行换版。最新稳定版无法确认、缺失或未登录时保留证据并报告阻塞，不静默回退、不绕过登录。固定性能运行仍保持原批准目标，不因选版策略重新采样。
+- Co-locate tests as `*.test.ts` / `*.spec.ts` and update snapshots with behavior. Before adding or changing a test, follow the [test authoring and retention rules](CONTRIBUTING.md#文档与测试审查).
+- Package TypeScript changes start with the owning package `typecheck`. Consumer-visible public exports, reusable types, configuration builders, or runtime contracts also require the package's `test:types` coverage when available. Add or update `tsd` coverage when fixing a consumer-visible type regression.
+- Narrow JSON from `fs.readJSON()` and similar APIs from `unknown` at the boundary. Diagnose broad root typecheck output by owning package before editing apps, templates, or generated output.
+- Assert stable semantics such as public exports, explicit markers, relative paths, object shape, values, and call behavior. Do not bind bundle tests or snapshots to generated helper names, minified identifiers, hash suffixes, machine paths, usernames, PIDs, ports, or one-off report paths. Runtime-created isolated temp paths and representative absolute paths in explicit path-normalization tests are allowed.
 
-### 4.1 Issue 修复完成判据与测试沉淀
+### 4.1 Global E2E and Resource Ownership
 
-- GitHub issue 修复是否“彻底”以目标小程序 runtime E2E 的可观察结果为最终判据；构建、typecheck 和单测只能证明局部契约，不能替代 runtime 验证。
-- Issue 修复必须把回归场景沉淀在仓库内：优先补充 `e2e-apps/github-issues` fixture、headless runtime test、真实 DevTools runtime test（或等价 provider-compatible suite），并同步 `project.private.config.json` 页面条件、真实 AppID 和 suite manifest/清单断言。
-- 真实 DevTools fixture 的 `app.json` 每个页面条目都必须有对应可生成的页面文件（至少 `index.wxml`、`index.json`、`index.js` 中宿主要求的集合）；新增或恢复原生 `Page({})` 页面后，在构建输出中检查这些文件的存在性，避免 headless 可运行但 DevTools 在 app 配置校验阶段启动失败。
-- 微信 IDE 会将以双下划线包围的目录名（`__name__`）视为保留目录并忽略其中所有文件；`donutAuthorize` 等宿主保留目录也不可用于 fixture、构建输出或 automator bridge 临时根目录。新增目录名必须先避开这类保留命名，并在真实 DevTools 启动日志中确认没有“文件将被忽略”警告。
-- runtime E2E 至少覆盖用户报告的主路径及关键边界：首次启动/首屏挂载顺序、异步 guard 完成前后的生命周期、guard abort/redirect、无 router 或普通后续导航，以及构建产物中最终路径和文件存在性等稳定语义。
-- 验证顺序固定为：先重建受影响包和下游产物，再跑 headless runtime；具备真实 IDE 基础设施时再跑 DevTools runtime，并比较两者相关可观察行为。不得用旧 `dist` 或仅源代码单测替代下游验证。
-- 当仓库没有可操作的 simulator SDK、headless bridge 无法覆盖目标观察面，或需要检查已安装 IDE 的真实 UI/runtime 时，使用 Computer Use 操作本机 IDE；操作前后重新读取应用状态，记录使用的 app、页面/路由、关键顺序和结果，且不把人工观察写成不可复现的绝对路径或机器专属值。
-- 真实 IDE 启动、登录、服务端口、automator bridge 或 simulator boot 错误属于环境限制时，必须单独记录并保留可运行的 headless/其他 provider 覆盖；不得把环境失败改写成产品通过，也不得为了 CI 通过而弱化真实 runtime 断言。
-- PR 交付前持续跟踪全部必需 CI checks；只有相关构建、单测、headless/IDE runtime（或明确记录的环境限制）和跨平台矩阵均完成且无可修复失败时，才可宣称修复与测试沉淀完成。
-- For package-level TypeScript work (`packages/*`, `packages-runtime/*`, `mpcore/packages/*`), verify the owning package first with the smallest package-scoped command:
-  - `pnpm --filter <package> typecheck`
-  - if the package ships public types or reusable type helpers, also run `pnpm --filter <package> test:types` when available
-- When a TypeScript regression is fixed in public exports, reusable helpers, config builders, runtime contracts, or other consumer-visible types, add or update `tsd` coverage in that package during the same change. Do not rely on source-only fixes without a type-contract regression test.
-- When reading JSON in tests or scripts under strict TS settings, treat `fs.readJSON()` and similar helpers as `unknown` by default. Narrow with a local typed helper or explicit cast at the boundary before property access; do not spread unchecked `unknown` through the test body.
-- When a broad root-level typecheck reports many errors, separate library/package failures from app/template/generated-output noise before editing. Prefer package-scoped diagnosis and verification over trying to make every auxiliary tsconfig participate in one giant build.
-- When fixing tests, do not hardcode repository-bound or machine-bound values into source files, fixtures, or assertions.
-- Forbidden examples include:
-  - absolute filesystem paths
-  - project-root-specific directories or local temp/report output directories
-  - usernames, home-directory paths, local workspace names, PID values, machine-specific ports, or one-off debug artifact paths
-  - CI/local generated report paths such as `docs/reports/**` unless the feature is explicitly about those outputs
-- Prefer repo-relative paths, temporary directories created inside the test at runtime, stable helper abstractions, and assertions that do not depend on local machine layout.
-- 对构建产物、bundle、shared chunk、runtime wrapper 的字符串断言，不要依赖打包器生成的局部 helper 名、临时变量名、chunk 内部导入别名、压缩后的短变量名或其 hash 后缀。
-- 测试里的 `toContain` / `toMatch` / snapshot / inline snapshot 都不要把压缩后的名称当作通过条件；每次压缩、拆包或依赖图变化都可能改名。
-- 禁止示例包括：`require_store_fwgCLl_K`、`require_src__P44BAOw`、`createContext-BDSht839`、`_sfc_main$1`、`zo`、`n`、`e` 这类可能因编译、压缩、拆包顺序变化而漂移的名字。
-- 这类断言应优先改为稳定语义校验：
-  - 匹配公开导出名、稳定 marker、相对路径、字面量值、对象结构、调用语义
-  - 需要正则时，匹配结构和相邻语义，不要把“随机 helper 名本身”作为通过条件
-- 如果必须覆盖一段编译产物结构，先证明该名字是显式稳定契约；否则默认视为不稳定实现细节。
-- Scope clarification:
-  - This restriction primarily targets production/source code, shared fixtures, snapshots, and general-purpose assertions introduced while fixing tests.
-  - Ordinary test-only temporary paths created at runtime in `*.test.ts` / `*.spec.ts` are allowed when they are isolated, machine-agnostic, and not asserted as machine-specific values.
-  - E2E reporting/diagnostic infrastructure under `e2e/**` may reference stable repo-owned report directories such as `docs/reports/**` when that path is part of the feature being implemented or validated.
-  - Platform-behavior fixtures in tests may use representative absolute paths when the test is explicitly verifying path normalization, symlink resolution, temp-directory behavior, or cross-platform filesystem semantics.
-- For `mpcore/packages/simulator` specifically:
-  - Treat test coverage as three layers that must stay in sync for behavior changes:
-    - unit/integration tests in `mpcore/packages/simulator/test/**`
-    - browser e2e tests in `mpcore/packages/simulator/e2e/**`
-    - type contract tests in `mpcore/packages/simulator/test-d/**`
-  - When changing exported types, public APIs, browser runtime behavior, testing bridge behavior, or simulator-observable runtime state, add or update all relevant layers instead of only one layer.
-  - Prefer adding the narrowest realistic browser e2e that exercises the public demo/debug bridge instead of duplicating low-level unit assertions.
-  - Keep browser e2e assertions stable: prefer scenario ids, route values, bridge-returned snapshots, and explicit scope ids over brittle visual selectors.
-  - Keep `mpcore/packages/simulator/package.json` scripts working together:
-    - `pnpm test`
-    - `pnpm test:e2e`
-    - `pnpm test:types`
-    - `pnpm test:all`
-- For incremental parity between real WeChat DevTools and `mpcore`:
-  - Treat stable, reproducible behavior observed in the real WeChat DevTools runtime as the source of truth, including platform quirks. Login failures, unavailable service ports, automator connection failures, protocol timeouts, and other infrastructure failures are not runtime behavior contracts.
-  - Every new or modified `e2e/ide/**` scenario, and every existing scenario that exposes a DevTools-versus-`mpcore` difference, must add or update corresponding coverage under `mpcore/packages/*` in the same change.
-  - Prefer running the same provider-compatible IDE scenario with both `devtools` and `headless` through `WEAPP_VITE_E2E_RUNTIME_PROVIDER`. When direct reuse is not practical, add the narrowest semantically equivalent simulator unit/integration and browser e2e coverage, plus type-contract coverage when public types are involved.
-  - When the real IDE and `mpcore` disagree, keep the real IDE assertion intact, minimize the observable behavior into an `mpcore` regression case, and fix the owning `mpcore/packages/*` runtime, lifecycle, rendering, API, navigation, or testing-bridge implementation. Do not weaken assertions, normalize away meaningful differences, or skip the headless case merely to make the suites pass.
-  - A touched parity scenario is complete only after the real IDE case and its `mpcore` counterpart agree on the relevant observable state, callback ordering, lifecycle, rendered structure, API result, and error behavior.
-  - Apply this rule incrementally: historical IDE scenarios do not all need to be migrated at once, but any scenario touched or found divergent during current work must reach parity before that work is considered complete. The long-term target is for the `mpcore` mini-program container sandbox to reproduce WeChat runtime behavior completely across all covered scenarios.
-- For WeChat DevTools runtime e2e environment selection:
-  - Treat `pnpm e2e:ide*`, `pnpm vitest run -c e2e/vitest.e2e.devtools.config.ts ...`, and any validation that depends on WeChat DevTools, automator bridge, or local port listeners as sandbox-sensitive by default.
-  - Run these validations outside the sandbox by default; request escalation before launching them instead of treating sandbox failure as the first signal.
-  - If sandbox execution fails with signals such as `listen EPERM`, `operation not permitted`, local HTTP server bind failures on `127.0.0.1`, or DevTools bridge connection failures, classify that as an environment limitation first rather than a product regression first.
-- For WeChat DevTools runtime e2e in `e2e/ide/**`:
-  - For the same `e2e-app`, launch automator only once per test suite (`describe`) and reuse that session.
-  - Validate multiple cases by `miniProgram.reLaunch(...)` across different pages/routes instead of re-launching DevTools for each case.
-  - If a case must use an isolated launch, document the reason in test comments.
-  - When a real-runtime suite proves that:
-    - the local verification server starts successfully
-    - native `fetch` cases pass
-    - but third-party request clients such as `axios` or `graphql-request` fail with the same `URL is not a constructor` or similar `URL` / `URLSearchParams` constructor error
-      then treat it as a WeChat DevTools runtime compatibility defect first, not an app/business regression first.
-  - For the above platform defect pattern:
-    - minimize the reproduction first
-    - record the limitation in a GitHub issue
-    - explicitly `skip` the affected DevTools runtime cases
-    - keep unaffected native-request coverage such as `fetch` enabled so IDE e2e still provides meaningful regression signal
-    - do not block the whole IDE suite on that known DevTools runtime defect
-  - After running DevTools e2e, inspect the worktree for generated noise before commit:
-    - pure newline-only rewrites in `project.config.json`
-    - generated `docs/reports/**`
-    - other DevTools-touched files unrelated to the task
-      Clean these before staging so the commit contains only intentional source/test changes.
-- For GitHub issue fixes (especially cases mapped to `e2e-apps/github-issues`), follow this order strictly:
-  - Before starting the fix, create a local `git worktree` from the mainline branch and do the issue work inside that isolated worktree.
-  - Create the worktree inside this repository's writable area (for example `.codex-tmp/<issue>`); do not place issue worktrees in directories outside the repository root, because external directories may not be writable in the agent environment.
-  - Reproduce the issue first in `e2e-apps/github-issues` with a minimal, reviewable case.
-  - Analyze and identify root cause before editing source.
-  - Fix the relevant source package(s) only after reproduction is stable.
-  - Add or update unit tests to lock the root-cause behavior.
-  - Add or update e2e tests (including the `e2e-apps/github-issues` case when applicable) to verify end-to-end regression coverage.
-  - Run targeted unit + e2e verification and confirm the bug is fixed before opening review.
-  - Open a PR back to the mainline branch after local verification is complete.
-- PR title, PR body, and follow-up review comments for this repository should default to Chinese unless the user explicitly requests another language.
-- PR title, PR body, and follow-up review comments must not contain local absolute filesystem paths, usernames, home-directory paths, machine-specific environment variable values, tokens, email addresses, or any other personal/privacy-sensitive information. When referencing commands or files in PR text, rewrite them as repo-relative paths or generic commands that are reproducible in CI.
-- When an assistant posts or edits any GitHub-facing text for this repository, treat privacy-safe wording as mandatory:
-  - never paste local absolute paths such as `/Users/...`, `/home/...`, `C:\\Users\\...`
-  - never include local usernames, workspace directory names, or machine-specific temp/cache paths
-  - when showing verification commands, rewrite them with repo-relative paths or generic commands that another maintainer can run in CI/local without depending on your machine layout
-- Ensure the PR CI/CD checks are all passing before considering the fix ready to merge.
-- After the PR is merged, delete the temporary local worktree used for that issue.
-- All `e2e-apps/*/project.config.json` must use a real AppID (no `touristappid`).
-- When adding pages in any `e2e-apps/*`, also update `project.private.config.json` under `condition.miniprogram.list`.
+- Every repository E2E entry is mutually exclusive on the same machine/user across worktrees, including `pnpm e2e*` and direct Vitest runs under `e2e/**`. Run them outside the sandbox and keep long IDE suites awake. Follow `$weapp-devtools-e2e-best-practices` and its [runtime checklist](skills/weapp-devtools-e2e-best-practices/references/runtime-e2e-checklist.md) before launching them.
+- Acquire the repository machine lease and inspect active E2E, DevTools, automator, watcher, and verification-server ownership first. Wait for another task. Preserve manual and unknown-owner resources. Never use a process name, command substring, image name, alternate state directory, or global lock/session deletion to claim or clean resources.
+- Cleanup, timeout, recovery, and teardown may release only resources recorded for the current session and still owned by it. Disposers must be idempotent, and an exited CLI PID is not a host PID. Preserve login data, user caches, unrelated projects, other installations, and borrowed parent leases.
+- Concurrency or residual resources are the first suspect for flaky HMR, watch, DevTools, or automator failures. Do not change product logic or weaken an assertion until exclusivity is established.
+
+### 4.2 Real DevTools and `mpcore` Parity
+
+- Stable, reproducible behavior in real WeChat DevTools is the runtime source of truth. Login, port, automator, simulator boot, and protocol failures are infrastructure evidence, not product contracts or passing results.
+- Default to the latest locally installed Stable. Record its channel/version, actual connected host, IDE/base-library versions, and official query evidence when available. Official lookup is advisory by default and blocks only when `--require-official-latest` or its environment equivalent explicitly enables strict mode. Use RC, nightly, development, old Stable, or another fixed installation only when the user selects it. Never switch versions to make a test pass.
+- Freeze one explicit CLI/installation identity for preflight, launch, build, connection, recovery, and cleanup. Missing or logged-out local installations remain blocked. Do not migrate credentials or bypass login.
+- A touched provider-compatible IDE scenario must run against DevTools and headless when supported. If reuse is impractical, add the narrowest equivalent owning `mpcore` unit/integration and browser E2E coverage, plus type-contract coverage for public types. Cover new, modified, or divergent `e2e/ide/**` scenarios in `mpcore` in the same change. Keep the real IDE assertion when the providers differ and repair `mpcore` to match.
+- Changes to `mpcore/packages/simulator` observable runtime, public APIs/types, or test bridge keep its unit/integration, browser E2E, and `test-d` layers aligned. Prefer public scenario/route/snapshot/scope evidence over visual selectors or private call shape.
+- Within one `e2e-app` suite, launch automator once and use `miniProgram.reLaunch(...)` between routes. An isolated relaunch needs a test comment explaining the requirement. Add every page to `project.private.config.json`. Every configured native page must emit the host-required files, and `project.config.json` must use a real AppID.
+- Avoid host-reserved fixture/output names, including `__name__` directories and `donutAuthorize`. After a DevTools run, remove only task-owned generated reports and newline noise from the candidate diff.
+
+### 4.3 Issue Fixes
+
+- Start issue and feature work in a repository-local `.codex-tmp/<issue>` worktree based on current `origin/main`. Reproduce an issue with the user's supplied input in `e2e-apps/github-issues` or an equivalent real fixture before editing the owning package. Do not synthesize a substitute reproduction. Preserve copied source and configuration except for setting the E2E host identity to the repository's approved AppID. Never copy the user's AppID into the fixture.
+- Identify the root cause, implement the owning fix, add the smallest unit/contract proof and end-to-end regression, rebuild touched package and downstream artifacts, then run headless before the corresponding real DevTools runtime scenario.
+- Cover the reported main path, one material boundary, and final output paths/files. A runtime issue is complete only when the target real runtime observation passes. If infrastructure prevents that observation, record the environment failure and available provider coverage and state `未完成最终验收`.
+- Full repository IDE acceptance runs only from a clean, current root `main` worktree. A task worktree may run its focused pre-merge issue suite but cannot claim the repository-wide acceptance result.
+- Open the issue PR against main only after focused local proof. Follow the CI and review gates below. Remove the temporary worktree after merge.
+
+### 4.4 Runtime Failure Handling
+
+- Treat DevTools/local-listener sandbox errors such as `listen EPERM` as environment limitations first. Use Computer Use when the installed IDE's login, UI, simulator, project, or service-port state must be observed. Re-read application state after each UI action.
+- Preserve the first launch/runtime error. A later `simulator launch success`, log rotation, or another window's readiness does not erase it. A generic `simulator launch failed` may remain pending only within the original launch budget and only when the same identified window later reaches `webview page ready`. Concrete initialization failures or budget expiry remain failures.
+- Attempt at most one evidence-backed normal restart for the same host state. It requires the machine lease, verified installation/process/window identity, no manual work or other task resources, normal quit/reopen paths, and post-action checks. Never escalate to a global kill, clear credentials/cache, loop cold starts, prewarm, or retry navigation until green.
+- Stop subsequent IDE suites after OOM, system kill, unknown ownership, uncertain launch receipt, or cleanup failure until the installation's process tree, ports, watchers, journal, snapshots, and lease reach a verified terminal state. Keep failure and recovery evidence separate.
+- Known host defects and specialized cleanup/recovery details live in `$weapp-devtools-e2e-best-practices`. Apply that workflow when writing or running the relevant tests.

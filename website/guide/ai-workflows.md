@@ -125,7 +125,7 @@ CI 只执行 `repo release ci`。需要恢复某个 npm 未发布版本时，使
 6. 截图优先用 `wv screenshot` 或 `take_weapp_screenshot`。
 7. 日志优先用 `wv ide logs --open` 或 MCP DevTools runtime tools。
 
-真实 IDE E2E 默认使用本机已安装的最新 Stable，渠道和版本以实际安装元数据为准。可通过 `--devtools-channel`、`--devtools-version` 或 `WEAPP_VITE_E2E_DEVTOOLS_CLI_PATH` 明确选择；RC/nightly 仅在明确选择时执行。解析后预检、启动、构建、恢复沿用同一 CLI，报告记录请求、实际安装、runtime 与基础库版本。官方查询用于更新提示和报告，失败不阻塞默认选择；`--require-official-latest` 恢复严格官方检查。使用 `pnpm e2e:ide:matrix --targets=stable,rc,nightly --suite=ide-smoke` 串行比较已有安装；缺失、未登录和未执行项必须记录未完成，不能自行换版。同一账号切换安装可能使另一安装登录失效；矩阵使用非交互模式，记录 `blocked / needs-login` 后继续其他版本，不等待扫码、不复制账号数据。恢复只释放会话登记资源，不清空全局 session、port-lease、登录信息或用户缓存；固定性能运行保持原批准目标。
+正式验收沿用预检确认的同一 CLI，并记录实际 IDE 与基础库版本。选版优先级、严格官方版本检查、登录失效和矩阵结果的解释见 [开发者工具安装选择与共享登录](/packages/weapp-ide-cli#安装选择与共享登录)。
 
 ```sh
 wv screenshot --json
