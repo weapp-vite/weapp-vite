@@ -7,10 +7,10 @@ import { isDeepStrictEqual } from 'node:util'
 import { candidateFile } from './manifest.mjs'
 
 export function selectLoadedAddonFiles(root, entry, modules) {
-  const packageRoot = path.dirname(entry)
   const loaded = []
   for (const module of modules) {
-    if (module.loaded && module.filename.endsWith('.node') && path.dirname(module.filename) === packageRoot) {
+    const relative = path.relative(root, module.filename).replaceAll('\\', '/')
+    if (module.loaded && /^packages\/ast-native-(?:darwin-arm64|darwin-x64|linux-arm64-gnu|linux-x64-gnu|win32-arm64-msvc|win32-x64-msvc)\/weapp_vite_ast_native\.(?:darwin-arm64|darwin-x64|linux-arm64-gnu|linux-x64-gnu|win32-arm64-msvc|win32-x64-msvc)\.node$/u.test(relative)) {
       loaded.push(module.filename)
     }
   }
@@ -27,7 +27,7 @@ export function loadedAddonFiles(root, entry) {
 
 export async function hashAddonFiles(root, files) {
   if (!Array.isArray(files) || files.length !== 2 || files[0] !== 'packages/ast-native/index.js'
-    || typeof files[1] !== 'string' || !/^packages\/ast-native\/[a-z][\w.-]*\.node$/u.test(files[1])) {
+    || typeof files[1] !== 'string' || !/^packages\/ast-native-(darwin-arm64|darwin-x64|linux-arm64-gnu|linux-x64-gnu|win32-arm64-msvc|win32-x64-msvc)\/weapp_vite_ast_native\.\1\.node$/u.test(files[1])) {
     throw new Error('Invalid actual addon entry or binary identity')
   }
   return Promise.all(files.map(async file => ({

@@ -15,12 +15,16 @@ const nativeNames: Record<string, string> = {
   'win32:arm64': 'win32-arm64-msvc',
 }
 
+function isGlibcLinux() {
+  return process.platform !== 'linux' || Boolean(process.report?.getReport?.().header?.glibcVersionRuntime)
+}
+
 export function defaultAddonPath(root: string) {
   const platform = nativeNames[`${process.platform}:${process.arch}`]
-  if (!platform) {
+  if (!platform || !isGlibcLinux()) {
     throw new Error('Unsupported native platform; supply --addon=<release.node>.')
   }
-  return path.join(root, 'packages/ast-native', `weapp_vite_ast_native.${platform}.node`)
+  return path.join(root, `packages/ast-native-${platform}`, `weapp_vite_ast_native.${platform}.node`)
 }
 
 export async function hashFile(filename: string) {
@@ -46,7 +50,7 @@ async function listFiles(root: string, relative: string): Promise<string[]> {
 
 export async function freezeSourceIdentity(root: string, cases: readonly ProfileCase[]) {
   const tracked = (await exec('git', ['ls-files', '-z'], { nodeOptions: { cwd: root }, throwOnError: true })).stdout.split('\0').filter(Boolean)
-  const inputs = tracked.filter(file => ['packages-runtime/wevu-compiler/', 'packages/ast/', 'packages/weapp-vite/src/', 'packages/ast-native/', '@weapp-core/'].some(prefix => file.startsWith(prefix))
+  const inputs = tracked.filter(file => ['packages-runtime/wevu-compiler/', 'packages/ast/', 'packages/weapp-vite/src/', 'packages/ast-native/', 'packages/ast-native-', '@weapp-core/'].some(prefix => file.startsWith(prefix))
     || cases.some(fixture => file.startsWith(`${fixture.project}/`)))
   inputs.push('pnpm-lock.yaml', 'pnpm-workspace.yaml', 'package.json', 'scripts/ast-migration-profile.ts', ...await listFiles(root, 'scripts/astMigrationProfile'))
   const sourceHashes: Record<string, string> = {}

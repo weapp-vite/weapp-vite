@@ -42,7 +42,7 @@ it('isolates mirror synchronization from completion, npm serialization and docum
   expect(mirror.permissions).toEqual({ contents: 'read', actions: 'read' })
   expect(mirror.concurrency).toBeUndefined()
   expect(workflow.jobs.docs?.needs).toBe('release')
-  expect(workflow.jobs.nightly?.needs).toBeUndefined()
+  expect(workflow.jobs.nightly?.needs).toBe('native-addon-build')
   const config = await createJiti(import.meta.url).import<typeof import('../repoctl.config').default>('../repoctl.config.ts', { default: true })
   expect(config.commands.release.hooks.afterPublish).toEqual([{ script: 'release:vscode-marketplace' }])
   const manifest = JSON.parse(await readFile(new URL('../package.json', import.meta.url), 'utf8')) as { scripts: Record<string, string> }

@@ -1,0 +1,32 @@
+{
+  "name": "@weapp-vite/ast-native-linux-arm64-gnu",
+  "version": "0.2.6",
+  "description": "Native @weapp-vite/ast-native binding for linux-arm64-gnu",
+  "os": [
+    "linux"
+  ],
+  "cpu": [
+    "arm64"
+  ],
+  "libc": [
+    "glibc"
+  ],
+  "license": "MIT",
+  "homepage": "https://github.com/weapp-vite/weapp-vite#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/weapp-vite/weapp-vite.git",
+    "directory": "packages/ast-native-linux-arm64-gnu"
+  },
+  "main": "./weapp_vite_ast_native.linux-arm64-gnu.node",
+  "files": [
+    "weapp_vite_ast_native.linux-arm64-gnu.node"
+  ],
+  "scripts": {
+    "prepack": "node ../../scripts/nativeAddonPublication/validate.mjs --target=linux-arm64-gnu --require-binaries"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org"
+  }
+}

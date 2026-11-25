@@ -128,6 +128,10 @@ describe('repoctl nightly workflow', () => {
   it('delegates audit, uncached quality, packing, publication and consumer checks to the native pipeline', () => {
     const nightly = workflow.jobs.nightly!
     const steps = nightly.steps!
+    expect(nightly.needs).toBe('native-addon-build')
+    const nativeDownload = steps.find(step => step.name === 'Download native addon packages')!
+    expect(nativeDownload.uses).toMatch(/^actions\/download-artifact@[\da-f]{40}$/)
+    expect(nativeDownload.with).toEqual({ 'pattern': 'ast-native-*', 'path': 'packages', 'merge-multiple': false })
     const publish = steps.find(step => step.id === 'nightly-publish')!
     expect(nightly['timeout-minutes']).toBe(240)
     expect(steps.find(step => step.id === 'nightly-checkout')?.with?.ref).toBe(expression('github.sha'))

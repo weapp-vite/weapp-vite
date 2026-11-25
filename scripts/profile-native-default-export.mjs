@@ -8,6 +8,14 @@ import { pathToFileURL } from 'node:url'
 import { parseArgs } from 'node:util'
 
 const root = path.resolve(import.meta.dirname, '..')
+const nativeNames = {
+  'darwin:arm64': 'darwin-arm64',
+  'darwin:x64': 'darwin-x64',
+  'linux:arm64': 'linux-arm64-gnu',
+  'linux:x64': 'linux-x64-gnu',
+  'win32:arm64': 'win32-arm64-msvc',
+  'win32:x64': 'win32-x64-msvc',
+}
 const { values } = parseArgs({
   options: { output: { type: 'string' }, help: { type: 'boolean', short: 'h' } },
 })
@@ -15,6 +23,11 @@ if (values.help) {
   process.stdout.write('用法：node scripts/profile-native-default-export.mjs [--output <新目录>]\n仅测暖 compileVueFile 入口；不覆盖完整构建、HMR、runtime 或 RSS。\n')
   process.exit(0)
 }
+const nativeTarget = nativeNames[`${process.platform}:${process.arch}`]
+if (!nativeTarget || (process.platform === 'linux' && !process.report?.getReport?.().header?.glibcVersionRuntime)) {
+  throw new Error('当前平台没有可用的 ast-native 发布目标。')
+}
+const addonFile = `packages/ast-native-${nativeTarget}/weapp_vite_ast_native.${nativeTarget}.node`
 
 const rounds = 40
 const warmupPairs = 10
@@ -55,15 +68,13 @@ async function listArtifacts(directory) {
 }
 
 async function freeze() {
-  const addonEntries = await readdir(path.join(root, 'packages/ast-native'), { withFileTypes: true })
-  const binaries = addonEntries.filter(entry => entry.isFile() && entry.name.endsWith('.node'))
-    .map(entry => path.posix.join('packages/ast-native', entry.name))
-  assert(binaries.length, '未找到本地 native .node 产物，请先构建 @weapp-vite/ast-native。')
+  await readdir(path.join(root, path.dirname(addonFile)))
   const artifacts = [
     ...await listArtifacts('packages-runtime/wevu-compiler/dist'),
     ...await listArtifacts('packages/ast/dist'),
     'packages/ast-native/index.js',
-    ...binaries,
+    path.posix.join(path.dirname(addonFile), 'package.json'),
+    addonFile,
     ...files,
     'pnpm-lock.yaml',
     'scripts/profile-native-default-export.mjs',

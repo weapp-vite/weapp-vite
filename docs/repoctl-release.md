@@ -138,7 +138,7 @@ Vitest setup 导出通过 `repoctl.packageCheck.runtimeContexts` 显式声明测
 
 消费项目显式安装本轮已检查的 workspace peer，避免 pnpm 自动选择 registry 中同版本的旧包。原有 peer 别名、版本范围和冲突校验继续执行，外部必需 peer 仍由包管理器正常解析。
 
-`ast-native` 的 `prepack` 按锁定的 Rust 工具链和 `Cargo.lock` 构建发布宿主的二进制，确保隔离源码打包不依赖本地未跟踪产物。这仅提供当前宿主的 native 模块；其他平台继续使用既有 JS fallback。
+`ast-native` 的发布先在六个目标 runner 上按锁定的 Rust 工具链和 `Cargo.lock` 构建并验证二进制，再将每个目标放入对应的静态平台包。正式版和 nightly 的 repoctl job 下载同一次 workflow 的六个产物后再执行打包与发布。根包通过 optionalDependencies 按运行时选择目标包，Linux 仅提供 GNU/glibc 目标，native AST 仍保持显式启用和失败回退行为。
 
 nightly 不消费 changeset，不改正式版本、changelog、发布账本或 `latest`。定时运行发现同一源码批次已经发布时会跳过。所有公开包都需要允许当前仓库 `release.yml` 的 npm Trusted Publisher；审计失败时不会开始上传，不改为长期 npm token。
 

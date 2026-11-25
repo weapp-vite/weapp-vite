@@ -23,7 +23,13 @@ interface ReleaseWorkflow {
   concurrency?: Record<string, unknown>
   env?: Record<string, unknown>
   jobs?: {
-    release?: {
+    'native-addon-build'?: {
+      'if'?: string
+      'runs-on'?: string
+      'strategy'?: { matrix?: { include?: Array<{ id?: string, runner?: string }> } }
+    }
+    'release'?: {
+      'needs'?: string
       'concurrency'?: Record<string, unknown>
       'timeout-minutes'?: number
       'if'?: string
@@ -42,11 +48,17 @@ async function readReleaseWorkflow() {
   const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
   const content = await fs.readFile(path.join(rootDir, '.github/workflows/release.yml'), 'utf8')
   const workflow = parse(content) as ReleaseWorkflow
-  return { content, workflow, job: workflow.jobs?.release, steps: workflow.jobs?.release?.steps ?? [] }
+  return {
+    content,
+    workflow,
+    nativeBuild: workflow.jobs?.['native-addon-build'],
+    job: workflow.jobs?.release,
+    steps: workflow.jobs?.release?.steps ?? [],
+  }
 }
 
 it('keeps the repoctl-managed release workflow aligned with the current contract', async () => {
-  const { content, workflow, job, steps } = await readReleaseWorkflow()
+  const { content, workflow, nativeBuild, job, steps } = await readReleaseWorkflow()
   const checkoutStep = steps.find(step => step.uses?.startsWith('actions/checkout@'))
   const pnpmSetupStep = steps.find(step => step.uses === './.github/actions/setup-node-pnpm')
 
@@ -58,6 +70,13 @@ it('keeps the repoctl-managed release workflow aligned with the current contract
   })
   assert.equal(job?.if, githubExpression('github.event_name != \'schedule\' && inputs.mode != \'nightly\' && inputs.mode != \'oidc-audit\' && inputs.mode != \'bootstrap\''))
   assert.equal(job?.['runs-on'], 'ubuntu-latest')
+  assert.equal(job?.needs, 'native-addon-build')
+  assert.equal(nativeBuild?.['runs-on'], githubExpression('matrix.runner'))
+  assert.equal(nativeBuild?.if, githubExpression('(github.event_name == \'schedule\' && github.event.schedule == \'17 22 * * *\') || github.event_name == \'push\' || (github.event_name == \'workflow_dispatch\' && inputs.mode != \'oidc-audit\' && inputs.mode != \'bootstrap\')'))
+  const ciToolchain = JSON.parse(await fs.readFile(path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../.github/ci-toolchain.json'), 'utf8')) as {
+    nativeAddon: { targets: Array<{ id: string, runner: string }> }
+  }
+  assert.deepEqual(nativeBuild?.strategy?.matrix?.include, ciToolchain.nativeAddon.targets)
   assert.equal(workflow.env?.npm_config_registry, 'https://registry.npmjs.org')
   assert.equal(workflow.env?.pnpm_config_registry, undefined)
   assert.ok(pnpmSetupStep)
@@ -86,6 +105,10 @@ it('keeps the repoctl-managed release workflow aligned with the current contract
   const recoveryValidation = steps.find(step => step.name === 'Validate release recovery inputs')
   assert.equal(recoveryValidation?.run, 'node .github/scripts/release-recovery-inputs.mjs')
   assert.ok(steps.indexOf(recoveryValidation!) < steps.findIndex(step => step.name === 'Install Dependencies'))
+
+  const nativeDownload = steps.find(step => step.name === 'Download native addon packages')
+  assert.match(nativeDownload?.uses ?? '', /^actions\/download-artifact@[\da-f]{40}$/)
+  assert.deepEqual(nativeDownload?.with, { 'pattern': 'ast-native-*', 'path': 'packages', 'merge-multiple': false })
 
   const timeoutPreparation = steps.find(step => step.name === 'Prepare GNU timeout for current and historical release checks')
   assert.equal(timeoutPreparation?.run, 'bash .github/scripts/prepare-release-timeout.sh')

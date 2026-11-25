@@ -69,6 +69,7 @@ dist-plugin
 /packages-runtime/react/skills/
 packages/ast-native/target/
 packages/ast-native/*.node
+packages/ast-native-*/**/*.node
 .wevu
 .wevu-config
 **/.weapp-vite/auto-routes.cache.json

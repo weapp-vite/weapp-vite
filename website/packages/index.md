@@ -117,7 +117,13 @@ keywords:
 | 包名 | 定位 | 适用场景 | 文档入口 |
 | --- | --- | --- | --- |
 | `@weapp-vite/ast` | Babel/Oxc 统一 AST 工具 | 插件、编译器和静态分析 | [/packages/ast](/packages/ast) |
-| `@weapp-vite/ast-native` | Rust/Oxc 原生 AST 原型 | 受控的 native AST 性能实验 | [/packages/ast-native](/packages/ast-native) |
+| `@weapp-vite/ast-native` | Rust/Oxc 原生 AST 分析 | 显式启用的跨平台 native AST 性能实验 | [/packages/ast-native](/packages/ast-native) |
+| `@weapp-vite/ast-native-darwin-arm64` | macOS arm64 native AST binding | 为 `@weapp-vite/ast-native` 提供 macOS Apple Silicon 原生二进制 | [/packages/ast-native-darwin-arm64](/packages/ast-native-darwin-arm64) |
+| `@weapp-vite/ast-native-darwin-x64` | macOS x64 native AST binding | 为 `@weapp-vite/ast-native` 提供 macOS Intel 原生二进制 | [/packages/ast-native-darwin-x64](/packages/ast-native-darwin-x64) |
+| `@weapp-vite/ast-native-linux-arm64-gnu` | Linux arm64 GNU native AST binding | 为 `@weapp-vite/ast-native` 提供 Linux arm64 glibc 原生二进制 | [/packages/ast-native-linux-arm64-gnu](/packages/ast-native-linux-arm64-gnu) |
+| `@weapp-vite/ast-native-linux-x64-gnu` | Linux x64 GNU native AST binding | 为 `@weapp-vite/ast-native` 提供 Linux x64 glibc 原生二进制 | [/packages/ast-native-linux-x64-gnu](/packages/ast-native-linux-x64-gnu) |
+| `@weapp-vite/ast-native-win32-arm64-msvc` | Windows arm64 MSVC native AST binding | 为 `@weapp-vite/ast-native` 提供 Windows arm64 原生二进制 | [/packages/ast-native-win32-arm64-msvc](/packages/ast-native-win32-arm64-msvc) |
+| `@weapp-vite/ast-native-win32-x64-msvc` | Windows x64 MSVC native AST binding | 为 `@weapp-vite/ast-native` 提供 Windows x64 原生二进制 | [/packages/ast-native-win32-x64-msvc](/packages/ast-native-win32-x64-msvc) |
 | `@weapp-vite/hmr` | HMR 批次与资产交付内核 | 编写宿主插件或集成自定义 watcher | [/packages/hmr](/packages/hmr) |
 | `@weapp-vite/tailwindcss` | Tailwind 宿主无关控制器 | 在 weapp-vite 插件中接入 Tailwind | [/packages/tailwindcss](/packages/tailwindcss) |
 | `@weapp-vite/qr` | 二维码编码、解码与终端渲染 | CLI 登录、截图和小程序码识别 | [/packages/qr](/packages/qr) |
