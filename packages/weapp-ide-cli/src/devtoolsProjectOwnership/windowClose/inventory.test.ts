@@ -4,6 +4,7 @@ import fs from 'node:fs/promises'
 import path from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { createWindowCloseFixture } from './fixture'
+import { captureLogCursors } from './logCursor'
 
 let fixture: WindowCloseFixture
 
@@ -34,7 +35,7 @@ describe('managed close log stream selection', () => {
 
   it.each([1, 131])('accepts a mixed stream with %s BACKEND records before its first MAIN record', async (count) => {
     const prefix = Array.from({ length: count }, () => fixture.line('simulator initialized', 'BACKEND')).join('')
-    const contents = prefix + fixture.line('project window ready')
+    const contents = prefix + fixture.line('project window ready') + fixture.line(`opened ${fixture.record.projectPath}`)
     await fs.writeFile(fixture.logFile, contents)
 
     await fixture.capture()
@@ -49,7 +50,7 @@ describe('managed close log stream selection', () => {
   })
 
   it.each([65_520, 2 * 1024 * 1024 + 1])('finds a complete MAIN record after a %s-byte non-MAIN prefix', async (length) => {
-    await fs.writeFile(fixture.logFile, `${'x'.repeat(length - 1)}\n${fixture.line('project window ready')}`)
+    await fs.writeFile(fixture.logFile, `${'x'.repeat(length - 1)}\n${fixture.line('project window ready')}${fixture.line(`opened ${fixture.record.projectPath}`)}`)
 
     await fixture.capture()
 
@@ -92,31 +93,38 @@ describe('managed close log stream selection', () => {
 
   it('selects the MAIN stream that reports this managed project when a prior session log remains', async () => {
     fixture.record.projectPath = path.join(fixture.directory, 'managed-bridge-7c2f')
-    await fs.writeFile(path.join(fixture.logDirectory, 'previous-session.log'), `${fixture.boot()}${fixture.line('stale project list', 'MAIN')}`)
-    await fs.writeFile(fixture.logFile, `${fixture.boot()}${fixture.line(`opened ${path.basename(fixture.record.projectPath)}`, 'MAIN')}`)
+    const staleRecord = (log: string) => log.replace(/^\[[^\]]+\]/gm, '[2020-01-01 00:00:00.000+00:00]')
+    await fs.writeFile(path.join(fixture.logDirectory, 'previous-session.log'), `${staleRecord(fixture.boot())}${staleRecord(fixture.line(`opened ${fixture.record.projectPath}`, 'MAIN'))}`)
+    await fs.writeFile(fixture.logFile, `${fixture.boot()}${fixture.line(`opened ${fixture.record.projectPath}`, 'MAIN')}`)
 
-    await fixture.capture()
+    const cursors = await captureLogCursors(fixture.logDirectory, fixture.record.target.version!, {
+      projectPath: fixture.record.projectPath,
+      startedAt: fixture.record.createdAt,
+    })
 
-    expect(fixture.record.windowClose?.cursors).toEqual([
+    expect(cursors).toEqual([
       expect.objectContaining({ name: path.basename(fixture.logFile) }),
     ])
-    await fs.appendFile(fixture.logFile, completeTrace())
-
-    await fixture.wait()
-    expect(fixture.record.windowClose?.window).toMatchObject({
-      nativeClosedAt: expect.any(String),
-      webContentsDestroyedAt: expect.any(String),
-    })
   })
 
   it('still rejects the fallback when two MAIN streams report the same managed project', async () => {
     fixture.record.projectPath = path.join(fixture.directory, 'managed-bridge-7c2f')
-    const mention = fixture.line(`opened ${path.basename(fixture.record.projectPath)}`, 'MAIN')
+    const mention = fixture.line(`opened ${fixture.record.projectPath}`, 'MAIN')
     await fs.writeFile(fixture.logFile, `${fixture.boot()}${mention}`)
     await fs.writeFile(path.join(fixture.logDirectory, 'concurrent-session.log'), `${fixture.boot()}${mention}`)
 
     await expect(fixture.capture()).rejects.toThrow('one unambiguous MAIN log')
     expect(fixture.record.windowClose).toBeUndefined()
+  })
+
+  it('does not select a log from a project basename match alone', async () => {
+    fixture.record.projectPath = path.join(fixture.directory, 'managed-bridge-7c2f')
+    await fs.writeFile(fixture.logFile, `${fixture.line('envMessagerService setuped')}${fixture.line(`opened ${path.basename(fixture.record.projectPath)}`, 'MAIN')}`)
+
+    await expect(captureLogCursors(fixture.logDirectory, fixture.record.target.version!, {
+      projectPath: fixture.record.projectPath,
+      startedAt: fixture.record.createdAt,
+    })).rejects.toThrow('one unambiguous MAIN log')
   })
 
   it('accepts the original destruction chain when historical helper logs are removed and new helper logs appear', async () => {

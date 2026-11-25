@@ -80,12 +80,12 @@ async function openLogFile(directory: string, name: string) {
 }
 
 /** 主进程日志汇聚多个来源，轮转后的首条记录可能来自 BACKEND；只识别固定偏移内的完整行。 */
-async function scanLog(file: FileHandle, size: number, productVersion: string, sessionToken?: string) {
+async function scanLog(file: FileHandle, size: number, productVersion: string, session?: { projectPath: string, startedAt: number }) {
   // 只保留有限行首并等待换行，长日志消息不会累积到内存，也不能把未完成的尾行当作证据。
   const prefix = Buffer.alloc(headerLimit)
   let prefixSize = 0
   let hasMain = false
-  let hasSession = !sessionToken
+  let hasSession = !session
   for (let offset = 0; offset < size;) {
     const bytes = await readBytes(file, offset, Math.min(size - offset, scanChunkSize))
     if (!bytes.length) {
@@ -100,8 +100,10 @@ async function scanLog(file: FileHandle, size: number, productVersion: string, s
         break
       }
       const line = prefix.toString('utf8', 0, prefixSize)
-      hasMain ||= /^\[[^\]\r\n]+\]\[[A-Z]+\]\[([^\]\r\n]+)\]\[MAIN\]/.exec(line)?.[1] === productVersion
-      hasSession ||= sessionToken !== undefined && line.includes(sessionToken)
+      const mainRecord = /^\[([^\]\r\n]+)\]\[[A-Z]+\]\[([^\]\r\n]+)\]\[MAIN\]/.exec(line)
+      const matchesProduct = mainRecord?.[2] === productVersion
+      hasMain ||= matchesProduct
+      hasSession ||= !!session && matchesProduct && Date.parse(mainRecord![1]!) >= session.startedAt && line.includes(session.projectPath)
       if (hasMain && hasSession) {
         return { hasMain, hasSession }
       }
@@ -151,15 +153,22 @@ async function validateCursor(file: FileHandle, cursor: ManagedWechatWindowLogCu
   return size
 }
 
-/** 关闭前固定唯一 MAIN 流；先按本轮受管项目收窄同版本的历史日志，收窄不确定时退回版本判定。 */
-export async function captureLogCursors(directory: string, productVersion: string, sessionToken?: string): Promise<ManagedWechatWindowLogCursor[]> {
+/** 关闭前固定唯一 MAIN 流；有受管会话上下文时，只接受启动后记录完整项目路径的日志。 */
+export async function captureLogCursors(directory: string, productVersion: string, session?: { projectPath: string, startedAt: string }): Promise<ManagedWechatWindowLogCursor[]> {
+  const sessionStartedAt = session ? Date.parse(session.startedAt) : undefined
+  if (session && !Number.isFinite(sessionStartedAt)) {
+    throw new Error('Managed DevTools window-close evidence requires a valid managed project start time.')
+  }
+  const sessionMatch = session && sessionStartedAt !== undefined
+    ? { projectPath: session.projectPath, startedAt: sessionStartedAt }
+    : undefined
   const scanned: (ManagedWechatWindowLogCursor & { hasSession: boolean })[] = []
   for (const name of await logFiles(directory)) {
     const file = await openLogFile(directory, name)
     try {
       const stat = await file.stat({ bigint: true })
       const size = logSize(stat)
-      const { hasMain, hasSession } = await scanLog(file, size, productVersion, sessionToken)
+      const { hasMain, hasSession } = await scanLog(file, size, productVersion, sessionMatch)
       if (!hasMain) {
         continue
       }
@@ -170,8 +179,7 @@ export async function captureLogCursors(directory: string, productVersion: strin
       await file.close()
     }
   }
-  const narrowed = scanned.filter(entry => entry.hasSession)
-  const selected = sessionToken && narrowed.length ? narrowed : scanned
+  const selected = sessionMatch ? scanned.filter(entry => entry.hasSession) : scanned
   return requireUniqueMain(selected.map(entry => ({ name: entry.name, identity: entry.identity, offset: entry.offset, anchor: entry.anchor, skipPartialLine: entry.skipPartialLine })))
 }
 

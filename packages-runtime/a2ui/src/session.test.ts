@@ -175,6 +175,22 @@ describe('createA2uiSession', () => {
     result.session.dispose()
   })
 
+  it('removes a data model path without replacing bound nodes', () => {
+    const result = setup()
+    result.session.receive(createSurface('s1', [
+      { id: 'root', component: 'Text', text: { '@path': '/status' } },
+    ], { status: 'idle' }))
+    const previous = rootOf(result)
+
+    result.session.receive(surface('updateDataModel', { surfaceId: 's1', path: '/status', value: null }))
+
+    const updated = rootOf(result)
+    expect(updated?.props.text).toBeNull()
+    expect(updated?.id).toBe(previous?.id)
+    expect(updated?.id).toMatch(/-v0$/)
+    result.session.dispose()
+  })
+
   it('rejects updates that orphan a component and keeps the previous tree', () => {
     const result = setup()
     result.session.receive(createSurface('s1', [

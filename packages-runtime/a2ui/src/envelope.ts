@@ -43,6 +43,7 @@ export function readA2uiEnvelope(message: unknown): A2uiEnvelope {
     surfaceId,
     replacesBindings: type === 'updateComponents' || (type === 'updateDataModel'
       && typeof payload === 'object' && payload !== null && 'value' in payload
+      && (payload as Record<string, unknown>).value !== null
       && typeof (payload as Record<string, unknown>).value === 'object'),
     message: { version: '1.0', [type]: payload } as ProcessableMessage,
   }

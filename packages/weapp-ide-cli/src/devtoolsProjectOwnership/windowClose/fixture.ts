@@ -70,6 +70,7 @@ export async function createWindowCloseFixture(): Promise<WindowCloseFixture> {
     },
     boot(version = fixture.record.target.version) {
       return fixture.line('envMessagerService setuped', 'MAIN', version)
+        + fixture.line(`opened ${fixture.record.projectPath}`, 'MAIN', version)
     },
     trace(event: string, fields: Record<string, unknown>, version = fixture.record.target.version) {
       return fixture.line(`[win-close-trace] ${event} ${inspect(fields, { breakLength: Infinity, compact: true })}`, 'MAIN', version)

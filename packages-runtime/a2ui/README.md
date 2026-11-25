@@ -51,7 +51,7 @@ session.dispose()
 | --- | --- |
 | `receive(message)` | 校验并应用 `createSurface`、`updateComponents`、`updateDataModel`、`deleteSurface`；RPC、内部操作、批量消息及空 `surfaceId` 直接拒绝 |
 | `interact(surfaceId, event)` | `input` 写回可写绑定；`action` 执行 Core 动作并把产生的 `ActionPayload` 按顺序交给 `onAction` |
-| `onSurfaces(views)` | 每次可见状态变化后整体推送；`updateDataModel` 的非对象写入只影响绑定值，不触发重投影 |
+| `onSurfaces(views)` | 每次可见状态变化后整体推送；`updateDataModel` 的标量写入与 `null` 删除只更新绑定值，不替换节点 |
 | `onAction(message)` | 可返回 Promise，动作消息按产生顺序串行等待 |
 | `dispose()` | 幂等；停止投影、释放 resolver 与 processor，之后不再回调 |
 
@@ -75,7 +75,7 @@ interface A2uiNode {
 - 子节点来自属性中的单个组件、组件数组或 `ChildList` 模板展开结果，按属性出现顺序收集，不进入 `props`；
 - `ResolvedBinding` 投影为其当前值；`WritableBinding` 除投影值外登记为可写输入，一个节点最多保留一个；
 - 同一节点的可写绑定与动作可同时存在；
-- `updateComponents` 或对象型 `updateDataModel` 会递增 generation 并清空旧操作表，视图层可通过 id 变化重建引用；仅绑定值变化不会重建。
+- `updateComponents` 或非 `null` 对象型 `updateDataModel` 会递增 generation 并清空旧操作表，视图层可通过 id 变化重建引用；标量写入与 `null` 删除只更新绑定值。
 
 ```ts
 interface A2uiSession {
