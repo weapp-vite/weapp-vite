@@ -110,9 +110,9 @@ const packageFeatureCards: HomeFeatureCard[] = [
         <p class="mt-5 text-balance text-base/7 text-zinc-700 dark:text-zinc-300 sm:text-lg/8">
           把现代化的开发模式带入小程序开发：极速热更、类型安全、插件生态、原子化样式与工程化能力，一站式串联。
         </p>
-        <div class="mt-8 flex items-center justify-center gap-3">
+        <div class="mt-8 flex flex-wrap items-center justify-center gap-2 sm:gap-3">
           <a
-            class="group relative inline-flex items-center gap-2 rounded-xl border border-emerald-500/50 bg-linear-to-b from-emerald-500/20 to-emerald-600/20 px-5 py-3 text-sm font-semibold text-emerald-900 dark:text-emerald-50 shadow-[0_1px_0_0_rgba(255,255,255,0.2)_inset,0_8px_24px_rgba(16,185,129,0.25)] hover:shadow-[0_0_0_1px_rgba(16,185,129,0.5)_inset,0_16px_40px_rgba(16,185,129,0.35)] transition interactive-cta"
+            class="group relative inline-flex items-center gap-2 rounded-xl border border-emerald-500/50 bg-linear-to-b from-emerald-500/20 to-emerald-600/20 px-2.5 py-3 text-sm font-semibold whitespace-nowrap text-emerald-900 dark:text-emerald-50 sm:px-5 shadow-[0_1px_0_0_rgba(255,255,255,0.2)_inset,0_8px_24px_rgba(16,185,129,0.25)] hover:shadow-[0_0_0_1px_rgba(16,185,129,0.5)_inset,0_16px_40px_rgba(16,185,129,0.35)] transition interactive-cta"
             href="/guide/"
           >
             <span class="i-mdi-rocket-launch-outline text-lg text-emerald-600 dark:text-emerald-300" />
@@ -122,13 +122,13 @@ const packageFeatureCards: HomeFeatureCard[] = [
             />
           </a>
           <a
-            class="inline-flex items-center gap-2 rounded-xl border border-emerald-500/50 bg-white/80 px-5 py-3 text-sm font-semibold text-emerald-900 shadow-[0_1px_0_0_rgba(255,255,255,0.2)_inset,0_8px_24px_rgba(16,185,129,0.15)] hover:shadow-[0_0_0_1px_rgba(16,185,129,0.5)_inset,0_14px_36px_rgba(16,185,129,0.25)] transition interactive-cta dark:border-emerald-300/40 dark:bg-white/10 dark:text-emerald-50"
+            class="inline-flex items-center gap-2 rounded-xl border border-emerald-500/50 bg-white/80 px-2.5 py-3 text-sm font-semibold whitespace-nowrap text-emerald-900 sm:px-5 shadow-[0_1px_0_0_rgba(255,255,255,0.2)_inset,0_8px_24px_rgba(16,185,129,0.15)] hover:shadow-[0_0_0_1px_rgba(16,185,129,0.5)_inset,0_14px_36px_rgba(16,185,129,0.25)] transition interactive-cta dark:border-emerald-300/40 dark:bg-white/10 dark:text-emerald-50"
             href="/ai"
           >
             <span class="i-bi-openai text-lg" />
             AI 学习入口
           </a>
-          <a class="inline-flex items-center gap-2 rounded-xl border border-zinc-400/40 px-5 py-3 text-sm font-semibold text-zinc-800 dark:text-zinc-100 hover:bg-zinc-900/5 dark:hover:bg-white/5 transition interactive-cta" href="https://github.com/weapp-vite/weapp-vite" target="_blank" rel="noreferrer">
+          <a class="inline-flex items-center gap-2 rounded-xl border border-zinc-400/40 px-2.5 py-3 text-sm font-semibold whitespace-nowrap text-zinc-800 dark:text-zinc-100 sm:px-5 hover:bg-zinc-900/5 dark:hover:bg-white/5 transition interactive-cta" href="https://github.com/weapp-vite/weapp-vite" target="_blank" rel="noreferrer">
             <span class="i-mdi-github text-lg" /> GitHub
           </a>
         </div>

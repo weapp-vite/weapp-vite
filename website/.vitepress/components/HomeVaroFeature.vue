@@ -12,7 +12,7 @@ import { withBase } from 'vitepress'
     </div>
     <div>
       <h2 id="home-varo-title" class="text-base/6 font-bold text-[var(--vp-c-text-1)] sm:text-xl/7">
-        Varo · Weapp-vite 官方自研组件库
+        Varo · Weapp-vite <span class="inline-block">官方自研组件库</span>
       </h2>
       <p class="mt-1 text-sm/6 text-[var(--vp-c-text-2)]">
         为微信小程序（Wevu）和 H5（Vue 3）提供可编辑的组件源码。
