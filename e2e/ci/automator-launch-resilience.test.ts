@@ -2358,7 +2358,7 @@ describe('automator launch resilience', { concurrent: false, timeout: 30_000 }, 
     await Promise.race([probeStarted.promise, launching])
     try {
       expect(connectedMiniProgram.waitForAppReady).toHaveBeenCalledExactlyOnceWith(expect.any(Number))
-      expect(connectedMiniProgram.waitForAppReady.mock.calls[0]![0]).toBeLessThanOrEqual(3_000)
+      expect(connectedMiniProgram.waitForAppReady.mock.calls[0]![0]).toBeLessThanOrEqual(12_345)
       expect(connectedMiniProgram.enableLog).not.toHaveBeenCalled()
     }
     finally {
@@ -2379,7 +2379,7 @@ describe('automator launch resilience', { concurrent: false, timeout: 30_000 }, 
     expect(connectedMiniProgram.enableLog).toHaveBeenCalledOnce()
   })
 
-  it('recovers through warmup when the bridge AppService readiness probe times out', async () => {
+  it('does not enable logs or navigate when bridge AppService readiness times out', async () => {
     process.env.WEAPP_VITE_E2E_AUTOMATOR_LAUNCH_MODE = 'bridge'
     process.env.WEAPP_VITE_E2E_APP_CONFIG_READY_TIMEOUT = '400'
     process.env.WEAPP_VITE_E2E_BRIDGE_CONNECT_SETTLE_DELAY = '1'
@@ -2403,45 +2403,70 @@ describe('automator launch resilience', { concurrent: false, timeout: 30_000 }, 
     connectMock.mockResolvedValueOnce(connectedMiniProgram)
 
     const { launchAutomator } = await import('../utils/automator')
-    const session = await launchAutomator({ projectPath: sandboxRoot, timeout: 12_345 })
+    await expect(launchAutomator({ projectPath: sandboxRoot, timeout: 12_345, maxLaunchRetries: 1 })).rejects.toThrow('App.getCurrentPage within 25ms')
 
     expect(connectedMiniProgram.waitForAppReady).toHaveBeenCalledExactlyOnceWith(19)
-    expect(connectedMiniProgram.enableLog).toHaveBeenCalledOnce()
-    expect(connectedMiniProgram.__rawReLaunch).toHaveBeenCalledExactlyOnceWith('/pages/index/index')
-    await session.close()
+    expect(connectedMiniProgram.enableLog).not.toHaveBeenCalled()
+    expect(connectedMiniProgram.__rawCurrentPage).not.toHaveBeenCalled()
+    expect(connectedMiniProgram.__rawReLaunch).not.toHaveBeenCalled()
+    expect(connectedMiniProgram.__rawDisconnect).toHaveBeenCalledOnce()
   })
 
-  it('continues on the same bridge connection when skipWarmup readiness sees missing page metadata', async () => {
+  it('retries an owned bridge launch after AppService readiness times out', async () => {
+    const parentJournal = await createManagedWechatProjectJournal(path.join(sandboxRoot, 'managed-journals'))
+    vi.stubEnv(MANAGED_PROJECT_JOURNAL_ENV, parentJournal)
     process.env.WEAPP_VITE_E2E_AUTOMATOR_LAUNCH_MODE = 'bridge'
     process.env.WEAPP_VITE_E2E_APP_CONFIG_READY_TIMEOUT = '400'
     process.env.WEAPP_VITE_E2E_BRIDGE_CONNECT_SETTLE_DELAY = '1'
     process.env.WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_PREBUILD = '0'
     process.env.WEAPP_VITE_E2E_BRIDGE_APP_READY_PROBE_TIMEOUT = '25'
+    process.env.WEAPP_VITE_E2E_LAUNCH_RETRIES = '2'
+    process.env.WEAPP_VITE_E2E_LAUNCH_RETRY_DELAY = '1'
 
-    createProjectFixture(sandboxRoot, {
-      pages: ['pages/index/index'],
-    })
+    createProjectFixture(sandboxRoot, { pages: ['pages/index/index'] })
 
-    const connectedMiniProgram = createMockMiniProgram({ currentPage: createMockPage('pages/index/index') })
-    connectedMiniProgram.waitForAppReady = vi.fn(async () => {
-      throw new Error('Cannot destructure property \'rawPath\' of \'t.getPageMetaByWebviewId(...)\' as it is null.')
+    const firstMiniProgram = createMockMiniProgram()
+    firstMiniProgram.waitForAppReady = vi.fn(async () => {
+      throw new Error('DevTools did not respond to protocol method App.getCurrentPage within 25ms')
     })
-    execaMock.mockResolvedValueOnce({
+    const secondMiniProgram = createMockMiniProgram()
+    secondMiniProgram.waitForAppReady = vi.fn(async () => {})
+    execaMock.mockImplementation(async (_command, _args, options) => ({
       exitCode: 0,
-      stdout: JSON.stringify({ wsEndpoint: 'ws://127.0.0.1:9420' }),
+      stdout: JSON.stringify({
+        wsEndpoint: 'ws://127.0.0.1:9420',
+        managedProject: {
+          id: `owned-window-${execaMock.mock.calls.length}`,
+          journalPath: options.env[MANAGED_PROJECT_JOURNAL_ENV],
+        },
+      }),
       stderr: '',
-    })
-    connectMock.mockResolvedValueOnce(connectedMiniProgram)
+    }))
+    connectMock
+      .mockResolvedValueOnce(firstMiniProgram)
+      .mockResolvedValueOnce(secondMiniProgram)
 
     const { launchAutomator } = await import('../utils/automator')
-    const session = await launchAutomator({ projectPath: sandboxRoot, timeout: 12_345, skipWarmup: true })
+    const session = await launchAutomator({ projectPath: sandboxRoot, timeout: 12_345, maxLaunchRetries: 2, skipWarmup: true })
 
-    expect(execaMock).toHaveBeenCalledTimes(1)
-    expect(connectMock).toHaveBeenCalledTimes(1)
-    expect(connectedMiniProgram.waitForAppReady).toHaveBeenCalledExactlyOnceWith(19)
-    expect(connectedMiniProgram.enableLog).toHaveBeenCalledOnce()
-    expect(connectedMiniProgram.__rawReLaunch).not.toHaveBeenCalled()
+    expect(firstMiniProgram.waitForAppReady).toHaveBeenCalledExactlyOnceWith(19)
+    expect(firstMiniProgram.enableLog).not.toHaveBeenCalled()
+    expect(firstMiniProgram.__rawCurrentPage).not.toHaveBeenCalled()
+    expect(firstMiniProgram.__rawReLaunch).not.toHaveBeenCalled()
+    expect(firstMiniProgram.__rawDisconnect).toHaveBeenCalledOnce()
+    expect(secondMiniProgram.waitForAppReady).toHaveBeenCalledExactlyOnceWith(19)
+    expect(secondMiniProgram.enableLog).toHaveBeenCalledOnce()
+    expect(secondMiniProgram.__rawReLaunch).not.toHaveBeenCalled()
+    expect(connectMock).toHaveBeenCalledTimes(2)
+    const firstAttemptJournal = execaMock.mock.calls[0]![2].env[MANAGED_PROJECT_JOURNAL_ENV] as string
+    expect(cleanupManagedWechatProjectsMock).toHaveBeenCalledExactlyOnceWith({ journalPath: firstAttemptJournal, scope: 'journal' })
+    expect(cleanupResidualDevtoolsProcessesMock).not.toHaveBeenCalled()
+    expect(firstMiniProgram.__rawDisconnect.mock.invocationCallOrder[0]).toBeLessThan(execaMock.mock.invocationCallOrder[1]!)
+    expect(cleanupManagedWechatProjectsMock.mock.invocationCallOrder[0]).toBeLessThan(execaMock.mock.invocationCallOrder[1]!)
     await session.close()
+    const secondAttemptJournal = execaMock.mock.calls[1]![2].env[MANAGED_PROJECT_JOURNAL_ENV] as string
+    expect(cleanupManagedWechatProjectsMock).toHaveBeenLastCalledWith({ journalPath: secondAttemptJournal, scope: 'journal' })
+    expect(cleanupManagedWechatProjectsMock).toHaveBeenCalledTimes(2)
   })
 
   it('fails immediately when bridge AppService readiness rejects with a non-readiness error', async () => {

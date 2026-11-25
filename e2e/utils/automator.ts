@@ -114,7 +114,7 @@ const DEFAULT_PAGE_ROOT_QUERY_TIMEOUT = 1_000
 const CURRENT_PAGE_READY_RETRY_DELAY = 220
 const ROUTE_READY_PAGE_ROOT_PROBE_TIMEOUT = 1_500
 const DEFAULT_BRIDGE_CONNECT_SETTLE_DELAY = 5_000
-const DEFAULT_BRIDGE_APP_READY_PROBE_TIMEOUT = 3_000
+const DEFAULT_BRIDGE_APP_READY_TIMEOUT = 30_000
 const AUTOMATOR_LAUNCH_MODE_ENV = 'WEAPP_VITE_E2E_AUTOMATOR_LAUNCH_MODE'
 const AUTOMATOR_LAUNCH_MODE_BRIDGE = 'bridge'
 const AUTOMATOR_PREBUILD_ENV = 'WEAPP_VITE_E2E_AUTOMATOR_PREBUILD'
@@ -237,9 +237,9 @@ const BRIDGE_CONNECT_SETTLE_DELAY = resolvePositiveIntEnv(
   process.env.WEAPP_VITE_E2E_BRIDGE_CONNECT_SETTLE_DELAY,
   DEFAULT_BRIDGE_CONNECT_SETTLE_DELAY,
 )
-const BRIDGE_APP_READY_PROBE_TIMEOUT = resolvePositiveIntEnv(
+const BRIDGE_APP_READY_TIMEOUT = resolvePositiveIntEnv(
   process.env.WEAPP_VITE_E2E_BRIDGE_APP_READY_PROBE_TIMEOUT,
-  DEFAULT_BRIDGE_APP_READY_PROBE_TIMEOUT,
+  DEFAULT_BRIDGE_APP_READY_TIMEOUT,
 )
 const isProjectPathTrustedByEnv = createAutomatorProjectTrust()
 
@@ -1619,6 +1619,7 @@ export function isLikelyLaunchRetryableError(error: unknown) {
     || isLikelyDevtoolsLaunchCacheStaleMessage(message)
     || LAUNCH_TIMEOUT_PATTERN.test(message)
     || PROJECT_REFRESH_TIMEOUT_PATTERN.test(message)
+    || isAppServiceReadinessTimeoutError(error)
     || DEVTOOLS_CONNECTION_CLOSED_PATTERNS.some(pattern => pattern.test(message))
     || DEVTOOLS_CLI_EARLY_EXIT_PATTERNS.some(pattern => pattern.test(message))
     || isLikelySimulatorBootErrorMessage(message)
@@ -3086,13 +3087,13 @@ function launchDevtoolsAutomator(options: LaunchAutomatorOptions, launchGuard: T
             const withRuntimeLogs = await lifecycle.step(() => enhanceMiniProgramWithRuntimeLogs(miniProgram, project))
             if (usesBridge && typeof miniProgram.waitForAppReady === 'function') {
               // bridge 的 Tool.getInfo 只确认控制接口；AppService 就绪后才能建立 CDP 通道。
-              const readyProbeBudget = Math.min(lifecycle.remainingMs(), BRIDGE_APP_READY_PROBE_TIMEOUT)
-              const probeMargin = Math.min(500, Math.floor(readyProbeBudget / 4))
-              const readyBudget = Math.max(1, readyProbeBudget - probeMargin)
+              const readinessBudget = Math.min(lifecycle.remainingMs(), BRIDGE_APP_READY_TIMEOUT)
+              const timeoutMargin = Math.min(500, Math.floor(readinessBudget / 4))
+              const readyBudget = Math.max(1, readinessBudget - timeoutMargin)
               try {
                 await lifecycle.step(() => runWithDevtoolsLogMonitor(
                   () => miniProgram.waitForAppReady(readyBudget),
-                  readyProbeBudget,
+                  readinessBudget,
                   'bridge AppService readiness',
                   devtoolsLogMonitor,
                 ), { stage: 'app-ready' })
@@ -3101,19 +3102,17 @@ function launchDevtoolsAutomator(options: LaunchAutomatorOptions, launchGuard: T
                 if (!isAppServiceReadinessTimeoutError(error)) {
                   throw error
                 }
-                const shouldRecoverWithWarmup = !shouldSkipAutomatorWarmup(skipWarmup)
-                  && warmupAllowRelaunch !== false
-                  && Boolean(resolvedWarmupRoute)
                 devtoolsLogMonitor.assertClean('bridge AppService readiness timeout')
-                process.stdout.write(`[warn] [runtime:launch-step] app-ready-timeout-recover mode=${shouldRecoverWithWarmup ? 'warmup-relaunch' : 'continue'} route=${resolvedWarmupRoute ?? '<none>'} probe=${readyProbeBudget}ms project=${project} reason=${error instanceof Error ? error.message : String(error)}\n`)
+                process.stdout.write(`[warn] [runtime:launch-step] app-ready-timeout project=${project} budget=${readinessBudget}ms reason=${error instanceof Error ? error.message : String(error)}\n`)
                 appendIdeReportEvent({
                   source: 'runtime',
                   kind: 'message',
                   project,
                   level: 'warn',
                   channel: 'app-ready',
-                  text: `timeout=${readyProbeBudget}ms recovery=${shouldRecoverWithWarmup ? 'warmup-relaunch' : 'continue'} route=${resolvedWarmupRoute ?? '<none>'}`,
+                  text: `timeout=${readinessBudget}ms action=retry-owned-launch`,
                 })
+                throw error
               }
             }
             // 订阅从本阶段开始计时，同时遵守原有整个启动 attempt 的截止时间。
