@@ -44,12 +44,12 @@ const APP_SERVICE_PAGE_PROTOCOL_VERSIONS = new Set([
 // Nightly 2.02.2610082/2.02.2610092 / SDK 3.17.4 的同一协议无法访问真实 Page 方法，沿用 AppService 调用。
 // Stable 2.02.2609250 / SDK 3.18.0 的真实 IDE 也会报 this.<method> is not a function。
 const APP_SERVICE_PAGE_METHOD_VERSIONS = new Set(['2.02.2608070', '2.02.2608080', '2.02.2609231', '2.02.2609240', '2.02.2609250', '2.02.2610082', '2.02.2610092'])
-/** 已确认 Exparser caller token 与 Runtime 对象表错绑的 IDE 与 SDK 精确组合。 */
+/** 已确认原生组件方法调用丢失 caller 的 IDE 与 SDK 精确组合。 */
 const COMPONENT_CALLER_BRIDGE_COMBINATIONS: ReadonlyMap<string, ReadonlySet<string>> = new Map([
   ['2.02.2608080', new Set(['3.17.5'])],
   ['2.02.2609231', new Set(['3.17.5', '3.17.6'])],
   ['2.02.2609240', new Set(['3.17.6'])],
-  ['2.02.2609250', new Set(['3.18.0'])],
+  ['2.02.2609250', new Set(['3.18.0', '3.18.1'])],
 ])
 /** Connection 的实现。 */
 export default class Connection extends EventEmitter {
