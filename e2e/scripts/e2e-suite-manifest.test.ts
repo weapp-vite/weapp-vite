@@ -374,6 +374,7 @@ describe('e2e suite manifest', () => {
     'ide/worker-host.runtime.test.ts',
     'ide/lib-host.runtime.test.ts',
     'ide/platform-host.runtime.test.ts',
+    'ide/wevu-a2ui.runtime.test.ts',
     'ide/wevu-json-render.runtime.test.ts',
     'ide/subpackage-output.runtime.test.ts',
   ])('runs the same %s case in strict headless and exhaustive IDE acceptance', async (label) => {

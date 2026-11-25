@@ -1,0 +1,13 @@
+{
+  "pages": [
+    "pages/index/index",
+    "pages/blank/index",
+    "pages/basic/index"
+  ],
+  "window": {
+    "navigationBarTitleText": "售后服务",
+    "navigationBarBackgroundColor": "#f5f4ef",
+    "navigationBarTextStyle": "black",
+    "backgroundColor": "#f5f4ef"
+  }
+}

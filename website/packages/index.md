@@ -43,6 +43,7 @@ keywords:
 - 想低成本测试不依赖模板的 Wevu Composition API：用 `@wevu/test-utils`
 - 想跨页面共享服务端数据、协调请求并在变更后刷新列表：用 `@wevu/query`
 - 想在 Wevu 中渲染受组件目录约束的 JSON 界面：用实验性的 `@wevu/json-render`
+- 想在 Wevu 中渲染服务端下发的 A2UI 1.0 surface：用实验性的 `@wevu/a2ui`
 
 ## 给 AI 的包选择契约
 
@@ -94,6 +95,7 @@ keywords:
 | `@wevu/test-utils`        | Wevu 逻辑与 Vue SFC 测试工具             | Composition API、SFC、响应式状态、生命周期与事件     | [/packages/wevu-test-utils](/packages/wevu-test-utils)                     |
 | `@wevu/query`             | Wevu 服务端状态与查询缓存                | 同键请求共享、跨页失效刷新、mutation、分页与账号隔离 | [服务端状态查询](/wevu/store#server-state-query)                           |
 | `@wevu/json-render`       | json-render 的 Wevu 适配（实验）         | 预编译组件、状态绑定、动作与 JSONL 增量界面更新      | [JSON 界面渲染](/packages/wevu-json-render)                                |
+| `@wevu/a2ui` | A2UI 1.0 的 Wevu 运行时适配（实验） | 会话消息、数据绑定与动作外发，宿主 SFC 由应用提供 | [A2UI 界面渲染](/packages/wevu-a2ui) |
 | `@wevu/api` | `@weapp-core/api` 兼容入口 | 旧项目保留 `wpi` / `createWeapi` 导入路径 | [API 兼容入口](/wevu/api-package) |
 | `@weapp-core/api` | 框架无关的跨平台小程序 API | 原生或任意框架项目统一调用平台 API | [API 参考](/packages/weapi/) |
 

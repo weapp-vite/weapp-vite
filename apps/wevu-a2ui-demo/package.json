@@ -1,0 +1,26 @@
+{
+  "name": "wevu-a2ui-demo",
+  "type": "module",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "dev": "wv dev",
+    "build": "wv build",
+    "open": "wv open",
+    "prepare:weapp": "wv prepare",
+    "typecheck": "vue-tsc --noEmit -p .weapp-vite/tsconfig.app.json",
+    "test": "vitest run --config vitest.config.ts",
+    "lint": "eslint ."
+  },
+  "dependencies": {
+    "@a2ui/web_core": "0.15.0",
+    "@wevu/a2ui": "workspace:*",
+    "wevu": "workspace:*"
+  },
+  "devDependencies": {
+    "@weapp-vite/volar": "workspace:*",
+    "miniprogram-api-typings": "catalog:",
+    "typescript": "catalog:",
+    "weapp-vite": "workspace:*"
+  }
+}
