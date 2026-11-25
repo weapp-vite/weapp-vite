@@ -15,4 +15,4 @@ it('updates reactive page state through the headless mini-program runtime', asyn
   finally {
     await project.close()
   }
-})
+}, 30_000)

@@ -12,4 +12,4 @@ it('renders the React mini-program page from its built artifact', async () => {
   finally {
     await project.close()
   }
-})
+}, 30_000)

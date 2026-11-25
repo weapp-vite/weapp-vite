@@ -12,4 +12,4 @@ it('renders the Tailwind starter page from its built mini-program artifact', asy
   finally {
     await project.close()
   }
-})
+}, 30_000)

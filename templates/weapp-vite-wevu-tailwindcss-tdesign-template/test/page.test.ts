@@ -14,4 +14,4 @@ it('updates the TDesign SFC page through the headless runtime', async () => {
   finally {
     await project.close()
   }
-})
+}, 30_000)

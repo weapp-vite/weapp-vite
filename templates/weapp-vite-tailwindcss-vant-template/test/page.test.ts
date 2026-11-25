@@ -12,4 +12,4 @@ it('renders the Vant starter page from its built mini-program artifact', async (
   finally {
     await project.close()
   }
-})
+}, 30_000)

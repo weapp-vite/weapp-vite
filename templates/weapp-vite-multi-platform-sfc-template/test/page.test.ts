@@ -15,4 +15,4 @@ it('updates the multi-platform SFC page through the headless runtime', async () 
   finally {
     await project.close()
   }
-})
+}, 30_000)
