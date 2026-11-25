@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { A2uiInteraction, A2uiNode } from '@wevu/a2ui'
+import type { A2uiInteraction, A2uiNode, A2uiPropValue } from '@wevu/a2ui'
 import { computed } from 'wevu'
 
 const props = defineProps<{ node: A2uiNode }>()
@@ -27,8 +27,33 @@ const isCaption = computed(() => props.node.type === 'Text' && props.node.props.
 const isLongText = computed(() => props.node.type === 'TextField' && props.node.props.variant === 'longText')
 const buttonLabel = computed(() => String(props.node.children.find(child => child.type === 'Text')?.props.text ?? ''))
 
+function isNode(value: A2uiPropValue | undefined): value is A2uiNode {
+  return value !== null
+    && typeof value === 'object'
+    && !Array.isArray(value)
+    && 'id' in value
+    && typeof value.id === 'string'
+    && 'componentId' in value
+    && typeof value.componentId === 'string'
+    && 'type' in value
+    && typeof value.type === 'string'
+}
+
+const tabs = computed(() => {
+  const value = props.node.props.tabs
+  if (!Array.isArray(value)) {
+    return []
+  }
+  return value.flatMap((tab, index) => {
+    if (!tab || typeof tab !== 'object' || Array.isArray(tab) || isNode(tab) || !isNode(tab.child)) {
+      return []
+    }
+    return [{ id: `${props.node.id}-tab-${index}`, title: String(tab.title ?? ''), child: tab.child }]
+  })
+})
+
 function input(event: WechatMiniprogram.Input) {
-  emit('interaction', { type: 'input', nodeId: props.node.id, value: event.detail.value })
+  emit('interaction', { type: 'input', nodeId: props.node.id, bindingName: 'value', value: event.detail.value })
 }
 function tap() {
   emit('interaction', { type: 'action', nodeId: props.node.id })
@@ -51,6 +76,12 @@ function tap() {
       :node="child"
       @interaction="emit('interaction', $event)"
     />
+  </view>
+  <view v-else-if="props.node.type === 'Tabs'" class="a2ui-tabs">
+    <view v-for="tab in tabs" :key="tab.id" class="a2ui-tab">
+      <text class="a2ui-tab__title">{{ tab.title }}</text>
+      <a2ui-node :node="tab.child" @interaction="emit('interaction', $event)" />
+    </view>
   </view>
   <text
     v-else-if="props.node.type === 'Text'"
@@ -109,6 +140,27 @@ function tap() {
   background: #fff;
   border: 1rpx solid #e4e3dc;
   border-radius: 24rpx;
+}
+
+.a2ui-tabs {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
+
+.a2ui-tab {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+  padding: 24rpx;
+  background: #f4f6f1;
+  border-radius: 16rpx;
+}
+
+.a2ui-tab__title {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #234f3c;
 }
 
 .a2ui-copy {

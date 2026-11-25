@@ -1,17 +1,26 @@
-import type { A2uiNode, A2uiSurfaceView } from '@wevu/a2ui'
+import type { A2uiNode, A2uiPropValue, A2uiSurfaceView } from '@wevu/a2ui'
 import { createA2uiSession } from '@wevu/a2ui'
 import { demoCatalog } from '../src/catalog'
-import { createInitialMessages, SURFACE_ID } from '../src/fixtures/afterSales'
+import { BASIC_SURFACE_ID, basicMessages, createInitialMessages, SURFACE_ID } from '../src/fixtures/afterSales'
 
-function find(node: A2uiNode | undefined, componentId: string): A2uiNode | undefined {
-  if (!node) {
+function find(value: A2uiPropValue | undefined, componentId: string): A2uiNode | undefined {
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      const found = find(item, componentId)
+      if (found) {
+        return found
+      }
+    }
     return undefined
   }
-  if (node.componentId === componentId) {
-    return node
+  if (!value || typeof value !== 'object') {
+    return undefined
   }
-  for (const child of node.children) {
-    const found = find(child, componentId)
+  if ('componentId' in value && value.componentId === componentId) {
+    return value as A2uiNode
+  }
+  for (const item of Object.values(value)) {
+    const found = find(item, componentId)
     if (found) {
       return found
     }
@@ -37,5 +46,19 @@ export function probe() {
   })
   const reason = find(views.find(view => view.id === SURFACE_ID)?.root, 'reason')?.props.value
   session.dispose()
-  return reason
+
+  let basicViews: A2uiSurfaceView[] = []
+  const basicSession = createA2uiSession({
+    catalog: demoCatalog,
+    onSurfaces(next) {
+      basicViews = next
+    },
+    onAction: () => {},
+  })
+  for (const message of basicMessages) {
+    basicSession.receive(message)
+  }
+  const nestedLabel = find(basicViews.find(view => view.id === BASIC_SURFACE_ID)?.root, 'label')?.props.text
+  basicSession.dispose()
+  return { reason, nestedLabel }
 }

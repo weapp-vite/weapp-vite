@@ -92,8 +92,48 @@ export const testCatalog = {
             ],
           },
         },
+        secondaryAction: { $ref: 'common_types.json#/$defs/Action' },
       },
       required: ['component'],
+    },
+    Tabs: {
+      type: 'object',
+      properties: {
+        component: { const: 'Tabs' },
+        tabs: {
+          type: 'array',
+          minItems: 1,
+          items: {
+            type: 'object',
+            properties: {
+              title: { $ref: 'common_types.json#/$defs/DynamicString' },
+              child: { $ref: 'common_types.json#/$defs/Child' },
+            },
+            required: ['title', 'child'],
+            additionalProperties: false,
+          },
+        },
+      },
+      required: ['component', 'tabs'],
+    },
+  },
+  functions: {
+    resolveValue: {
+      type: 'object',
+      returnType: 'string',
+      properties: {
+        '@call': { const: 'resolveValue' },
+        'args': {
+          type: 'object',
+          properties: {
+            value: { type: 'string' },
+            delay: { type: 'number' },
+          },
+          required: ['value'],
+          additionalProperties: false,
+        },
+      },
+      required: ['@call'],
     },
   },
 } as const

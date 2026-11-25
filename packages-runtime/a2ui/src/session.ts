@@ -1,4 +1,4 @@
-import type { ActionPayload, ComponentApi, SurfaceModel } from '@a2ui/web_core'
+import type { ComponentApi, SurfaceModel } from '@a2ui/web_core'
 import type { A2uiNodeOperation, A2uiProjectedSurface } from './projection'
 import type { A2uiActionMessage, A2uiInteraction, A2uiSession, A2uiSessionOptions, A2uiSurfaceView } from './types'
 import {
@@ -16,8 +16,51 @@ import { createA2uiCatalog } from './catalog'
 import { A2UI_STATE_MESSAGES, readA2uiEnvelope } from './envelope'
 import { projectA2uiSurface } from './projection'
 
-function cloneAction(action: ActionPayload): ActionPayload {
-  return JSON.parse(JSON.stringify(action)) as ActionPayload
+function clonePayload<T>(payload: T): T {
+  return JSON.parse(JSON.stringify(payload)) as T
+}
+
+function cloneDataModelValue(value: unknown): unknown {
+  if (Array.isArray(value)) {
+    const result: unknown[] = []
+    result.length = value.length
+    for (let index = 0; index < value.length; index++) {
+      if (index in value) {
+        result[index] = cloneDataModelValue(value[index])
+      }
+    }
+    return result
+  }
+  if (value !== null && typeof value === 'object') {
+    const result: Record<string, unknown> = {}
+    for (const [key, item] of Object.entries(value)) {
+      Object.defineProperty(result, key, {
+        value: cloneDataModelValue(item),
+        enumerable: true,
+        configurable: true,
+        writable: true,
+      })
+    }
+    return result
+  }
+  return value
+}
+
+function selectOperation<T>(operations: ReadonlyMap<string, T>, name: string | undefined, kind: 'binding' | 'action', nodeId: string): T | undefined {
+  if (name !== undefined) {
+    const selected = operations.get(name)
+    if (!selected) {
+      throw new TypeError(`节点 '${nodeId}' 不存在名为 '${name}' 的${kind === 'binding' ? '输入绑定' : '动作'}。`)
+    }
+    return selected
+  }
+  if (operations.size === 1) {
+    return operations.values().next().value
+  }
+  if (operations.size > 1) {
+    throw new TypeError(`节点 '${nodeId}' 有多个${kind === 'binding' ? '输入绑定' : '动作'}，请指定${kind === 'binding' ? ' bindingName' : ' actionName'}。`)
+  }
+  return undefined
 }
 
 interface ResolvedSurface<T extends ComponentApi> {
@@ -33,7 +76,7 @@ interface ResolvedSurface<T extends ComponentApi> {
  * `interact` 进入，动作经 `onAction` 交给调用方发送给 agent。
  */
 export function createA2uiSession(options: A2uiSessionOptions): A2uiSession {
-  const { catalog } = createA2uiCatalog(options.catalog)
+  const { catalog } = createA2uiCatalog(options.catalog, options.functionImplementations)
   const processor = new MessageProcessor([catalog], undefined, {
     validationConfig: { ...STRICT_VALIDATION, targetVersion: '1.0', allowedMessages: [...A2UI_STATE_MESSAGES] },
   })
@@ -42,9 +85,15 @@ export function createA2uiSession(options: A2uiSessionOptions): A2uiSession {
   let disposed = false
   let published = false
   let dispatch: A2uiActionMessage[] | undefined
+  let actionQueue: Promise<void> = Promise.resolve()
   const actionSubscription = processor.model.onAction.subscribe((action) => {
     if (!disposed && dispatch) {
-      dispatch.push({ version: '1.0', action: cloneAction(action) })
+      dispatch.push({ version: '1.0', action: clonePayload(action) })
+    }
+  })
+  const errorSubscription = processor.model.onError.subscribe((error) => {
+    if (!disposed) {
+      return options.onError?.(clonePayload(error))
     }
   })
   const stopProjection = effect(() => {
@@ -91,10 +140,16 @@ export function createA2uiSession(options: A2uiSessionOptions): A2uiSession {
       const { type, surfaceId } = envelope
       batchWrite(() => {
         const previous = surfaceId === undefined ? undefined : processor.getSurface(surfaceId)
+        const rollback = type === 'updateDataModel' && previous
+          ? { surface: previous, data: cloneDataModelValue(previous.dataModel.get('/')) }
+          : undefined
         try {
           processor.processMessages(envelope.message)
         }
         catch (error) {
+          if (rollback) {
+            rollback.surface.dataModel.set('/', rollback.data)
+          }
           // Core 会先注册内联 createSurface，再校验其组件批次。
           if (type === 'createSurface' && !previous && surfaceId !== undefined) {
             processor.model.deleteSurface(surfaceId)
@@ -133,26 +188,35 @@ export function createA2uiSession(options: A2uiSessionOptions): A2uiSession {
       if (!operation) {
         return
       }
-      if (event.type === 'input' && operation.input) {
-        const binding = operation.input
-        if (binding.value !== event.value) {
+      if (event.type === 'input') {
+        const binding = selectOperation(operation.inputs, event.bindingName, 'binding', event.nodeId)
+        if (binding && binding.value !== event.value) {
           batchWrite(() => binding.set(event.value))
         }
         return
       }
-      if (event.type !== 'action' || !operation.action) {
+      const action = selectOperation(operation.actions, event.actionName, 'action', event.nodeId)
+      if (!action) {
         return
       }
+      // Core 的动作消息没有调用上下文，消息捕获必须串行；handler 内 await interact 会等待当前队列，由调用方避免。
       const messages: A2uiActionMessage[] = []
-      let completion
-      dispatch = messages
-      try {
-        completion = operation.action()
-      }
-      finally {
-        dispatch = undefined
-      }
-      await completion
+      const execution = actionQueue.then(async () => {
+        if (disposed) {
+          return
+        }
+        dispatch = messages
+        try {
+          await action()
+        }
+        finally {
+          if (dispatch === messages) {
+            dispatch = undefined
+          }
+        }
+      })
+      actionQueue = execution.catch(() => {})
+      await execution
       for (const message of messages) {
         if (disposed) {
           return
@@ -167,6 +231,7 @@ export function createA2uiSession(options: A2uiSessionOptions): A2uiSession {
       disposed = true
       stopProjection()
       actionSubscription.unsubscribe()
+      errorSubscription.unsubscribe()
       for (const id of surfaces.keys()) {
         detach(id)
       }

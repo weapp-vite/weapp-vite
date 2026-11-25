@@ -39,23 +39,34 @@ const session = createA2uiSession({
     // message: { version: '1.0', action: ActionPayload }
     socket.send(message)
   },
+  onError(error) {
+    report(error)
+  },
+  functionImplementations: {
+    async format(args) {
+      return String(args.value)
+    },
+  },
 })
 
 session.receive(message) // 单个 A2UI 1.0 状态消息
-await session.interact(surfaceId, { type: 'input', nodeId, value })
-await session.interact(surfaceId, { type: 'action', nodeId })
+await session.interact(surfaceId, { type: 'input', nodeId, bindingName: 'value', value: 'hello' })
+await session.interact(surfaceId, { type: 'action', nodeId, actionName: 'action' })
 session.dispose()
 ```
 
 | API | 行为 |
 | --- | --- |
 | `receive(message)` | 校验并应用 `createSurface`、`updateComponents`、`updateDataModel`、`deleteSurface`；RPC、内部操作、批量消息及空 `surfaceId` 直接拒绝 |
-| `interact(surfaceId, event)` | `input` 写回可写绑定；`action` 执行 Core 动作并把产生的 `ActionPayload` 按顺序交给 `onAction` |
+| `interact(surfaceId, event)` | `input` 写回选定的可写绑定；`action` 执行选定的 Core 动作并把产生的 `ActionPayload` 按顺序交给 `onAction` |
 | `onSurfaces(views)` | 每次可见状态变化后整体推送；`updateDataModel` 的标量写入与 `null` 删除只更新绑定值，不替换节点 |
-| `onAction(message)` | 可返回 Promise，动作消息按产生顺序串行等待 |
+| `onAction(message)` | 可返回 Promise；单个动作产生的消息按序串行等待，不同 `interact` 的异步回调可能交错；本地函数动作不会外发 |
+| `onError(error)` | 可选；接收 Core surface、消息处理与表达式错误，可返回 Promise |
 | `dispose()` | 幂等；停止投影、释放 resolver 与 processor，之后不再回调 |
 
-创建会话时构造的 catalog 只保留组件声明与 `$defs`，函数实现为空数组。因此节点上的动作属性仍是 Core 生成的可执行 RPC 入口，但本包不接收 `callRendererFunction` / `agentFunctionResponse`，动作结果统一通过 `onAction` 外发。
+`functionImplementations` 为可选能力扩展。catalog 中声明的函数会保留完整签名并照常参与校验，未提供实现的函数在调用时抛出表达式错误，并通过 `onError` 上报；构造会话时提供未声明函数的实现会立即失败。只按对象自身属性查找实现，`toString` 等继承成员不会被误当作实现。
+
+实现只接收已校验的参数字典，不接收 Core `DataContext` 或 `AbortSignal`，因此 `dispose()` 不会强制取消已启动的异步实现。动作 handler 不要 `await session.interact(...)`：动作捕获区通过会话级队列串行，等待同一队列会挂起。`functionCall` 动作在本地执行且不外发 `onAction`；本包不接收 `callRendererFunction` / `agentFunctionResponse`。
 
 ## 视图投影
 
@@ -66,15 +77,18 @@ interface A2uiNode {
   readonly id: string // `${节点ID}-v${generation}`，仅在当前 generation 内稳定
   readonly componentId: string
   readonly type: string // catalog 组件名
-  readonly props: { readonly [key: string]: A2uiJsonValue }
+  readonly props: { readonly [key: string]: A2uiPropValue }
   readonly children: readonly A2uiNode[]
   readonly actions: readonly string[] // 值为动作的属性名
 }
 ```
 
-- 子节点来自属性中的单个组件、组件数组或 `ChildList` 模板展开结果，按属性出现顺序收集，不进入 `props`；
-- `ResolvedBinding` 投影为其当前值；`WritableBinding` 除投影值外登记为可写输入，一个节点最多保留一个；
-- 同一节点的可写绑定与动作可同时存在；
+`A2uiPropValue` 是 JSON 值、`A2uiNode` 或包含两者的递归数组/对象。直接作为属性值的组件节点与纯组件节点数组进入 `children`；嵌套在对象或混合数组中的节点保留在 `props` 原位置，例如 Basic Catalog 的 `Tabs.tabs[].child`。这些嵌套节点同样进入操作表，可执行其动作与顶层可写绑定。
+
+- `ResolvedBinding` 投影为其当前值；`WritableBinding` 除投影值外按 catalog 属性名登记为可写输入，一个节点可以保留多个；
+- 可写输入与动作分别通过 `bindingName` / `actionName` 选择；省略时仅在候选数量为 1 时回退，多个候选或显式未知名称会抛出 `TypeError`；
+- 仅直接暴露在节点顶层的可写绑定可选择；深层绑定只投影当前值，深层函数属性也不会被登记为动作；
+- 同一节点的可写绑定与动作可同时存在；动作执行通过会话级队列串行，异步动作完成前不会提前清理消息捕获状态；
 - `updateComponents` 或非 `null` 对象型 `updateDataModel` 会递增 generation 并清空旧操作表，视图层可通过 id 变化重建引用；标量写入与 `null` 删除只更新绑定值。
 
 ```ts
@@ -85,8 +99,8 @@ interface A2uiSession {
 }
 
 type A2uiInteraction
-  = | { type: 'input', nodeId: string, value: string }
-    | { type: 'action', nodeId: string }
+  = | { type: 'input', nodeId: string, value: A2uiJsonValue, bindingName?: string }
+    | { type: 'action', nodeId: string, actionName?: string }
 ```
 
 `interact` 使用投影时的操作表；节点已被替换或 surface 已删除时静默忽略。
@@ -119,7 +133,7 @@ defineComponentJson({
   <input
     v-else-if="props.node.type === 'TextField'"
     :value="props.node.props.value"
-    @input="emit('interaction', { type: 'input', nodeId: props.node.id, value: $event.detail.value })"
+    @input="emit('interaction', { type: 'input', nodeId: props.node.id, bindingName: 'value', value: $event.detail.value })"
   >
   <button v-else-if="props.node.type === 'Button'" @tap="emit('interaction', { type: 'action', nodeId: props.node.id })">
     {{ props.node.children[0]?.props.text }}
@@ -138,16 +152,17 @@ Chat 消息编排的参考实现采用同样的 envelope 校验、generation 操
 - 消息：仅 `version: '1.0'` 的 `createSurface`、`updateComponents`、`updateDataModel`、`deleteSurface`；使用 `STRICT_VALIDATION` 与 1.0 目标版本。
 - `updateComponents` 按 id upsert 且必须保持整树可达：协议不删除单个组件，隐藏节点通过绑定值表达，否则 Core 抛出可达性完整性错误。
 - 节点 ID 遵循 Core 的 UAX #31 校验；模板 `ChildList`（`{ componentId, path }`）由 Core 解析，数据更新会导致实例重建。
-- 不支持 catalog 函数、checks 与 RPC；动作只外发事件，不等待 agent 回写。
+- 支持通过宿主实现 catalog 函数；不支持 checks、RPC 与 agent 函数响应，事件动作只外发且不等待 agent 回写。
 - 不包含 Markdown 渲染、图片/勾选等目录扩展；catalog 能声明哪些组件由消费方决定，但视图层必须为每个类型提供宿主分支。
-- 运行时只接受 JSON 数据；投影会丢弃函数、`undefined`、`NaN`/`Infinity`（转为 `null`），组件节点出现在对象属性中时转换为 `componentId`。
+- `updateDataModel` 失败时回滚目标 surface 的整份数据快照，避免 Core 部分写入后留下半成品；失败仍会向调用方抛出。快照是 O(N) 深拷贝，数据模型很大时应优先使用更小的增量路径。
+- 运行时只接受 JSON 数据；投影会丢弃未登记的函数与 `undefined`，将 `NaN`/`Infinity` 转为 `null`，并保留 props 中的嵌套组件节点。
 - 无 lit、无动态求值；兼容层只补齐 `Object.hasOwn`、`AbortController` 与 `AbortSignal`。
 - 需要显式调用 `dispose()`；`receive` 不接管 transport、重连或排队。
 
 ## 验证与发布边界
 
-包级单测覆盖投影绑定、输入回写、动作外发、模板列表 respawn、消息校验、失败回滚与幂等销毁；tsd 锁定公开类型。构建产物为 ESM + d.mts，`@a2ui/web_core` 作为外部依赖由宿主应用打包。
+包级 21 项单测覆盖投影绑定、多绑定/多动作选择、嵌套槽位、输入回写、动作外发、异步动作隔离、本地 `functionCall`、函数错误与继承成员边界、模板列表 respawn、消息校验、失败回滚与幂等销毁；tsd 锁定公开类型。构建产物为 ESM + d.mts，`@a2ui/web_core` 作为外部依赖由宿主应用打包。
 
 `apps/wevu-a2ui-demo` 与 `e2e/ide/wevu-a2ui.runtime.test.ts` 提供 headless 与真实微信 DevTools 的同场景验收，覆盖基础目录页、递归宿主、输入写回、增量替换后的输入保留、异常消息保留上一版界面和卸载清理。应用的 `test/noEval.test.ts` 从公共入口打包，在禁用 `Function` / `eval` 的 `vm` 上下文执行。
 
-尚未提供：内置组件包与构建期 resolver（宿主组件目前由 `apps/wevu-a2ui-demo` 自带）、catalog 子集对齐（Row/Image/ChoicePicker 等）以及函数/checks/RPC 长尾。本包也未执行 npm 发布。
+尚未提供：内置组件包与构建期 resolver（宿主组件目前由 `apps/wevu-a2ui-demo` 自带）、catalog 子集对齐（Row/Image/ChoicePicker 等）以及 checks/RPC 长尾。本包也未执行 npm 发布。

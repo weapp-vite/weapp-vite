@@ -1,66 +1,17 @@
-import type { A2uiActionMessage, A2uiNode, A2uiSurfaceView } from './types'
 import { A2uiIntegrityError, A2uiValidationError } from '@a2ui/web_core'
 import { describe, expect, it } from 'vitest'
-import { createA2uiSession } from './session'
-import { TEST_CATALOG_ID, testCatalog } from './testFixture'
-
-interface SetupResult {
-  session: ReturnType<typeof createA2uiSession>
-  batches: A2uiSurfaceView[][]
-  actions: A2uiActionMessage[]
-  latest: () => A2uiSurfaceView[]
-}
-
-function setup(): SetupResult {
-  const batches: A2uiSurfaceView[][] = []
-  const actions: A2uiActionMessage[] = []
-  const session = createA2uiSession({
-    catalog: testCatalog,
-    onSurfaces: views => batches.push(views),
-    onAction: (message) => {
-      actions.push(message)
-    },
-  })
-  return { session, batches, actions, latest: () => batches.at(-1) ?? [] }
-}
-
-function findNode(node: A2uiNode | undefined, componentId: string): A2uiNode | undefined {
-  if (!node) {
-    return undefined
-  }
-  if (node.componentId === componentId) {
-    return node
-  }
-  for (const child of node.children) {
-    const found = findNode(child, componentId)
-    if (found) {
-      return found
-    }
-  }
-  return undefined
-}
-
-function surface(type: string, payload: Record<string, unknown>) {
-  return { version: '1.0', [type]: payload }
-}
-
-function createSurface(surfaceId: string, components: unknown[], dataModel?: Record<string, unknown>) {
-  return surface('createSurface', {
-    surfaceId,
-    catalogId: TEST_CATALOG_ID,
-    components,
-    ...(dataModel ? { dataModel } : {}),
-  })
-}
-
-function rootOf(result: SetupResult, surfaceId = 's1') {
-  return result.latest().find(view => view.id === surfaceId)?.root
-}
+import {
+  createSurfaceMessage,
+  findNode,
+  rootOf,
+  setupSession,
+  surfaceMessage,
+} from './sessionTestUtils'
 
 describe('createA2uiSession', () => {
   it('projects a component tree with bound text', () => {
-    const result = setup()
-    result.session.receive(createSurface('s1', [
+    const result = setupSession()
+    result.session.receive(createSurfaceMessage('s1', [
       { id: 'root', component: 'Column', children: ['title', 'name'] },
       { id: 'title', component: 'Text', text: 'Hello' },
       { id: 'name', component: 'Text', text: { '@path': '/name' } },
@@ -76,8 +27,8 @@ describe('createA2uiSession', () => {
   })
 
   it('writes input bindings back into the data model', async () => {
-    const result = setup()
-    result.session.receive(createSurface('s1', [
+    const result = setupSession()
+    result.session.receive(createSurfaceMessage('s1', [
       { id: 'root', component: 'Column', children: ['field', 'echo'] },
       { id: 'field', component: 'TextField', label: '名字', value: { '@path': '/name' } },
       { id: 'echo', component: 'Text', text: { '@path': '/name' } },
@@ -96,8 +47,8 @@ describe('createA2uiSession', () => {
   })
 
   it('dispatches button actions with resolved context', async () => {
-    const result = setup()
-    result.session.receive(createSurface('s1', [
+    const result = setupSession()
+    result.session.receive(createSurfaceMessage('s1', [
       { id: 'root', component: 'Column', children: ['submit'] },
       {
         id: 'submit',
@@ -125,8 +76,8 @@ describe('createA2uiSession', () => {
   })
 
   it('spawns templated children from the data model', async () => {
-    const result = setup()
-    result.session.receive(createSurface('s1', [
+    const result = setupSession()
+    result.session.receive(createSurfaceMessage('s1', [
       { id: 'root', component: 'List', children: { componentId: 'item', path: '/items' } },
       { id: 'item', component: 'Text', text: { '@path': 'name' } },
     ], { items: [{ name: 'A' }, { name: 'B' }] }))
@@ -135,7 +86,7 @@ describe('createA2uiSession', () => {
     expect(root?.children.map(child => child.props.text)).toEqual(['A', 'B'])
     const previousIds = root?.children.map(child => child.id)
 
-    result.session.receive(surface('updateDataModel', {
+    result.session.receive(surfaceMessage('updateDataModel', {
       surfaceId: 's1',
       path: '/items',
       value: [{ name: 'A' }, { name: 'B' }, { name: 'C' }],
@@ -148,26 +99,26 @@ describe('createA2uiSession', () => {
   })
 
   it('rejects non-state messages and empty surface ids', () => {
-    const result = setup()
-    result.session.receive(createSurface('s1', [
+    const result = setupSession()
+    result.session.receive(createSurfaceMessage('s1', [
       { id: 'root', component: 'Text', text: 'ok' },
     ]))
 
     expect(() => result.session.receive({ version: '1.0', callRendererFunction: {} })).toThrow(A2uiValidationError)
-    expect(() => result.session.receive(surface('createSurface', { surfaceId: '', components: [] }))).toThrow(A2uiValidationError)
+    expect(() => result.session.receive(surfaceMessage('createSurface', { surfaceId: '', components: [] }))).toThrow(A2uiValidationError)
     expect(rootOf(result)?.props.text).toBe('ok')
     result.session.dispose()
   })
 
   it('re-projects primitive data model writes at a path', () => {
-    const result = setup()
-    result.session.receive(createSurface('s1', [
+    const result = setupSession()
+    result.session.receive(createSurfaceMessage('s1', [
       { id: 'root', component: 'Column', children: ['status'] },
       { id: 'status', component: 'Text', text: { '@path': '/status' } },
     ], { status: 'idle' }))
     const batches = result.batches.length
 
-    result.session.receive(surface('updateDataModel', { surfaceId: 's1', path: '/status', value: 'done' }))
+    result.session.receive(surfaceMessage('updateDataModel', { surfaceId: 's1', path: '/status', value: 'done' }))
 
     expect(result.batches.length).toBeGreaterThan(batches)
     expect(rootOf(result)?.children[0]?.props.text).toBe('done')
@@ -192,14 +143,14 @@ describe('createA2uiSession', () => {
   })
 
   it('rejects updates that orphan a component and keeps the previous tree', () => {
-    const result = setup()
-    result.session.receive(createSurface('s1', [
+    const result = setupSession()
+    result.session.receive(createSurfaceMessage('s1', [
       { id: 'root', component: 'Column', children: ['title', 'extra'] },
       { id: 'title', component: 'Text', text: 'Hello' },
       { id: 'extra', component: 'Text', text: 'Extra' },
     ]))
 
-    expect(() => result.session.receive(surface('updateComponents', {
+    expect(() => result.session.receive(surfaceMessage('updateComponents', {
       surfaceId: 's1',
       components: [{ id: 'root', component: 'Column', children: ['title'] }],
     }))).toThrow(A2uiIntegrityError)
@@ -208,24 +159,24 @@ describe('createA2uiSession', () => {
   })
 
   it('removes surfaces on deleteSurface', () => {
-    const result = setup()
-    result.session.receive(createSurface('s1', [
+    const result = setupSession()
+    result.session.receive(createSurfaceMessage('s1', [
       { id: 'root', component: 'Text', text: 'ok' },
     ]))
     expect(result.latest()).toHaveLength(1)
 
-    result.session.receive(surface('deleteSurface', { surfaceId: 's1' }))
+    result.session.receive(surfaceMessage('deleteSurface', { surfaceId: 's1' }))
     expect(result.latest()).toHaveLength(0)
     result.session.dispose()
   })
 
   it('rolls back a failed createSurface so the id can be reused', () => {
-    const result = setup()
-    expect(() => result.session.receive(createSurface('s1', [
+    const result = setupSession()
+    expect(() => result.session.receive(createSurfaceMessage('s1', [
       { id: 'root', component: 'Column', children: ['missing'] },
     ]))).toThrow()
 
-    result.session.receive(createSurface('s1', [
+    result.session.receive(createSurfaceMessage('s1', [
       { id: 'root', component: 'Text', text: 'retry' },
     ]))
     expect(rootOf(result)?.props.text).toBe('retry')
@@ -233,14 +184,14 @@ describe('createA2uiSession', () => {
   })
 
   it('stops notifying after dispose and stays idempotent', () => {
-    const result = setup()
-    result.session.receive(createSurface('s1', [
+    const result = setupSession()
+    result.session.receive(createSurfaceMessage('s1', [
       { id: 'root', component: 'Text', text: 'ok' },
     ]))
     const batchCount = result.batches.length
     result.session.dispose()
     result.session.dispose()
-    result.session.receive(createSurface('s2', [
+    result.session.receive(createSurfaceMessage('s2', [
       { id: 'root', component: 'Text', text: 'ignored' },
     ]))
     expect(result.batches.length).toBe(batchCount)

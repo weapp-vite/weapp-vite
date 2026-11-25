@@ -17,7 +17,10 @@ it('imports Core and projects a bound surface without any dynamic evaluation att
     expect(attempts).toBe(1)
     attempts = 0
     vm.runInContext(output[0]!.code, context)
-    expect(vm.runInContext('demoProbe.probe()', context)).toBe('兼容检查')
+    expect(vm.runInContext('demoProbe.probe()', context)).toEqual({
+      reason: '兼容检查',
+      nestedLabel: '基础组件无需业务适配',
+    })
     expect(attempts).toBe(0)
   }
   finally {

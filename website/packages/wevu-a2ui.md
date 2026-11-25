@@ -1,6 +1,6 @@
 ---
 title: '@wevu/a2ui'
-description: 在 Wevu 微信小程序中渲染 A2UI 1.0 surface 状态消息，支持数据绑定、模板列表和动作外发，不引入 lit。
+description: 在 Wevu 微信小程序中渲染 A2UI 1.0 surface 状态消息，支持嵌套槽位、多绑定输入、catalog 函数与动作外发，不引入 lit。
 keywords:
   - Wevu
   - A2UI
@@ -37,6 +37,12 @@ const session = createA2uiSession({
   onAction: async (message) => {
     await agent.send(message)
   },
+  onError: (error) => {
+    report(error)
+  },
+  functionImplementations: {
+    format: async args => String(args.value),
+  },
 })
 session.receive({ version: '1.0', createSurface: { surfaceId: 'after-sales', catalogId: DEMO_CATALOG_ID, components: [], dataModel: {} } })
 ```
@@ -45,11 +51,15 @@ session.receive({ version: '1.0', createSurface: { surfaceId: 'after-sales', cat
 
 ## 支持范围
 
-- 四类 surface 状态消息，严格校验；`createSurface` 失败会回滚该 surface，便于用同一 id 重下。
+- 四类 surface 状态消息，严格校验；`createSurface` 失败会回滚该 surface，`updateDataModel` 失败会恢复目标 surface 的数据快照。
 - `DynamicString` 的 `@path` 绑定、`ChildList` 模板列表、按钮 `action.event` 与上下文求值。
-- 输入绑定写回数据模型，动作消息按调用顺序交给 `onAction`，`dispose()` 后不再通知。
+- 对象或混合数组中的组件节点保留在 `props` 原位置，例如 `Tabs.tabs[].child`；宿主递归读取并渲染。
+- 多输入绑定与多动作分别通过 `bindingName` / `actionName` 选择；省略时只接受唯一候选，歧义或未知名称抛出 `TypeError`。
+- 输入值支持 JSON 标量与复合值；异步动作串行执行并持续捕获消息，`onAction` / `onError` 可异步等待，不同 `interact` 的异步回调可能交错。
+- catalog 函数保留声明与校验，宿主通过 `functionImplementations` 注入实现；缺失实现通过 `onError` 上报表达式错误，`functionCall` 动作只在本地执行。
+- 异步函数实现不接收 `AbortSignal`，`dispose()` 不会强制取消已启动实现；动作 handler 内不要 `await interact`，避免等待同一动作队列。
 - 每次组件或对象级数据替换会提升 generation，节点 id 形如 `组件ID-vN`，用于宿主重建与选择器稳定。
 
-不支持 `callRendererFunction`、函数调用与校验规则等完整 Basic Catalog 能力，也不接管 transport、agent 或 RPC。Core 的依赖图会带入 `zod@3` 与 `zod-to-json-schema`（约 77 kB gzip），`lit` 等声明依赖在小程序入口不可达。当前验证目标是微信 DevTools 与 mpcore headless。
+不支持 `callRendererFunction`、checks、agent 函数响应等完整 Basic Catalog 能力，也不接管 transport、agent 或 RPC。Core 的依赖图会带入 `zod@3` 与 `zod-to-json-schema`（约 77 kB gzip），`lit` 等声明依赖在小程序入口不可达。当前验证目标是微信 DevTools 与 mpcore headless。
 
 完整会话语义与投影规则见 [包 README](https://github.com/weapp-vite/weapp-vite/tree/main/packages-runtime/a2ui)。可运行的售后示例见 [wevu-a2ui-demo](https://github.com/weapp-vite/weapp-vite/tree/main/apps/wevu-a2ui-demo)。

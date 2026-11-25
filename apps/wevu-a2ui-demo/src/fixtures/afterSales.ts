@@ -95,8 +95,11 @@ export const basicMessages: unknown[] = [
     surfaceId: 'basic',
     catalogId: DEMO_CATALOG_ID,
     components: [
-      { id: 'root', component: 'Column', children: ['label'] },
+      { id: 'root', component: 'Tabs', tabs: [{ title: '嵌套文本', child: 'textTab' }, { title: '嵌套输入', child: 'inputTab' }] },
+      { id: 'textTab', component: 'Column', children: ['label'] },
       { id: 'label', component: 'Text', text: { '@path': '/message' } },
+      { id: 'inputTab', component: 'Column', children: ['nestedField'] },
+      { id: 'nestedField', component: 'TextField', label: '修改文本', value: { '@path': '/message' } },
     ],
     dataModel: { message: '基础组件无需业务适配' },
   }),

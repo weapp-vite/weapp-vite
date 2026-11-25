@@ -67,7 +67,10 @@ describe('Wevu A2UI runtime', { concurrent: false }, () => {
       id: 'basic',
       route: basicRoute,
       action: '仅使用包内基础组件',
-      nodes: [{ selector: '//text[@id="label"]', query: 'xpath', text: '基础组件无需业务适配' }],
+      nodes: [
+        { selector: '//text[@id="label"]', query: 'xpath', text: '基础组件无需业务适配' },
+        { selector: '//input[@id="nestedField"]', query: 'xpath', count: 1 },
+      ],
     }])
     const page = await miniProgram.reLaunch(basicRoute)
     await dom.check('basic', miniProgram, page)

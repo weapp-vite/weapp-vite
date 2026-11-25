@@ -50,6 +50,26 @@ export const demoCatalog = {
       },
       required: ['component', 'child'],
     },
+    Tabs: {
+      type: 'object',
+      properties: {
+        component: { const: 'Tabs' },
+        tabs: {
+          type: 'array',
+          minItems: 1,
+          items: {
+            type: 'object',
+            properties: {
+              title: { $ref: 'common_types.json#/$defs/DynamicString' },
+              child: { $ref: 'common_types.json#/$defs/Child' },
+            },
+            required: ['title', 'child'],
+            additionalProperties: false,
+          },
+        },
+      },
+      required: ['component', 'tabs'],
+    },
     Text: {
       type: 'object',
       properties: {
