@@ -6,7 +6,7 @@
 
 `main`、`alpha`、`beta`、`rc`、`next` 的推送继续进入六个原生阶段：plan、verify、prepare、upload、confirm、finalize。plan、仓库 preflight、verify 共用 45 分钟；verify 成功后仅重置一次截止时间，prepare、upload、confirm、finalize 另共用完整 45 分钟。后续阶段不会逐阶段续期，GNU timeout 的 TERM/KILL 宽限也计入预算。job 上限为 120 分钟，其余时间留给安装、缓存、归档与清理。全部质量脚本、版本联动、进程组终止和 Marketplace hook 保留。
 
-npmmirror 已从 `afterPublish` 移出。只有 finalize 生成真实 completion record 后，独立 `mirror` job 才下载本次 run/attempt 的 `pnpm-publish-summary.json`，通过 `REPO_RELEASE_PUBLISH_SUMMARY` 同步精确包版本。原生同步共享 240 秒，步骤上限 5 分钟；镜像失败保留逐包警告、task ID 和重试命令，job 失败也不阻塞发布记账、npm 队列或文档部署。需要重试时下载该运行的 `npm-publish-progress-<run>-<attempt>` artifact，再执行：
+npmmirror 已从 `afterPublish` 移出。只有 finalize 生成真实 completion record 后，独立 `mirror` job 才下载本次 run 的 `pnpm-publish-summary.json`，通过 `REPO_RELEASE_PUBLISH_SUMMARY` 同步精确包版本。发布摘要 artifact 使用 `npm-publish-progress-<run>` 的稳定名称，重跑 failed jobs 时仍能复用 release job 首次成功上传的摘要。原生同步共享 240 秒，步骤上限 5 分钟；镜像失败保留逐包警告、task ID 和重试命令，job 失败也不阻塞发布记账、npm 队列或文档部署。需要重试时下载该运行的 `npm-publish-progress-<run>` artifact，再执行：
 
 ```sh
 REPO_RELEASE_PUBLISH_SUMMARY=<下载的精确摘要> pnpm release:sync-npmmirror
@@ -138,7 +138,7 @@ Vitest setup 导出通过 `repoctl.packageCheck.runtimeContexts` 显式声明测
 
 消费项目显式安装本轮已检查的 workspace peer，避免 pnpm 自动选择 registry 中同版本的旧包。原有 peer 别名、版本范围和冲突校验继续执行，外部必需 peer 仍由包管理器正常解析。
 
-`ast-native` 的发布先在六个目标 runner 上按锁定的 Rust 工具链和 `Cargo.lock` 构建并验证二进制，再将每个目标放入对应的静态平台包。正式版和 nightly 的 repoctl job 下载同一次 workflow 的六个产物后再执行打包与发布。根包通过 optionalDependencies 按运行时选择目标包，Linux 仅提供 GNU/glibc 目标，native AST 仍保持显式启用和失败回退行为。
+`ast-native` 的发布先在六个目标 runner 上按锁定的 Rust 工具链和 `Cargo.lock` 构建并验证二进制，再将每个目标放入对应的静态平台包。正式版下载产物后由发布阶段直接打包，nightly 通过仓库内的 `scripts/repoctl-nightly-native-artifacts.mjs` 将六个下载产物复制进 repoctl 的 Git archive，并由 `prepareSource` 回执逐文件哈希，避免被 `.gitignore` 排除的二进制在隔离源码中丢失。根包通过 optionalDependencies 按运行时选择目标包，Linux 仅提供 GNU/glibc 目标，native AST 仍保持显式启用和失败回退行为。
 
 nightly 不消费 changeset，不改正式版本、changelog、发布账本或 `latest`。定时运行发现同一源码批次已经发布时会跳过。所有公开包都需要允许当前仓库 `release.yml` 的 npm Trusted Publisher；审计失败时不会开始上传，不改为长期 npm token。
 

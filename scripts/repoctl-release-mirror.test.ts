@@ -50,12 +50,12 @@ it('isolates mirror synchronization from completion, npm serialization and docum
   expect(sync['timeout-minutes']).toBe(5)
 })
 
-it('downloads only this attempt and never scans workspace versions as a fallback', () => {
+it('downloads the stable run artifact and never scans workspace versions as a fallback', () => {
   const checkout = steps.find(step => step.uses?.startsWith('actions/checkout@'))!
   expect(checkout.with).toEqual({ 'ref': expression('github.sha'), 'persist-credentials': false })
   const download = steps.find(step => step.uses?.startsWith('actions/download-artifact@'))!
   expect(download.with).toEqual({
-    name: `npm-publish-progress-${expression('github.run_id')}-${expression('github.run_attempt')}`,
+    name: `npm-publish-progress-${expression('github.run_id')}`,
     path: `${expression('runner.temp')}/confirmed-release`,
   })
   expect(sync.env).toEqual({ REPO_RELEASE_PUBLISH_SUMMARY: `${expression('runner.temp')}/confirmed-release/pnpm-publish-summary.json` })
@@ -77,10 +77,10 @@ it.skipIf(process.platform === 'win32')('preserves the exact summary and retry i
     expect(spawnSync('bash', ['-euc', sync.run!], { env }).status).toBe(124)
     expect(await readFile(trace, 'utf8')).toBe(summary)
     expect(await readFile(summary, 'utf8')).toBe(published)
-    const warning = spawnSync('bash', ['-euc', retry.run!.replaceAll(expression('github.run_id'), '123').replaceAll(expression('github.run_attempt'), '2')], { env, encoding: 'utf8' })
+    const warning = spawnSync('bash', ['-euc', retry.run!.replaceAll(expression('github.run_id'), '123')], { env, encoding: 'utf8' })
     expect(warning.status).toBe(0)
     expect(warning.stdout).toContain('::warning::')
-    expect(await readFile(stepSummary, 'utf8')).toContain('npm-publish-progress-123-2')
+    expect(await readFile(stepSummary, 'utf8')).toContain('npm-publish-progress-123')
     await rm(summary)
     await rm(trace)
     expect(spawnSync('bash', ['-euc', sync.run!], { env }).status).not.toBe(0)
