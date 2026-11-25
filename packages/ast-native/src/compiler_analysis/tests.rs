@@ -7,6 +7,7 @@ fn input(code: &str, filename: &str) -> NativeCompilerScriptInput {
         filename: Some(filename.to_string()),
         page_feature_modules: None,
         page_feature_hook_to_feature_json: None,
+        collect_on_page_scroll_diagnostics: None,
     }
 }
 
@@ -22,6 +23,7 @@ fn page_feature_input(code: &str) -> NativeCompilerScriptInput {
         page_feature_hook_to_feature_json: Some(
             r#"{"onPageScroll":"enableOnPageScroll","usePageScrollRestoration":"enableOnPageScroll","onPullDownRefresh":"enableOnPullDownRefresh","onReachBottom":"enableOnReachBottom","onRouteDone":"enableOnRouteDone","onTabItemTap":"enableOnTabItemTap","onResize":"enableOnResize","onShareAppMessage":"enableOnShareAppMessage","onShareTimeline":"enableOnShareTimeline","onAddToFavorites":"enableOnAddToFavorites","onSaveExitState":"enableOnSaveExitState"}"#.to_string(),
         ),
+        collect_on_page_scroll_diagnostics: None,
     }
 }
 
@@ -291,11 +293,49 @@ refresh(() => {});
     input.page_feature_modules = None;
     input.page_feature_hook_to_feature_json = None;
     let without_page_features = analyze_compiler_scripts_native(vec![input]);
-    assert!(without_page_features[0]
-        .as_ref()
-        .unwrap()
-        .page_feature_flags
-        .is_none());
+    assert!(
+        without_page_features[0]
+            .as_ref()
+            .unwrap()
+            .page_feature_flags
+            .is_none()
+    );
+}
+
+#[test]
+fn compiler_batch_collects_scroll_diagnostics_with_page_features_in_one_parse() {
+    let code = "import { onPageScroll } from 'wevu'\nonPageScroll(() => {\n  this.setData({ top: 1 })\n  wx.getStorageSync('key')\n})";
+    let mut input = page_feature_input(code);
+    input.collect_on_page_scroll_diagnostics = Some(true);
+    SCRIPT_PARSE_COUNT.set(0);
+
+    let results = analyze_compiler_scripts_native(vec![input]);
+
+    assert_eq!(SCRIPT_PARSE_COUNT.get(), 1);
+    let analysis = results[0].as_ref().unwrap();
+    assert_eq!(
+        analysis.page_feature_flags.as_ref().unwrap(),
+        &["enableOnPageScroll".to_string()]
+    );
+    assert_eq!(
+        analysis.on_page_scroll_diagnostics.as_ref().unwrap(),
+        &[
+            NativeOnPageScrollDiagnostic {
+                kind: "setData".to_string(),
+                line: 2,
+                column: 14,
+                source_label: "onPageScroll(...)".to_string(),
+                sync_api: None,
+            },
+            NativeOnPageScrollDiagnostic {
+                kind: "syncApi".to_string(),
+                line: 2,
+                column: 14,
+                source_label: "onPageScroll(...)".to_string(),
+                sync_api: Some("wx.getStorageSync".to_string()),
+            },
+        ]
+    );
 }
 
 #[test]

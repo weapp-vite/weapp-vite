@@ -1,4 +1,4 @@
-import type { NativeCompilerRegisteredComponent, NativeCompilerScriptAnalysis, NativeCompilerScriptImport, NativeCompilerScriptInput, NativeCompilerScriptSpan } from '@weapp-vite/ast'
+import type { NativeCompilerRegisteredComponent, NativeCompilerScriptAnalysis, NativeCompilerScriptImport, NativeCompilerScriptInput, NativeCompilerScriptSpan, NativeOnPageScrollDiagnostic } from '@weapp-vite/ast'
 import { analyzeCompilerScriptsWithNative } from '@weapp-vite/ast'
 import { expectError, expectNotAssignable, expectType } from 'tsd'
 
@@ -8,6 +8,7 @@ const pageInput: NativeCompilerScriptInput = {
   filename: 'page.ts',
   pageFeatureModules: ['wevu/router'],
   pageFeatureHookToFeatureJson: JSON.stringify({ onResize: 'enableOnResize' }),
+  collectOnPageScrollDiagnostics: true,
 }
 const results = analyzeCompilerScriptsWithNative([input])
 expectType<Array<NativeCompilerScriptAnalysis | null> | undefined>(results)
@@ -20,6 +21,7 @@ if (summary) {
   expectType<NativeCompilerRegisteredComponent[] | undefined>(summary.registeredComponents)
   expectType<string[] | undefined>(summary.pageFeatureFlags)
   expectType<{ warningOffset?: number } | undefined>(summary.reservedPropsDiagnostic)
+  expectType<NativeOnPageScrollDiagnostic[] | undefined>(summary.onPageScrollDiagnostics)
   expectType<number | undefined>(summary.reservedPropsDiagnostic?.warningOffset)
   expectType<number>(summary.defineOptionsStatements[0]!.start)
   expectType<number>(summary.defineOptionsStatements[0]!.end)

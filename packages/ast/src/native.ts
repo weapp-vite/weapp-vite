@@ -33,6 +33,7 @@ export interface NativeCompilerScriptInput {
   filename?: string
   pageFeatureModules?: string[]
   pageFeatureHookToFeatureJson?: string
+  collectOnPageScrollDiagnostics?: boolean
 }
 
 export interface NativeCompilerScriptImport {
@@ -63,6 +64,8 @@ export interface NativeCompilerScriptAnalysis {
   pageFeatureFlags?: string[]
   /** 缺失表示旧 binding 或需由 Babel 完成诊断；空对象表示已确认无警告。 */
   reservedPropsDiagnostic?: { warningOffset?: number }
+  /** 缺失表示旧 binding 未提供该诊断；空数组表示已确认没有滚动回调风险。 */
+  onPageScrollDiagnostics?: NativeOnPageScrollDiagnostic[]
 }
 
 export type { NativeNpmChunkAnalysis, NativeNpmChunkAnalysisInput, NativeNpmLocalRootFact, NativeNpmPlatformApiFact, NativeNpmRequireFact } from './native/npmChunks'
@@ -250,6 +253,7 @@ export function analyzeCompilerScriptsWithNative(inputs: NativeCompilerScriptInp
     filename: input.filename ?? 'inline.ts',
     pageFeatureModules: input.pageFeatureModules,
     pageFeatureHookToFeatureJson: input.pageFeatureHookToFeatureJson,
+    collectOnPageScrollDiagnostics: input.collectOnPageScrollDiagnostics,
   }))
   let results: unknown
   try {

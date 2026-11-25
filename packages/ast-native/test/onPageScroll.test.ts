@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  analyzeCompilerScriptsNative,
   analyzeScriptNative,
   analyzeScriptsNative,
   collectFeatureFlagsNative,
@@ -34,22 +35,22 @@ wevu.onPageScroll?.(() => {})`
 
     expect(collectOnPageScrollDiagnosticsNative(source)).toEqual([
       {
-        column: 5,
+        column: 3,
         kind: 'setData',
-        line: 6,
+        line: 5,
         sourceLabel: 'onPageScroll',
-      },
-      {
-        column: 5,
-        kind: 'syncApi',
-        line: 7,
-        sourceLabel: 'onPageScroll',
-        syncApi: 'wx.getStorageSync',
       },
       {
         column: 3,
         kind: 'syncApi',
-        line: 17,
+        line: 5,
+        sourceLabel: 'onPageScroll',
+        syncApi: 'wx.getStorageSync',
+      },
+      {
+        column: 10,
+        kind: 'syncApi',
+        line: 11,
         sourceLabel: 'onPageScroll(...)',
         syncApi: 'wx.getSystemInfoSync',
       },
@@ -60,6 +61,62 @@ wevu.onPageScroll?.(() => {})`
         sourceLabel: 'onPageScroll(...)',
       },
     ])
+  })
+
+  it('returns page feature flags and scroll diagnostics from the compiler batch', () => {
+    const source = `import { onPageScroll } from 'wevu'
+onPageScroll(() => {
+  this.setData({ top: 1 })
+})`
+    const result = analyzeCompilerScriptsNative([{
+      code: source,
+      filename: 'page.ts',
+      pageFeatureModules: ['wevu'],
+      pageFeatureHookToFeatureJson: JSON.stringify({ onPageScroll: 'enableOnPageScroll' }),
+      collectOnPageScrollDiagnostics: true,
+    }])[0]
+
+    expect(result?.pageFeatureFlags).toEqual(['enableOnPageScroll'])
+    expect(result?.onPageScrollDiagnostics).toEqual([{
+      kind: 'setData',
+      line: 2,
+      column: 14,
+      sourceLabel: 'onPageScroll(...)',
+    }])
+  })
+
+  it('uses callback locations with UTF-16 columns and source-order diagnostics', () => {
+    const source = 'const title = "首页😀"; onPageScroll(() => { wx.getSystemInfoSync(); wx.getStorageSync("k") })'
+    const callbackColumn = source.indexOf('() =>') + 1
+
+    expect(collectOnPageScrollDiagnosticsNative(source)).toEqual([
+      {
+        kind: 'syncApi',
+        line: 1,
+        column: callbackColumn,
+        sourceLabel: 'onPageScroll(...)',
+        syncApi: 'wx.getSystemInfoSync',
+      },
+      {
+        kind: 'syncApi',
+        line: 1,
+        column: callbackColumn,
+        sourceLabel: 'onPageScroll(...)',
+        syncApi: 'wx.getStorageSync',
+      },
+    ])
+  })
+
+  it('maps callback lines with CRLF input', () => {
+    const diagnostics = collectOnPageScrollDiagnosticsNative('const title = 1;\r\nonPageScroll(() => wx.getStorageSync("k"))')
+
+    expect(diagnostics).toEqual([{
+      kind: 'syncApi',
+      line: 2,
+      column: 14,
+      sourceLabel: 'onPageScroll(...)',
+      syncApi: 'wx.getStorageSync',
+    }])
   })
 
   it('builds Vue SFC signature payloads', () => {

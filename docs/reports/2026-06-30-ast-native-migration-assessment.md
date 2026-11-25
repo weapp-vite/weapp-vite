@@ -107,6 +107,19 @@ pnpm performance:report -- --mode=full --runs=hmr-lab,hmr-lab-native,workspace-h
 - native 路径仅在 `WEAPP_VITE_NATIVE=1` 且 `WEAPP_VITE_NATIVE_AST_PATH` 指向可加载模块时启用。
 - native 加载或运行失败时回退现有 Babel / Vue compiler-sfc 路径，不引入发布必选依赖。
 
+## 2026-11-25 页面特性批量 profile
+
+本轮新增 `scripts/astMigrationProfile/pageFeatureBatch.ts`，只测同一份页面脚本上的页面特性 flags 与 `onPageScroll` 诊断。旧路径使用 Babel 分析，batch 路径使用一次 Rust parse 返回两类摘要。样本为 371 字节的页面脚本，使用 macOS arm64 release addon，交错执行 80 组配对样本，先做结果 parity 校验。
+
+| 指标 | 旧路径 | Rust batch |
+| --- | ---: | ---: |
+| 中位耗时 | 0.1527 ms | 0.0173 ms |
+| P95 | 0.2480 ms | 0.0333 ms |
+
+在这个固定输入上，batch 中位耗时降低 88.75%，约为 8.83 倍。该结果只代表分析阶段和当前机器，不能换算为完整 SFC、CLI 或 HMR 的固定收益。profile 没有采集 RSS、V8 heap 或持续 HMR session，当前没有内存改善证据。
+
+本轮还修正了 native 诊断的位置语义，使告警锚定回调起点、列号按 Babel 的 UTF-16 规则计算，并按源码顺序去重同步 API。Rust 单测、native addon correctness 和 JS fallback parity 覆盖了该契约。
+
 ## 使用点分类
 
 优先 native：

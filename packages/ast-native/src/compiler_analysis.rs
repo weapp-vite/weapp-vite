@@ -8,7 +8,10 @@ use oxc_ast::ast::{
 };
 use oxc_ast_visit::{Visit, walk};
 
-use crate::parse_program;
+use crate::{
+    NativeOnPageScrollDiagnostic, on_page_scroll::collect_on_page_scroll_diagnostics_from_program,
+    parse_program,
+};
 
 mod components;
 use components::{NativeCompilerRegisteredComponent, collect_registered_components};
@@ -21,6 +24,7 @@ pub struct NativeCompilerScriptInput {
     pub filename: Option<String>,
     pub page_feature_modules: Option<Vec<String>>,
     pub page_feature_hook_to_feature_json: Option<String>,
+    pub collect_on_page_scroll_diagnostics: Option<bool>,
 }
 
 #[napi(object)]
@@ -49,6 +53,7 @@ pub struct NativeCompilerScriptAnalysis {
     pub registered_components: Option<Vec<NativeCompilerRegisteredComponent>>,
     pub page_feature_flags: Option<Vec<String>>,
     pub reserved_props_diagnostic: Option<NativeReservedPropsDiagnostic>,
+    pub on_page_scroll_diagnostics: Option<Vec<NativeOnPageScrollDiagnostic>>,
 }
 
 #[derive(Default)]
@@ -213,6 +218,7 @@ fn analyze_compiler_script_program(
     code: &str,
     page_feature_modules: Option<&[String]>,
     page_feature_hook_to_feature_json: Option<&str>,
+    collect_on_page_scroll_diagnostics: bool,
 ) -> Option<NativeCompilerScriptAnalysis> {
     let page_feature_config = page_feature_modules
         .zip(page_feature_hook_to_feature_json)
@@ -239,6 +245,8 @@ fn analyze_compiler_script_program(
         page_feature_flags: collect_page_feature_flags
             .then(|| diagnostics.collect_page_feature_flags()),
         reserved_props_diagnostic: diagnostics.reserved_props.finish(code),
+        on_page_scroll_diagnostics: collect_on_page_scroll_diagnostics
+            .then(|| collect_on_page_scroll_diagnostics_from_program(program, code)),
     })
 }
 
@@ -316,6 +324,7 @@ pub fn analyze_compiler_scripts_native(
             Option<String>,
             Option<Vec<String>>,
             Option<String>,
+            bool,
         ),
         Vec<usize>,
     > = HashMap::new();
@@ -328,11 +337,22 @@ pub fn analyze_compiler_scripts_native(
             input.filename.clone(),
             input.page_feature_modules.clone(),
             input.page_feature_hook_to_feature_json.clone(),
+            input.collect_on_page_scroll_diagnostics.unwrap_or(false),
         );
         groups.entry(key).or_default().push(index);
     }
 
-    for ((code, filename, page_feature_modules, page_feature_hook_to_feature_json), matching) in groups {
+    for (
+        (
+            code,
+            filename,
+            page_feature_modules,
+            page_feature_hook_to_feature_json,
+            collect_on_page_scroll_diagnostics,
+        ),
+        matching,
+    ) in groups
+    {
         let allocator = oxc_allocator::Allocator::default();
         // 有恢复诊断的 AST 不能证明宏诊断完整，逐项交回原编译器处理。
         let Some(program) = parse_program(&allocator, &code, filename, true) else {
@@ -343,6 +363,7 @@ pub fn analyze_compiler_scripts_native(
             &code,
             page_feature_modules.as_deref(),
             page_feature_hook_to_feature_json.as_deref(),
+            collect_on_page_scroll_diagnostics,
         );
         for index in matching {
             results[index] = analysis.clone();

@@ -1,4 +1,4 @@
-import type { NativeCompilerRegisteredComponent, NativeCompilerScriptAnalysis, NativeCompilerScriptImport, NativeCompilerScriptSpan } from '../native'
+import type { NativeCompilerRegisteredComponent, NativeCompilerScriptAnalysis, NativeCompilerScriptImport, NativeCompilerScriptSpan, NativeOnPageScrollDiagnostic } from '../native'
 
 function isUtf16Boundary(code: string, offset: number) {
   const before = code.charCodeAt(offset - 1)
@@ -56,6 +56,34 @@ function readComponent(value: unknown): NativeCompilerRegisteredComponent | unde
   return typeof name === 'string' && typeof local === 'string' ? { name, local } : undefined
 }
 
+function readPageScrollDiagnostic(value: unknown): NativeOnPageScrollDiagnostic | undefined {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return undefined
+  }
+  const raw = value as Record<string, unknown>
+  const kind = raw.kind
+  const line = raw.line
+  const column = raw.column
+  const sourceLabel = raw.sourceLabel
+  const syncApi = raw.syncApi
+  if ((kind !== 'empty' && kind !== 'setData' && kind !== 'syncApi')
+    || typeof line !== 'number' || !Number.isSafeInteger(line) || line < 1
+    || typeof column !== 'number' || !Number.isSafeInteger(column) || column < 1
+    || typeof sourceLabel !== 'string'
+    || (syncApi !== undefined && typeof syncApi !== 'string')
+    || (kind === 'syncApi' && typeof syncApi !== 'string')
+    || (kind !== 'syncApi' && syncApi !== undefined)) {
+    return undefined
+  }
+  return {
+    kind,
+    line,
+    column,
+    sourceLabel,
+    ...(syncApi === undefined ? {} : { syncApi }),
+  }
+}
+
 /** 只保留校验后的自有摘要，不把可选 binding 的 getter 或可变容器传到编译阶段。 */
 export function readNativeCompilerScriptAnalysis(value: unknown, code: string): NativeCompilerScriptAnalysis | undefined {
   try {
@@ -88,10 +116,15 @@ export function readNativeCompilerScriptAnalysis(value: unknown, code: string): 
     const pageFeatureFlags = rawPageFeatureFlags === undefined
       ? undefined
       : readDenseArray(rawPageFeatureFlags, value => typeof value === 'string' ? value : undefined)
+    const rawPageScrollDiagnostics = raw.onPageScrollDiagnostics
+    const onPageScrollDiagnostics = rawPageScrollDiagnostics === undefined
+      ? undefined
+      : readDenseArray(rawPageScrollDiagnostics, readPageScrollDiagnostic)
     if (imports === undefined || defineOptionsStatements === undefined
       || (hasDefaultExport !== undefined && typeof hasDefaultExport !== 'boolean')
       || (rawComponents !== undefined && registeredComponents === undefined)
-      || (rawPageFeatureFlags !== undefined && pageFeatureFlags === undefined)) {
+      || (rawPageFeatureFlags !== undefined && pageFeatureFlags === undefined)
+      || (rawPageScrollDiagnostics !== undefined && onPageScrollDiagnostics === undefined)) {
       return undefined
     }
     const rawDiagnostic = raw.reservedPropsDiagnostic
@@ -114,6 +147,7 @@ export function readNativeCompilerScriptAnalysis(value: unknown, code: string): 
       defineOptionsStatements,
       ...(registeredComponents === undefined ? {} : { registeredComponents }),
       ...(pageFeatureFlags === undefined ? {} : { pageFeatureFlags }),
+      ...(onPageScrollDiagnostics === undefined ? {} : { onPageScrollDiagnostics }),
       ...(reservedPropsDiagnostic === undefined ? {} : { reservedPropsDiagnostic }),
     }
   }
