@@ -152,7 +152,8 @@ it('keeps the repoctl-managed release workflow aligned with the current contract
   ])
   assert.equal(summaryStep?.with?.['if-no-files-found'], 'ignore')
   assert.equal(summaryStep?.with?.['retention-days'], 14)
-  assert.equal(summaryStep?.with?.name, `npm-publish-progress-${githubExpression('github.run_id')}-${githubExpression('github.run_attempt')}`)
+  assert.equal(summaryStep?.with?.name, `npm-publish-progress-${githubExpression('github.run_id')}`)
+  assert.equal(summaryStep?.with?.overwrite, true)
   assert.ok(steps.indexOf(summaryStep!) > steps.indexOf(releaseSteps.at(-1)!))
   const repoctlConfig = await createJiti(import.meta.url).import<typeof import('../repoctl.config').default>('../repoctl.config.ts', { default: true })
   assert.deepEqual(repoctlConfig.commands.release.qualityScripts, [
