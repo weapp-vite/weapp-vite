@@ -111,14 +111,12 @@ export default defineConfig({
 })
 ```
 
-测试文件使用 fixture 自动创建、关闭每个测试的独立运行时：
+测试文件直接使用 `@mpcore/vitest` 提供的 Vitest `test` 入口，fixture 会自动创建并关闭每个测试的独立运行时：
 
 ```ts
-import { createMpcoreTest } from '@mpcore/vitest'
+import { expect, test } from '@mpcore/vitest'
 
-const test = createMpcoreTest()
-
-test('首页', async ({ mpcore, expect }) => {
+test('首页', async ({ mpcore }) => {
   const page = await mpcore.renderPage('/pages/index/index')
   expect(page.screen.getByText('欢迎')).toBeInTheMiniProgram()
 })

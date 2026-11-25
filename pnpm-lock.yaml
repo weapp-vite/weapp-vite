@@ -4214,6 +4214,15 @@ importers:
       '@mini-types/alipay':
         specifier: 'catalog:'
         version: 3.0.14
+      '@mpcore/test':
+        specifier: workspace:*
+        version: link:../../mpcore/packages/test
+      '@mpcore/vitest':
+        specifier: workspace:*
+        version: link:../../mpcore/packages/vitest
+      '@mpcore/weapp-vite':
+        specifier: workspace:*
+        version: link:../../mpcore/packages/weapp-vite
       '@types/node':
         specifier: 'catalog:'
         version: 26.6.6
@@ -4232,6 +4241,9 @@ importers:
       typescript:
         specifier: 'catalog:'
         version: 6.0.3
+      vitest:
+        specifier: catalog:tilde
+        version: 5.1.1(@types/node@26.6.6)(@vitest/browser-playwright@5.1.1)(@vitest/coverage-v8@5.1.1)(@vitest/ui@5.1.1)(happy-dom@21.0.4(bufferutil@4.1.0))(vite@8.3.5)
       vue-tsc:
         specifier: 'catalog:'
         version: 3.3.14(typescript@6.0.3)
@@ -4256,6 +4268,15 @@ importers:
       '@mini-types/alipay':
         specifier: 'catalog:'
         version: 3.0.14
+      '@mpcore/test':
+        specifier: workspace:*
+        version: link:../../mpcore/packages/test
+      '@mpcore/vitest':
+        specifier: workspace:*
+        version: link:../../mpcore/packages/vitest
+      '@mpcore/weapp-vite':
+        specifier: workspace:*
+        version: link:../../mpcore/packages/weapp-vite
       '@types/node':
         specifier: 'catalog:'
         version: 26.6.6
@@ -4277,6 +4298,9 @@ importers:
       typescript:
         specifier: 'catalog:'
         version: 6.0.3
+      vitest:
+        specifier: catalog:tilde
+        version: 5.1.1(@types/node@26.6.6)(@vitest/browser-playwright@5.1.1)(@vitest/coverage-v8@5.1.1)(@vitest/ui@5.1.1)(happy-dom@21.0.4(bufferutil@4.1.0))(vite@8.3.5)
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -4394,6 +4418,15 @@ importers:
       '@iconify/tailwind4':
         specifier: 'catalog:'
         version: 1.2.3(tailwindcss@4.3.5)
+      '@mpcore/test':
+        specifier: workspace:*
+        version: link:../../mpcore/packages/test
+      '@mpcore/vitest':
+        specifier: workspace:*
+        version: link:../../mpcore/packages/vitest
+      '@mpcore/weapp-vite':
+        specifier: workspace:*
+        version: link:../../mpcore/packages/weapp-vite
       '@types/node':
         specifier: 'catalog:'
         version: 26.6.6
@@ -4421,6 +4454,9 @@ importers:
       typescript:
         specifier: 'catalog:'
         version: 6.0.3
+      vitest:
+        specifier: catalog:tilde
+        version: 5.1.1(@types/node@26.6.6)(@vitest/browser-playwright@5.1.1)(@vitest/coverage-v8@5.1.1)(@vitest/ui@5.1.1)(happy-dom@21.0.4(bufferutil@4.1.0))(vite@8.3.5)
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -4442,6 +4478,15 @@ importers:
       '@iconify/tailwind4':
         specifier: 'catalog:'
         version: 1.2.3(tailwindcss@4.3.5)
+      '@mpcore/test':
+        specifier: workspace:*
+        version: link:../../mpcore/packages/test
+      '@mpcore/vitest':
+        specifier: workspace:*
+        version: link:../../mpcore/packages/vitest
+      '@mpcore/weapp-vite':
+        specifier: workspace:*
+        version: link:../../mpcore/packages/weapp-vite
       '@types/node':
         specifier: 'catalog:'
         version: 26.6.6
@@ -4469,6 +4514,9 @@ importers:
       typescript:
         specifier: 'catalog:'
         version: 6.0.3
+      vitest:
+        specifier: catalog:tilde
+        version: 5.1.1(@types/node@26.6.6)(@vitest/browser-playwright@5.1.1)(@vitest/coverage-v8@5.1.1)(@vitest/ui@5.1.1)(happy-dom@21.0.4(bufferutil@4.1.0))(vite@8.3.5)
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -4494,6 +4542,15 @@ importers:
       '@iconify/tailwind4':
         specifier: 'catalog:'
         version: 1.2.3(tailwindcss@4.3.5)
+      '@mpcore/test':
+        specifier: workspace:*
+        version: link:../../mpcore/packages/test
+      '@mpcore/vitest':
+        specifier: workspace:*
+        version: link:../../mpcore/packages/vitest
+      '@mpcore/weapp-vite':
+        specifier: workspace:*
+        version: link:../../mpcore/packages/weapp-vite
       '@types/node':
         specifier: 'catalog:'
         version: 26.6.6
@@ -4521,6 +4578,9 @@ importers:
       typescript:
         specifier: 'catalog:'
         version: 6.0.3
+      vitest:
+        specifier: catalog:tilde
+        version: 5.1.1(@types/node@26.6.6)(@vitest/browser-playwright@5.1.1)(@vitest/coverage-v8@5.1.1)(@vitest/ui@5.1.1)(happy-dom@21.0.4(bufferutil@4.1.0))(vite@8.3.5)
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -4536,6 +4596,15 @@ importers:
       '@icebreakers/stylelint-config':
         specifier: 'catalog:'
         version: 6.0.5(postcss@8.5.33)(stylelint@18.1.0)(tailwindcss@4.3.5)
+      '@mpcore/test':
+        specifier: workspace:*
+        version: link:../../mpcore/packages/test
+      '@mpcore/vitest':
+        specifier: workspace:*
+        version: link:../../mpcore/packages/vitest
+      '@mpcore/weapp-vite':
+        specifier: workspace:*
+        version: link:../../mpcore/packages/weapp-vite
       '@types/node':
         specifier: 'catalog:'
         version: 26.6.6
@@ -4557,6 +4626,9 @@ importers:
       typescript:
         specifier: 'catalog:'
         version: 6.0.3
+      vitest:
+        specifier: catalog:tilde
+        version: 5.1.1(@types/node@26.6.6)(@vitest/browser-playwright@5.1.1)(@vitest/coverage-v8@5.1.1)(@vitest/ui@5.1.1)(happy-dom@21.0.4(bufferutil@4.1.0))(vite@8.3.5)
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -4634,6 +4706,15 @@ importers:
       '@iconify/tailwind4':
         specifier: 'catalog:'
         version: 1.2.3(tailwindcss@4.3.5)
+      '@mpcore/test':
+        specifier: workspace:*
+        version: link:../../mpcore/packages/test
+      '@mpcore/vitest':
+        specifier: workspace:*
+        version: link:../../mpcore/packages/vitest
+      '@mpcore/weapp-vite':
+        specifier: workspace:*
+        version: link:../../mpcore/packages/weapp-vite
       '@types/node':
         specifier: 'catalog:'
         version: 26.6.6
@@ -4661,6 +4742,9 @@ importers:
       typescript:
         specifier: 'catalog:'
         version: 6.0.3
+      vitest:
+        specifier: catalog:tilde
+        version: 5.1.1(@types/node@26.6.6)(@vitest/browser-playwright@5.1.1)(@vitest/coverage-v8@5.1.1)(@vitest/ui@5.1.1)(happy-dom@21.0.4(bufferutil@4.1.0))(vite@8.3.5)
       vue-tsc:
         specifier: 'catalog:'
         version: 3.3.14(typescript@6.0.3)
@@ -4679,6 +4763,15 @@ importers:
       '@icebreakers/stylelint-config':
         specifier: 'catalog:'
         version: 6.0.5(postcss@8.5.33)(stylelint@18.1.0)(tailwindcss@4.3.5)
+      '@mpcore/test':
+        specifier: workspace:*
+        version: link:../../mpcore/packages/test
+      '@mpcore/vitest':
+        specifier: workspace:*
+        version: link:../../mpcore/packages/vitest
+      '@mpcore/weapp-vite':
+        specifier: workspace:*
+        version: link:../../mpcore/packages/weapp-vite
       '@types/node':
         specifier: 'catalog:'
         version: 26.6.6
@@ -4697,6 +4790,9 @@ importers:
       typescript:
         specifier: 'catalog:'
         version: 6.0.3
+      vitest:
+        specifier: catalog:tilde
+        version: 5.1.1(@types/node@26.6.6)(@vitest/browser-playwright@5.1.1)(@vitest/coverage-v8@5.1.1)(@vitest/ui@5.1.1)(happy-dom@21.0.4(bufferutil@4.1.0))(vite@8.3.5)
       vue-tsc:
         specifier: 'catalog:'
         version: 3.3.14(typescript@6.0.3)

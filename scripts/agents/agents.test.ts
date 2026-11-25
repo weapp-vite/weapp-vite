@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { generatedAgentGuidelines } from '../../packages/create-weapp-vite/src/generated/agents'
-import { recommendedSkillsInstallation } from '../../packages/create-weapp-vite/src/skills'
+import { getRecommendedSkillNames, recommendedSkillsInstallation } from '../../packages/create-weapp-vite/src/skills'
 import { TEMPLATE_DEFINITIONS } from '../../packages/create-weapp-vite/src/templates'
 import { agentManifest } from './manifest'
 import { AGENTS_GENERATED_MARKER, renderAgentDocument } from './render'
@@ -28,8 +28,9 @@ describe('agent manifest', () => {
     const sections = resolveLayer(agentManifest, `template:${template.id}`)
     const content = sections.map(section => section.content).join('\n')
     expect(content).toContain(recommendedSkillsInstallation(template.id).command)
-    const recommendedNames = [...content.matchAll(/`\$([^`]+)`/g)].map(match => match[1])
-    expect(recommendedNames).toEqual(template.skills)
+    const skillsSection = content.split('## AI Skills\n')[1]?.split('\n## ')[0] ?? ''
+    const recommendedNames = [...skillsSection.matchAll(/`\$([^`]+)`/g)].map(match => match[1])
+    expect(recommendedNames).toEqual(getRecommendedSkillNames(template.id))
     expect(content).not.toContain('{{ TEMPLATE_SKILLS }}')
   })
 

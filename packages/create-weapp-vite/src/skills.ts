@@ -7,9 +7,14 @@ import { getTemplateDefinition } from './templates'
 
 const RECOMMENDED_SKILLS_SOURCE = 'sonofmagic/skills'
 
+export function getRecommendedSkillNames(templateName: TemplateName) {
+  const template = getTemplateDefinition(templateName)
+  return [...template.skills, ...(template.workflowSkills ?? [])]
+}
+
 /** 让提示、执行参数和失败后的手动命令使用同一份模板选择。 */
 export function recommendedSkillsInstallation(templateName: TemplateName) {
-  const args = ['--yes', 'skills', 'add', RECOMMENDED_SKILLS_SOURCE, '--skill', ...getTemplateDefinition(templateName).skills]
+  const args = ['--yes', 'skills', 'add', RECOMMENDED_SKILLS_SOURCE, '--skill', ...getRecommendedSkillNames(templateName)]
   return { args, command: `npx ${args.join(' ')}` }
 }
 

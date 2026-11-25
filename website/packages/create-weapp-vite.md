@@ -45,6 +45,8 @@ npx --yes skills add sonofmagic/skills --skill weapp-vite-best-practices
 
 同时，脚手架还会在项目根目录生成 `AGENTS.md`，把当前模板推荐的 AI 工作流、命令入口与约束一起写进去。
 
+默认的原生与 Wevu 模板附带 `$weapp-acceptance` 指引和 `/pages/agent-proof/index` 交互样例。安装依赖后，`pnpm test` 使用 `@mpcore/vitest` 的内置 `test` fixture 与 `@mpcore/weapp-vite` 检查编译产物；`wv accept` 自动读取项目脚本和 `acceptance/*.json` 场景。`weapp-acceptance.config.json` 仅在需要自定义检查时创建。插件、组件库和 React 模板按自身脚本执行构建及类型检查。
+
 如果你想先了解这些 AI skills 分别适合什么任务，可以阅读 [AI Skills 使用指南](/guide/skills)；如果要把 issue 修复、文档同步、DevTools e2e 或迁移任务串成流程，可以阅读 [AI 任务工作流](/guide/ai-workflows)。
 
 ### 非交互模式

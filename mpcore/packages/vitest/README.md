@@ -1,6 +1,6 @@
 # @mpcore/vitest
 
-Vitest 5 integration for `@mpcore/test`. Import the configuration plugin from `@mpcore/vitest/config`; this entry does not load the test worker's `expect` or `test`. Test files import fixtures from `@mpcore/vitest`, using the same Vitest peer instance as setup and matchers.
+Vitest 5 integration for `@mpcore/test`. Import the configuration plugin from `@mpcore/vitest/config`; test files import the preconfigured `test` and native `expect` from `@mpcore/vitest`, using the same Vitest peer instance as setup and matchers.
 
 Configure an explicit artifact factory. The integration does not depend on a particular compiler; for weapp-vite:
 
@@ -26,18 +26,18 @@ Run mode calls `build` once per project. Watch mode calls `watch` instead; the r
 
 Vite+ uses the same plugin and `vp test`; import `defineConfig` from `vite-plus` in that host's configuration and keep its Vitest peer aligned with the runner.
 
-Each test receives an isolated mini-program runtime from the injected artifact:
+The package exports Vitest-compatible `test` and `it` functions with an isolated mini-program runtime fixture, plus Vitest's native `expect`. Other APIs such as `describe`, hooks, and `vi` continue to come directly from Vitest:
 
 ```ts
-import { createMpcoreTest } from '@mpcore/vitest'
+import { expect, test } from '@mpcore/vitest'
 
-const test = createMpcoreTest()
-
-test('renders a page', async ({ mpcore, expect }) => {
+test('renders a page', async ({ mpcore }) => {
   const result = await mpcore.renderPage('/pages/index/index')
   expect(result.screen.getByText('ready')).toBeInTheMiniProgram()
 })
 ```
+
+`createMpcoreTest()` remains available when a project needs a separately configured fixture. `createVitestProject()` remains available for tests that manage a project explicitly.
 
 `createMpcoreTest({ artifact: { projectPath: process.cwd() } })` still accepts an existing artifact directly. `createVitestProject()` also uses the configured artifact when omitted, and closes its runtime with the current test. Optional host mocks and `failOnConsoleError` can be passed without replacing the injected artifact. Calling either helper without a configured or explicit artifact reports an actionable error.
 

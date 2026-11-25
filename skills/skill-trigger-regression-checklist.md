@@ -418,6 +418,10 @@ pnpm skills:score:json
 | L3   |      |            |            |           |      |
 | L4   |      |            |            |           |      |
 | L5   |      |            |            |           |      |
+| M1   |      |            |            |           |      |
+| M2   |      |            |            |           |      |
+| M3   |      |            |            |           |      |
+| M4   |      |            |            |           |      |
 | X9   |      |            |            |           |      |
 | X10  |      |            |            |           |      |
 | X11  |      |            |            |           |      |
@@ -432,6 +436,7 @@ pnpm skills:score:json
 | K7   |      |            |            |           |      |
 | K8   |      |            |            |           |      |
 | K9   |      |            |            |           |      |
+| X14  |      |            |            |           |      |
 
 ## 验收场景新增用例
 
@@ -441,3 +446,4 @@ pnpm skills:score:json
 | M2 | 检查这份小程序验收截图是否对应当前代码 | weapp-acceptance | | |
 | M3 | 排查仓库的 automator 全局串行与 provider parity | weapp-devtools-e2e-best-practices | | 边界 |
 | X14 | Codex 写完页面后运行现有场景并查询报告，不修改底层 E2E | weapp-acceptance | | 冲突 |
+| M4 | 这个小程序页面改完了，按项目已有的验收配置跑一遍并看真实页面结果 | weapp-acceptance | | |

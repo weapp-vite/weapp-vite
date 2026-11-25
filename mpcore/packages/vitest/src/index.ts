@@ -5,7 +5,7 @@ import type {
   MiniProgramTestProject,
 } from '@mpcore/test'
 import { createTestProject, mpcoreMatchers } from '@mpcore/test'
-import { expect, inject, onTestFinished, test } from 'vitest'
+import { inject, onTestFinished, expect as vitestExpect, test as vitestTest } from 'vitest'
 import { MPCORE_ARTIFACT_KEY } from './artifact'
 
 export { mpcoreTest } from './config'
@@ -26,7 +26,7 @@ function projectOptions(options: MpcoreTestProjectOptions = {}): CreateTestProje
 }
 
 export function createMpcoreTest(options?: MpcoreTestProjectOptions) {
-  return test.extend<MpcoreVitestFixture>({
+  return vitestTest.extend<MpcoreVitestFixture>({
     // eslint-disable-next-line no-empty-pattern -- Vitest 要求 fixture 的首个参数使用对象解构语法。
     mpcore: async ({}, use) => {
       const project = createTestProject(projectOptions(options))
@@ -40,6 +40,28 @@ export function createMpcoreTest(options?: MpcoreTestProjectOptions) {
   })
 }
 
+function createLazyMpcoreTest() {
+  let resolved: ReturnType<typeof createMpcoreTest> | undefined
+  const resolve = () => resolved ??= createMpcoreTest()
+  return new Proxy(vitestTest, {
+    apply(_target, thisArg, argumentsList) {
+      return Reflect.apply(resolve(), thisArg, argumentsList)
+    },
+    get(_target, property, receiver) {
+      const test = resolve()
+      const value = Reflect.get(test, property, receiver)
+      if (typeof value === 'function') {
+        return (...argumentsList: unknown[]) => Reflect.apply(value, test, argumentsList)
+      }
+      return value
+    },
+  }) as ReturnType<typeof createMpcoreTest>
+}
+
+/** 默认的 Vitest 入口，首次使用时提供隔离的 mpcore fixture。 */
+const test = createLazyMpcoreTest()
+const it = test
+
 export function createVitestProject(options?: MpcoreTestProjectOptions) {
   const project = createTestProject(projectOptions(options))
   onTestFinished(async () => {
@@ -49,8 +71,10 @@ export function createVitestProject(options?: MpcoreTestProjectOptions) {
 }
 
 export function registerMpcoreMatchers() {
-  expect.extend(mpcoreMatchers)
+  vitestExpect.extend(mpcoreMatchers)
 }
+
+export { vitestExpect as expect, it, test }
 
 declare module 'vitest' {
   interface Matchers<R, T> {

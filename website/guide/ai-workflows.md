@@ -20,6 +20,7 @@ date: 2026-05-03
 
 | 任务                              | 主 skill                                | 事实源                                                      | 验收信号                                 |
 | --------------------------------- | --------------------------------------- | ----------------------------------------------------------- | ---------------------------------------- |
+| 验收小程序页面或交互改动          | `$weapp-acceptance`                     | 项目脚本、`@mpcore/vitest` 测试和可选 DevTools 场景          | 按 `requiredChecks` 分别读取报告证据     |
 | 同步网站和 skills 文档            | `$docs-and-website-sync`                | 源码、CLI、类型定义、随包 docs、VitePress 配置              | 相关入口一致，`seo-quality-check` 通过   |
 | 修 GitHub issue                   | `$release-and-changeset-best-practices` | issue 描述、最小复现、单测、e2e                             | 复现先失败后通过，change intent 判定清楚 |
 | 准备或恢复包发布                  | `$release-and-changeset-best-practices` | `repoctl.config.ts`、pnpm versioning、release workflow      | Release PR、npm、tag 与 Release 状态一致 |
@@ -203,4 +204,4 @@ wv ide logs --open
 
 ## 改动验收
 
-使用 [小程序改动验收](./acceptance) 和 `weapp-acceptance` Skill，通过现有 MCP 完成检查、场景运行和报告读取，无需第二个模型。
+页面或交互改动完成后，使用 [小程序改动验收](./acceptance) 和 `$weapp-acceptance`。先检查 `wv accept --inspect --json` 返回的命令、自动发现的场景和 required checks，再执行已审阅的检查并读取报告。模板里的 Vitest/mpcore 测试验证编译产物和交互；存在 `acceptance/*.json` 时再验证微信开发者工具 runtime，不能把前者当作后者的证据。

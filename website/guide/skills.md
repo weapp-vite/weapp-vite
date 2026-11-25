@@ -83,6 +83,7 @@ pnpm approve
 | Skill                                   | 适用任务                                                                            | 优先读取                                                                     |
 | --------------------------------------- | ----------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
 | `$weapp-vite-best-practices` | 配置、构建、分包、路由和 CLI | `node_modules/weapp-vite/dist/docs/` |
+| `$weapp-acceptance`                     | 验收小程序改动，检查项目脚本、Vitest/mpcore、可选 DevTools 场景和报告证据             | `package.json` scripts、`acceptance/*.json`                                  |
 | `$docs-and-website-sync`                | 根据真实实现同步 `website`、README、skills、AI 指南和随包 `dist/docs`               | 源码、CLI、类型定义、`packages/weapp-vite/docs/**`、`website/.vitepress/**`  |
 | `$release-and-changeset-best-practices` | pnpm change intent、repoctl 发布检查、GitHub issue 修复、worktree 与 PR 闭环        | `repoctl.config.ts`、`.changeset/**`、`e2e-apps/github-issues`、发布检查脚本 |
 | `$weapp-devtools-e2e-best-practices`    | `e2e/ide/**`、automator 复用、`miniProgram.reLaunch(...)`、真实运行时截图和日志验收 | `e2e/ide/**`、`e2e/scripts/**`、DevTools 配置                                |
@@ -136,4 +137,4 @@ node skills/scripts/verify-package-skills.mjs
 
 ## 改动验收
 
-使用 [小程序改动验收](./acceptance) 和 `weapp-acceptance` Skill，通过现有 MCP 完成检查、场景运行和报告读取，无需第二个模型。
+提到小程序改动验收时，使用 `$weapp-acceptance` 检查项目脚本和 `acceptance/*.json` 场景，并按报告区分构建、Vitest/mpcore 与 DevTools runtime 证据。验收配置文件可选，只在需要覆盖自动推断结果时创建。

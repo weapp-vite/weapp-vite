@@ -18,12 +18,12 @@ export function registerAcceptCommand(cli: CAC) {
       try {
         const directory = path.resolve(root)
 
-        const { defaultVerification, detectProject, safePath } = await import('@weapp-vite/acceptance')
+        const { defaultAcceptanceConfig, safePath } = await import('@weapp-vite/acceptance')
 
         if (options.init) {
           const target = await safePath(directory, options.acceptanceConfig ?? 'weapp-acceptance.config.json')
 
-          const config = { version: 1, verification: defaultVerification(await detectProject(directory)), acceptance: { requiredChecks: ['build', 'devtools'], scenarios: [], timeoutMs: 600000 } }
+          const config = await defaultAcceptanceConfig(directory)
 
           await writeFile(target, `${JSON.stringify(config, null, 2)}\n`, { flag: 'wx' })
 

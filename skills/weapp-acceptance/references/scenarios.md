@@ -16,7 +16,7 @@ Add model-free configuration to the project, preserving existing fields:
 }
 ```
 
-Use the project's actual package manager and scripts. Available required categories: typecheck, build, test, devtools. The default requires build and devtools; categories omitted from requirements are still reported when configured. An arbitrary command labelled devtools is not runtime proof for version 2 acceptance.
+Use the project's actual package manager and scripts. Available required categories: typecheck, build, test, devtools. An explicit acceptance configuration defaults to requiring build and devtools. Without an acceptance configuration, `wv accept` infers required checks from available `typecheck`, `build`, and `test` scripts, then adds devtools when it discovers scenarios under `acceptance/*.json`. Configured but non-required categories are still reported. An arbitrary command labelled devtools is not runtime proof for version 2 acceptance.
 
 ```json
 {

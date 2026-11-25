@@ -5,7 +5,6 @@
 - Prefer local package docs over stale model memory or old web pages when command behavior is unclear.
 
 ## CLI Entry
-
 - This project supports both `weapp-vite` and `wv` CLI commands.
 - Treat `weapp-vite dev` and `wv dev` as equivalent forms.
 - Prefer project scripts such as `pnpm dev`, `pnpm build`, `pnpm open`, and `pnpm g` before ad-hoc shell commands.
@@ -21,6 +20,11 @@
 - When the request mentions screenshot compare, 截图对比, diff, baseline, visual regression, 像素对比, or acceptance comparison, default to `weapp-vite compare` / `wv compare`.
 - Treat these commands as the primary screenshot contract for AI workflows in this project.
 - Only fall back to generic browser screenshot tools when the target is explicitly the web runtime instead of WeChat DevTools.
+
+## Acceptance
+
+- Use `$weapp-acceptance` when asked to validate a change. `wv accept` infers checks from the project scripts. This plugin template provides its build script and does not configure mpcore or DevTools runtime evidence.
+- Start with `wv accept --inspect --json`, review the detected command, and run with `--trust` only when the user authorized trusting and executing project scripts.
 
 ## Weapp-vite Workflow
 

@@ -22,6 +22,8 @@
     "dev:ui": "wv dev --ui",
     "dev:open:ui": "wv dev --ui -o",
     "build": "wv build",
+    "test": "vitest run",
+    "test:dev": "vitest",
     "build:web": "wv build -p web",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
@@ -34,6 +36,9 @@
   "devDependencies": {
     "@icebreakers/eslint-config": "catalog:",
     "@icebreakers/stylelint-config": "catalog:",
+    "@mpcore/test": "workspace:*",
+    "@mpcore/vitest": "workspace:*",
+    "@mpcore/weapp-vite": "workspace:*",
     "@types/node": "catalog:",
     "@weapp-vite/dashboard": "workspace:*",
     "eslint": "catalog:",
@@ -41,6 +46,7 @@
     "sass": "catalog:",
     "stylelint": "catalog:",
     "typescript": "catalog:",
+    "vitest": "catalog:tilde",
     "weapp-vite": "workspace:*",
     "wevu": "workspace:*"
   }

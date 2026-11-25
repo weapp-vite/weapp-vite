@@ -48,9 +48,8 @@ Page({ data: { value, count: 0 }, tap() { this.setData({ count: this.data.count 
     'owned/runtime.test.mjs': `import { access, appendFile, readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { inject } from ${JSON.stringify(vitestEntry)}
-import { createMpcoreTest } from ${JSON.stringify(testEntry.href)}
-const test = createMpcoreTest()
-test('renders the explicitly built artifact', async ({ mpcore, expect }) => {
+import { expect, test } from ${JSON.stringify(testEntry.href)}
+test('renders the explicitly built artifact', async ({ mpcore }) => {
   const artifact = inject('mpcoreArtifact')
   for (const file of ['app.json', 'app.js', 'pages/home/index.json', 'pages/home/index.js', 'pages/home/index.wxml']) {
     await access(join(artifact.miniprogramRootPath, file))

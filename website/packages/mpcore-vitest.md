@@ -6,7 +6,7 @@ keywords: [mpcore, vitest, testing]
 
 # @mpcore/vitest
 
-`@mpcore/vitest` 提供 Vitest 5 插件和 `createMpcoreTest` fixture。它负责把每个测试隔离到独立的小程序 runtime，并在 watch 模式下只重跑受影响项目。
+`@mpcore/vitest` 提供 Vitest 5 插件、预配置的 `test`/`it` 和 Vitest 原生 `expect`。每个测试自动获得独立的小程序 runtime，watch 模式只重跑受影响项目。
 
 ## 安装
 
@@ -30,10 +30,8 @@ export default defineConfig({
 ```
 
 ```ts
-import { createMpcoreTest } from '@mpcore/vitest'
-import { expect } from 'vitest'
+import { expect, test } from '@mpcore/vitest'
 
-const test = createMpcoreTest()
 test('renders home', async ({ mpcore }) => {
   const result = await mpcore.renderPage('/pages/index/index')
   expect(result.screen.getByText('ready')).toBeInTheMiniProgram()

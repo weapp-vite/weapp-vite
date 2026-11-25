@@ -1,11 +1,16 @@
 import type { MiniProgramEmissionSource, MiniProgramNode } from '@mpcore/test'
-import { createMpcoreTest, createVitestProject, mpcoreTest } from '@mpcore/vitest'
+import { createMpcoreTest, createVitestProject, it, expect as mpcoreExpect, mpcoreTest, test } from '@mpcore/vitest'
 import { mpcoreTest as configureMpcore } from '@mpcore/vitest/config'
 import { expectError, expectType } from 'tsd'
 import { expect, inject } from 'vitest'
 import { defineConfig } from 'vitest/config'
 
 expectType<string>(mpcoreTest().name)
+expectType<void>(test('default fixture type', async ({ mpcore }) => {
+  expectType<Promise<void>>(mpcore.close())
+}))
+expectType<typeof test>(it)
+expectType<typeof expect>(mpcoreExpect)
 expectType<string>(inject('mpcoreArtifact').projectPath)
 expectType<Promise<void>>(createVitestProject().close())
 defineConfig({
@@ -23,11 +28,11 @@ createMpcoreTest()('injected fixture type', async ({ mpcore }) => {
   expectType<Promise<void>>(mpcore.close())
 })
 
-const test = createMpcoreTest({
+const configuredTest = createMpcoreTest({
   artifact: { projectPath: '/project' },
 })
 
-test('fixture type', async ({ mpcore }) => {
+configuredTest('fixture type', async ({ mpcore }) => {
   expectType<Promise<void>>(mpcore.close())
 })
 

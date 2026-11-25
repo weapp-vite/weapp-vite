@@ -1,9 +1,15 @@
 import type { MiniProgramEmissionSource, MiniProgramNode } from '@mpcore/test'
 import { mergeConfig } from 'vite'
-import { describe, expect, it } from 'vitest'
-import { mpcoreTest, registerMpcoreMatchers } from './index'
+import { describe, expect } from 'vitest'
+import { it, mpcoreTest, registerMpcoreMatchers, test } from './index'
 
 describe('@mpcore/vitest', () => {
+  it('exports a Vitest-compatible test with the mpcore fixture', () => {
+    expect(test).toBeTypeOf('function')
+    expect(test.extend).toBeTypeOf('function')
+    expect(it).toBe(test)
+  })
+
   it('appends its setup module without replacing user setup files', () => {
     const plugin = mpcoreTest()
     const initial = {

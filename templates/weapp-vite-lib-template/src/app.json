@@ -2,7 +2,8 @@
   "$schema": "https://vite.weapp.dev/app.json",
   "pages": [
     "pages/index/index",
-    "pages/layouts/index"
+    "pages/layouts/index",
+    "pages/agent-proof/index"
   ],
   "window": {},
   "style": "v2",

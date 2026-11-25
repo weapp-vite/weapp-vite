@@ -1,4 +1,4 @@
-import type { ProjectInfo, VerificationCommand } from '@weapp-agent/core/project'
+import type { ProjectConfig, ProjectInfo, VerificationCommand } from '@weapp-agent/core/project'
 import { access, readdir, readFile, realpath } from 'node:fs/promises'
 import path from 'node:path'
 import { bounded, safePath } from '@weapp-agent/core/project'
@@ -147,6 +147,50 @@ export function defaultVerification(
       args: ['run', kind],
       timeoutMs: 120_000,
     }))
+}
+
+export function defaultAcceptanceChecks(
+  verification: VerificationCommand[],
+): VerificationCommand['kind'][] {
+  const checks = verification
+    .map(command => command.kind)
+    .filter((kind): kind is 'typecheck' | 'build' | 'test' => kind !== 'devtools')
+  return checks.length > 0 ? [...new Set(checks)] : ['build']
+}
+
+export async function discoverAcceptanceScenarios(root: string): Promise<string[]> {
+  let entries
+  try {
+    entries = await readdir(await safePath(root, 'acceptance'), { withFileTypes: true })
+  }
+  catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+      return []
+    }
+    throw error
+  }
+  return entries
+    .filter(entry => entry.isFile() && entry.name.endsWith('.json'))
+    .map(entry => `acceptance/${entry.name}`)
+    .sort()
+}
+
+export async function defaultAcceptanceConfig(root: string): Promise<ProjectConfig> {
+  const verification = defaultVerification(await detectProject(root))
+  const scenarios = await discoverAcceptanceScenarios(root)
+  const requiredChecks = defaultAcceptanceChecks(verification)
+  if (scenarios.length) {
+    requiredChecks.push('devtools')
+  }
+  return {
+    version: 1,
+    maxSteps: 40,
+    timeoutMs: 600_000,
+    contextCharacters: 100_000,
+    verification,
+    mcp: [],
+    acceptance: { requiredChecks, scenarios, timeoutMs: 600_000 },
+  }
 }
 export async function projectInstructions(
   project: ProjectInfo,

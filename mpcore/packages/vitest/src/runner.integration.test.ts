@@ -71,6 +71,7 @@ describe('@mpcore/vitest real runner integration', { concurrent: false }, () => 
         reporters: [],
       }, {
         cacheDir: path.join(root, 'vite-cache'),
+        resolve: { alias: { '@mpcore/vitest': path.join(packageRoot, 'dist/index.mjs') } },
         plugins: [mpcoreTest({ artifact: { build, watch } })],
         server: { fs: { allow: [root, packageRoot] } },
       })
@@ -139,6 +140,7 @@ describe('@mpcore/vitest real runner integration', { concurrent: false }, () => 
       }, {
         // 被监听的测试模块保持静态；日志、产物与缓存仅写入本轮临时目录。
         cacheDir: path.join(workspace, 'vite-cache/root'),
+        resolve: { alias: { '@mpcore/vitest': path.join(packageRoot, 'dist/index.mjs') } },
         server: { fs: { allow: [workspace, packageRoot] }, watch: { ignored: ['**/events.log', '**/artifacts/**'] } },
       })
       assertPassed(await runner.start())

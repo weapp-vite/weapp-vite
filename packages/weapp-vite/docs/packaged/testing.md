@@ -19,6 +19,8 @@ export default defineConfig({
 
 ## 接入
 
+`create-weapp-vite` 的原生与 Wevu 模板包含 `vitest.config.ts`、`@mpcore/vitest` 与 `@mpcore/weapp-vite` 接入，以及 `test/agent-proof.test.ts` 示例。示例从 `@mpcore/vitest` 导入内置 `test`，从 `vitest` 导入原生 `expect`，直接使用注入的 `mpcore` fixture 渲染 `/pages/agent-proof/index`，点击后断言计数从 `0` 变为 `1`。运行 `pnpm test` 可在 headless simulator 中检查编译产物，不需要启动微信开发者工具。
+
 ```ts
 import { mpcoreTest } from '@mpcore/vitest/config'
 import { defineConfig } from 'vitest/config'
@@ -62,7 +64,7 @@ export default defineConfig({
 })
 ```
 
-测试文件从 `@mpcore/vitest` 导入 `createMpcoreTest()`，无参调用会使用当前 runner 提供的完整产物，每个测试创建独立运行时。一次性执行只构建一次；watch 在源码、配置及编译依赖重建完成后重新运行所属测试项目。退出会等待进行中的构建并关闭监听。不要从测试配置导入包含 fixture 的根入口，配置入口使用 `/config`。
+测试文件从 `@mpcore/vitest` 导入预配置的 `test` 或 `it` 与原生 `expect`，无需手动创建 test fixture。每个测试会使用当前 runner 提供的完整产物并创建独立运行时。一次性执行只构建一次；watch 在源码、配置及编译依赖重建完成后重新运行所属测试项目。退出会等待进行中的构建并关闭监听。测试配置只从 `@mpcore/vitest/config` 导入配置插件。
 
 Vitest 的源码覆盖率、生成的小程序 JS 覆盖率和模拟器自身覆盖率属于不同观察面；此适配不会把它们自动合并成业务源码覆盖率。
 
@@ -70,7 +72,7 @@ Vitest 的源码覆盖率、生成的小程序 JS 覆盖率和模拟器自身覆
 
 `renderComponent()` 通过内存 overlay 注入测试宿主页，组件和依赖仍来自真实产物。支持 properties、静态 WXML slots 与事件监听。
 
-每次测试应拥有独立 project/session，并在结束时 `close()`。`createMpcoreTest()` fixture 和 `createVitestProject()` 会自动注册清理，适用于 `test.concurrent`。
+每次测试应拥有独立 project/session，并在结束时 `close()`。内置 `test`/`it` fixture 和 `createVitestProject()` 会自动注册清理，适用于 `test.concurrent`。
 
 ## 边界
 

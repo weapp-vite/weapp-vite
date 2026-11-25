@@ -2,6 +2,7 @@
 defineAppJson({
   pages: [
     'pages/index/index',
+    'pages/agent-proof/index',
   ],
   window: {
     navigationBarTitleText: 'TDesign 模板',

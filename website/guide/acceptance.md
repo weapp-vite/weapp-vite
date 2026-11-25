@@ -14,23 +14,24 @@ keywords:
 Codex 等宿主负责编辑代码；weapp-vite 执行构建和可重复场景，返回明确结论与截图、日志。无需额外模型 Key。
 
 ```bash
-wv accept --init
 wv accept --inspect --json
 wv mcp print codex
 ```
 
 `wv mcp init codex` 可在用户主动选择后写入接入配置。沿用同一个 MCP 服务，无需另装一个验收服务。
 
-在 `weapp-acceptance.config.json` 配置 `verification` 和 `acceptance.scenarios`。场景以 route 开始且至少包含一个 assert；支持 find、wait、tap、input、assert 和 screenshot。详见[场景格式](./agent/acceptance)。审阅项目脚本、配置和场景后运行：
+无需配置文件即可使用默认验收。`wv accept` 从项目脚本识别 `typecheck`、`build`、`test`，并自动读取 `acceptance/*.json` 中的 DevTools 场景。只有需要覆盖检查命令、required checks 或场景列表时，才用 `wv accept --init` 创建 `weapp-acceptance.config.json`。场景以 route 开始且至少包含一个 assert；支持 find、wait、tap、input、assert 和 screenshot。详见[场景格式](./agent/acceptance)。检查脚本和自动发现的场景后运行：
 
 ```bash
 wv accept --trust --json
 wv accept --report <jobId> --json
 ```
 
-默认要求 build 与 devtools；缺失检查或场景不会通过。点击和输入不重试，重启不重放交互。报告 version 2 只有 `passed: true` 且 `snapshot.stale: false` 才代表该检查范围通过。截图是视觉证据，不代表视觉断言或真机验收。
+默认原生与 Wevu 模板带有 `pages/agent-proof/index` 示例，并通过 Vitest + mpcore 检查页面初始状态和交互结果。测试直接从 `@mpcore/vitest` 导入内置 `test`，用 Vitest 原生 `expect` 断言。模板中的 `acceptance/*.json` 会自动启用 DevTools runtime 检查。多平台模板固定对微信目标运行 mpcore 测试和构建检查；插件、组件库和 React 模板运行其已有的构建及类型检查，不报告 runtime 通过。
 
-配置选择顺序：`--acceptance-config` 指定的 JSON、新配置、旧 `weapp-agent.config.json`、自动探测。不会拼接多份验收配置；`--inspect` 显示实际来源。新文件只包含 version、verification、acceptance。配置变更后需要重新审阅授权。
+自动推断会要求项目中已定义的 `typecheck`、`build`、`test` 脚本；没有这些脚本时会显示 `unverified`，不会算作通过。发现 DevTools 场景时，`devtools` 也会成为必需检查。点击和输入不重试，重启不重放交互。报告 version 2 只有 `passed: true` 且 `snapshot.stale: false` 才代表该检查范围通过。截图是视觉证据，不代表视觉断言或真机验收。
+
+配置选择顺序：`--acceptance-config` 指定的 JSON、新配置、旧 `weapp-agent.config.json`、自动推断。不会拼接多份验收配置；`--inspect` 显示实际来源。配置文件只包含 version、verification、acceptance。需要保存当前推断结果并继续自定义时，可运行 `wv accept --init` 生成配置。配置变更后需要重新审阅授权。
 
 MCP 提供 `weapp_project_inspect`、`weapp_acceptance_start`、`weapp_acceptance_status`、`weapp_acceptance_cancel`、`weapp_acceptance_report`。启动取得 jobId 后查询状态，不要通过重复启动任务来轮询。未授权返回可操作状态，不等待终端输入。
 
