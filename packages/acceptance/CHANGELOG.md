@@ -1,5 +1,34 @@
 # @weapp-vite/acceptance
 
+## 0.2.7
+
+### Patch Changes
+
+- chore(deps): 基于 pnpm-workspace.yaml 中 catalog 版本变更，自动补充发布记录。
+  默认 catalog 变更键：@ai-sdk/anthropic, @ai-sdk/openai, @ai-sdk/openai-compatible, @babel/core, @babel/generator, @babel/parser, @babel/traverse, @babel/types, @tanstack/vue-query, @vue/compiler-core, @vue/compiler-dom, @vue/reactivity, @vue/runtime-core, @vue/shared, ai, autoprefixer, cac, stylelint, tailwind-merge, vue。命名 catalog 变更键：无。
+
+- chore(deps): 基于 pnpm-workspace.yaml 中 catalog 版本变更，自动补充发布记录。
+  默认 catalog 变更键：@devframes/agentic, @devframes/hub, @devframes/hub-ui, @devframes/json-render, devframe。命名 catalog 变更键：无。
+
+- chore(deps): 基于 pnpm-workspace.yaml 中 catalog 版本变更，自动补充发布记录。
+  默认 catalog 变更键：oxc-parser。命名 catalog 变更键：无。
+
+- chore(deps): 自动补充依赖升级发布记录。
+  涉及包：
+  - @wevu/json-render：dependencies.@json-render/core
+  - create-weapp-vite：dependencies.@inquirer/prompts
+  - @weapp-vite/volar：dependencies.@vue/compiler-sfc
+  - weapp-vite：dependencies.@babel/plugin-transform-modules-commonjs
+
+- chore(deps): 自动补充依赖升级发布记录。
+  涉及包：
+  - @weapp-vite/glass-easel-web-adapter：dependencies.glass-easel-template-compiler
+  - @weapp-vite/dashboard：dependencies.@devframes/json-render
+
+- chore(deps): 自动补充依赖升级发布记录。
+  涉及包：
+  - @weapp-vite/ast：dependencies.@oxc-project/types
+
 ## 0.2.6
 
 ### Patch Changes

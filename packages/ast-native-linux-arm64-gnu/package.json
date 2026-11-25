@@ -1,6 +1,6 @@
 {
   "name": "@weapp-vite/ast-native-linux-arm64-gnu",
-  "version": "0.2.6",
+  "version": "0.3.0",
   "description": "Native @weapp-vite/ast-native binding for linux-arm64-gnu",
   "os": [
     "linux"
