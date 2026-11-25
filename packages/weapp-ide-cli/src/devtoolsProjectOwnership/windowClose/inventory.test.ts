@@ -90,6 +90,35 @@ describe('managed close log stream selection', () => {
     expect(fixture.record.windowClose).toBeUndefined()
   })
 
+  it('selects the MAIN stream that reports this managed project when a prior session log remains', async () => {
+    fixture.record.projectPath = path.join(fixture.directory, 'managed-bridge-7c2f')
+    await fs.writeFile(path.join(fixture.logDirectory, 'previous-session.log'), `${fixture.boot()}${fixture.line('stale project list', 'MAIN')}`)
+    await fs.writeFile(fixture.logFile, `${fixture.boot()}${fixture.line(`opened ${path.basename(fixture.record.projectPath)}`, 'MAIN')}`)
+
+    await fixture.capture()
+
+    expect(fixture.record.windowClose?.cursors).toEqual([
+      expect.objectContaining({ name: path.basename(fixture.logFile) }),
+    ])
+    await fs.appendFile(fixture.logFile, completeTrace())
+
+    await fixture.wait()
+    expect(fixture.record.windowClose?.window).toMatchObject({
+      nativeClosedAt: expect.any(String),
+      webContentsDestroyedAt: expect.any(String),
+    })
+  })
+
+  it('still rejects the fallback when two MAIN streams report the same managed project', async () => {
+    fixture.record.projectPath = path.join(fixture.directory, 'managed-bridge-7c2f')
+    const mention = fixture.line(`opened ${path.basename(fixture.record.projectPath)}`, 'MAIN')
+    await fs.writeFile(fixture.logFile, `${fixture.boot()}${mention}`)
+    await fs.writeFile(path.join(fixture.logDirectory, 'concurrent-session.log'), `${fixture.boot()}${mention}`)
+
+    await expect(fixture.capture()).rejects.toThrow('one unambiguous MAIN log')
+    expect(fixture.record.windowClose).toBeUndefined()
+  })
+
   it('accepts the original destruction chain when historical helper logs are removed and new helper logs appear', async () => {
     const empty = path.join(fixture.logDirectory, 'historical-empty.log')
     const helper = path.join(fixture.logDirectory, 'historical-helper.log')

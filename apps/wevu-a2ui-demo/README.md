@@ -67,7 +67,7 @@ pnpm exec cross-env WEAPP_VITE_E2E_RUNTIME_PROVIDER=devtools \
 
 包级单测 10 项、应用单测 6 项（含 noEval）；headless runtime suite 4 项全部通过，覆盖基础目录页、递归宿主与真实输入/点击事件、增量更新后的输入保留、异常消息保留上一版界面、失败重试与卸载取消。2026-11-25 固定场景实测：dist 总量 880588 字节（主包约 860 KB，包含 `@a2ui/web_core` 依赖图）。
 
-同一天按维护者显式指定的 Nightly 2.02.2611232（基础库 3.18.1）运行真实 IDE 分支：4 项断言全部通过，其中包含开发者工具截图路径与增量场景度量 8 次 / 53624 字节，与 headless 数值一致。本轮 teardown 未完成：`weapp-ide-cli` 的活动 MAIN 日志识别仅在 macOS 生效（`windowClose/activeLog.ts` 在非 darwin 直接回退），Windows 回退为按目录扫描且要求同版本 MAIN 日志唯一，而同一 profile 会随每次启动累积多份 MAIN 日志，故窗口关闭证据被判为歧义、机器租约与 journal 按策略保留待恢复，不影响上述断言结果。
+同一天按维护者显式指定的 Nightly 2.02.2611232（基础库 3.18.1）在 Windows 上运行真实 IDE 分支：4 项断言全部通过，其中包含开发者工具截图路径与增量场景度量 8 次 / 53624 字节，与 headless 数值一致。该轮 teardown 暴露出 `weapp-ide-cli` 的平台缺口：活动 MAIN 日志识别仅在 macOS 生效（`windowClose/activeLog.ts` 在非 darwin 直接回退），Windows 回退为按目录扫描且要求同版本 MAIN 日志唯一，而同一 profile 会随每次启动累积多份 MAIN 日志，故关闭证据被判为歧义、机器租约与 journal 按策略保留待恢复——断言结果不受影响。已在同一提交内修复：非 macOS 回退按本轮受管项目会话令牌收窄候选日志，复用仓库恢复 API 释放本轮 scope 后重新核验得到唯一游标与完整的原生窗口销毁证据。
 
 `src/runtime/metrics.ts` 仅统计当前应用页面的 `setData`，用于观察递归宿主的重渲染规模；runtime suite 输出本次产物总字节数、测量范围内的调用次数与 JSON UTF-8 字节数（增量场景实测 8 次 / 53624 字节），并断言卸载后 `lateSetData` 为 0、`cancelledTasks` 大于 0，即在途任务确实被取消且没有迟到的宿主写入。
 

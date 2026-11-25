@@ -80,14 +80,16 @@ async function openLogFile(directory: string, name: string) {
 }
 
 /** 主进程日志汇聚多个来源，轮转后的首条记录可能来自 BACKEND；只识别固定偏移内的完整行。 */
-async function hasMainRecord(file: FileHandle, size: number, productVersion: string) {
+async function scanLog(file: FileHandle, size: number, productVersion: string, sessionToken?: string) {
   // 只保留有限行首并等待换行，长日志消息不会累积到内存，也不能把未完成的尾行当作证据。
   const prefix = Buffer.alloc(headerLimit)
   let prefixSize = 0
+  let hasMain = false
+  let hasSession = !sessionToken
   for (let offset = 0; offset < size;) {
     const bytes = await readBytes(file, offset, Math.min(size - offset, scanChunkSize))
     if (!bytes.length) {
-      return false
+      break
     }
     offset += bytes.length
     for (let start = 0; start < bytes.length;) {
@@ -98,14 +100,16 @@ async function hasMainRecord(file: FileHandle, size: number, productVersion: str
         break
       }
       const line = prefix.toString('utf8', 0, prefixSize)
-      if (/^\[[^\]\r\n]+\]\[[A-Z]+\]\[([^\]\r\n]+)\]\[MAIN\]/.exec(line)?.[1] === productVersion) {
-        return true
+      hasMain ||= /^\[[^\]\r\n]+\]\[[A-Z]+\]\[([^\]\r\n]+)\]\[MAIN\]/.exec(line)?.[1] === productVersion
+      hasSession ||= sessionToken !== undefined && line.includes(sessionToken)
+      if (hasMain && hasSession) {
+        return { hasMain, hasSession }
       }
       prefixSize = 0
       start = newline + 1
     }
   }
-  return false
+  return { hasMain, hasSession }
 }
 
 function requireUniqueMain(cursors: ManagedWechatWindowLogCursor[]) {
@@ -147,25 +151,28 @@ async function validateCursor(file: FileHandle, cursor: ManagedWechatWindowLogCu
   return size
 }
 
-/** 关闭前固定唯一 MAIN 流；辅助日志和历史空日志不属于窗口销毁证据。 */
-export async function captureLogCursors(directory: string, productVersion: string): Promise<ManagedWechatWindowLogCursor[]> {
-  const cursors: ManagedWechatWindowLogCursor[] = []
+/** 关闭前固定唯一 MAIN 流；先按本轮受管项目收窄同版本的历史日志，收窄不确定时退回版本判定。 */
+export async function captureLogCursors(directory: string, productVersion: string, sessionToken?: string): Promise<ManagedWechatWindowLogCursor[]> {
+  const scanned: (ManagedWechatWindowLogCursor & { hasSession: boolean })[] = []
   for (const name of await logFiles(directory)) {
     const file = await openLogFile(directory, name)
     try {
       const stat = await file.stat({ bigint: true })
       const size = logSize(stat)
-      if (!await hasMainRecord(file, size, productVersion)) {
+      const { hasMain, hasSession } = await scanLog(file, size, productVersion, sessionToken)
+      if (!hasMain) {
         continue
       }
       const last = size ? await readBytes(file, size - 1, 1) : undefined
-      cursors.push({ name, identity: identity(stat), offset: size, anchor: await anchorAt(file, size), skipPartialLine: last !== undefined && last[0] !== 10 })
+      scanned.push({ name, identity: identity(stat), offset: size, anchor: await anchorAt(file, size), skipPartialLine: last !== undefined && last[0] !== 10, hasSession })
     }
     finally {
       await file.close()
     }
   }
-  return requireUniqueMain(cursors)
+  const narrowed = scanned.filter(entry => entry.hasSession)
+  const selected = sessionToken && narrowed.length ? narrowed : scanned
+  return requireUniqueMain(selected.map(entry => ({ name: entry.name, identity: entry.identity, offset: entry.offset, anchor: entry.anchor, skipPartialLine: entry.skipPartialLine })))
 }
 
 /** 旧整目录门禁只能从原游标收窄；非空证据丢失或新文件均不能补充候选。 */
@@ -184,7 +191,7 @@ export async function recoverLogCursors(directory: string, cursors: ManagedWecha
     }
     try {
       await validateCursor(file, cursor)
-      if (await hasMainRecord(file, cursor.offset, productVersion)) {
+      if ((await scanLog(file, cursor.offset, productVersion)).hasMain) {
         main.push({ ...cursor })
       }
     }
