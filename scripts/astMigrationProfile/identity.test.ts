@@ -63,6 +63,6 @@ describe('native addon identity', () => {
       expect(() => defaultAddonPath('/repo')).toThrow('Unsupported native platform')
       return
     }
-    expect(defaultAddonPath('/repo')).toBe(`/repo/packages/ast-native-${target}/weapp_vite_ast_native.${target}.node`)
+    expect(defaultAddonPath('/repo')).toBe(path.join('/repo', `packages/ast-native-${target}`, `weapp_vite_ast_native.${target}.node`))
   })
 })
