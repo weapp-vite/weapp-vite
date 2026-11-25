@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const { artifact, buildMock, currentMock } = vi.hoisted(() => {
+const { artifact, buildMock, createTestProjectMock, currentMock, mpcoreMatchersMock } = vi.hoisted(() => {
   const artifact = {
     appConfigPath: '/project/.weapp-vite/test-artifacts/app.json',
     miniprogramRootPath: '/project/.weapp-vite/test-artifacts',
@@ -10,13 +10,17 @@ const { artifact, buildMock, currentMock } = vi.hoisted(() => {
   return {
     artifact,
     buildMock: vi.fn(async () => artifact),
+    createTestProjectMock: vi.fn(),
     currentMock: vi.fn(async () => true),
+    mpcoreMatchersMock: {},
   }
 })
 
 vi.mock('weapp-vite/test', () => ({
   buildTestArtifact: buildMock,
+  createTestProject: createTestProjectMock,
   isTestArtifactCurrent: currentMock,
+  mpcoreMatchers: mpcoreMatchersMock,
   watchTestArtifact: vi.fn(),
 }))
 
@@ -58,5 +62,35 @@ describe('@mpcore/weapp-vite', () => {
     await failed
     await buildWeappViteTestArtifact({ cwd: '/project' })
     expect(buildMock).toHaveBeenCalledTimes(2)
+  })
+
+  it('keeps package namespaces aligned with weapp-vite test and e2e APIs', async () => {
+    const [adapter, adapterE2e, adapterTest, e2e, test] = await Promise.all([
+      import('./index'),
+      import('./e2e'),
+      import('./test'),
+      import('weapp-vite/e2e'),
+      import('weapp-vite/test'),
+    ])
+
+    expect(adapterE2e).not.toHaveProperty('buildTestArtifact')
+    expect(adapterE2e.launchAutomator).toBe(e2e.launchAutomator)
+    expect(adapterTest.createTestProject).toBe(test.createTestProject)
+    expect(adapterTest.mpcoreMatchers).toBe(test.mpcoreMatchers)
+    expect(typeof adapterTest.createWeappViteTestProject).toBe('function')
+    expect(adapterTest).not.toHaveProperty('launchAutomator')
+    expect(adapterE2e).not.toHaveProperty('createTestProject')
+    expect(adapterTest.buildTestArtifact).toBe(test.buildTestArtifact)
+    expect(adapterTest.isTestArtifactCurrent).toBe(test.isTestArtifactCurrent)
+    expect(adapterTest.watchTestArtifact).toBe(test.watchTestArtifact)
+    expect(typeof adapterTest.buildWeappViteTestArtifact).toBe('function')
+    expect(typeof adapterTest.clearWeappViteTestArtifactCache).toBe('function')
+    expect(typeof adapterTest.watchWeappViteTestArtifact).toBe('function')
+    expect(adapter.createTestProject).toBe(test.createTestProject)
+    expect(adapter.mpcoreMatchers).toBe(test.mpcoreMatchers)
+    expect(adapter.buildTestArtifact).toBe(test.buildTestArtifact)
+    expect(adapter.isTestArtifactCurrent).toBe(test.isTestArtifactCurrent)
+    expect(adapter.watchTestArtifact).toBe(test.watchTestArtifact)
+    expect(adapter.createWeappViteTestProject).toBe(adapterTest.createWeappViteTestProject)
   })
 })

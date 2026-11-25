@@ -23,6 +23,8 @@
     "dev:open:ui": "wv dev --ui -o",
     "build": "wv build",
     "build:web": "wv build -p web",
+    "test": "vitest run",
+    "test:dev": "vitest",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "typecheck": "vue-tsc --noEmit -p .weapp-vite/tsconfig.app.json",
@@ -40,6 +42,7 @@
     "miniprogram-api-typings": "catalog:",
     "stylelint": "catalog:",
     "typescript": "catalog:",
+    "vitest": "catalog:tilde",
     "vue-tsc": "catalog:",
     "weapp-vite": "workspace:*",
     "wevu": "workspace:*"

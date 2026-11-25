@@ -203,4 +203,4 @@ wv ide logs --open
 
 ## 改动验收
 
-使用 [小程序改动验收](./acceptance) 和 `weapp-acceptance` Skill，通过现有 MCP 完成检查、场景运行和报告读取，无需第二个模型。
+使用 [小程序改动验收](./acceptance)。先运行项目 Vitest headless 测试，再运行 `e2e/ide` 的 provider-compatible DevTools suite；新项目不创建 acceptance 配置。

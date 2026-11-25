@@ -1,10 +1,9 @@
 import type { MiniProgramRenderResult } from '@mpcore/test'
-import type { MpcoreVitestFixture } from './index'
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
-import { afterAll, expect } from 'vitest'
-import { createMpcoreTest } from './index'
+import { afterAll, expect, it } from 'vitest'
+import { createVitestProject } from './index'
 
 function writeFile(root: string, filePath: string, source: string) {
   const target = path.join(root, filePath)
@@ -31,16 +30,16 @@ writeFile(projectPath, 'dist/pages/index/index.wxml', `
 `)
 
 const completedRenders: MiniProgramRenderResult[] = []
-const concurrentTest = createMpcoreTest({ artifact: { projectPath } })
-async function verifyIsolatedSession({ mpcore }: MpcoreVitestFixture) {
+async function verifyIsolatedSession() {
+  const mpcore = createVitestProject({ artifact: { projectPath } })
   const result = await mpcore.renderPage('/pages/index/index')
   completedRenders.push(result)
   await result.user.tap(result.screen.getByRole('button', { name: 'increment' }))
   expect(result.screen.getByText('count: 1')).toBeDefined()
 }
 
-concurrentTest.concurrent('isolates and cleans the first concurrent session', verifyIsolatedSession)
-concurrentTest.concurrent('isolates and cleans the second concurrent session', verifyIsolatedSession)
+it.concurrent('isolates and cleans the first concurrent session', verifyIsolatedSession)
+it.concurrent('isolates and cleans the second concurrent session', verifyIsolatedSession)
 
 afterAll(() => {
   expect(completedRenders).toHaveLength(2)

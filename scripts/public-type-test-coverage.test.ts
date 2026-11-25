@@ -31,6 +31,7 @@ const weappViteFixtures = [
   'resolvers-public-types',
   'runtime-public-types',
   'test-artifact-public-types',
+  'e2e-public-types',
   'dashboard-public-types',
   'vite-public-types',
   'doctor-public-types',

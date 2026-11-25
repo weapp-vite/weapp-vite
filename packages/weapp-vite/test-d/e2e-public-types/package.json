@@ -1,0 +1,19 @@
+{
+  "name": "e2e-public-types-tsd",
+  "private": true,
+  "types": "index.d.ts",
+  "tsd": {
+    "compilerOptions": {
+      "module": "NodeNext",
+      "moduleResolution": "NodeNext",
+      "target": "ES2023",
+      "strict": true,
+      "types": ["node"],
+      "paths": {
+        "weapp-vite/e2e": [
+          "../../dist/e2e.d.mts"
+        ]
+      }
+    }
+  }
+}

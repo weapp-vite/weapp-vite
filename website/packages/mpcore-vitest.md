@@ -6,36 +6,40 @@ keywords: [mpcore, vitest, testing]
 
 # @mpcore/vitest
 
-`@mpcore/vitest` 提供 Vitest 5 插件和 `createMpcoreTest` fixture。它负责把每个测试隔离到独立的小程序 runtime，并在 watch 模式下只重跑受影响项目。
+`@mpcore/vitest` 提供可选的 Vitest 5 集成插件。它不替换 Vitest 的 `test`、`it`、`expect` 或 `describe`。新模板可直接使用 `weapp-vite/test`、`weapp-vite/e2e` 和 Vitest 原生 API。
 
 ## 安装
 
 ```bash
-pnpm add -D @mpcore/vitest @mpcore/weapp-vite vitest
+pnpm add -D weapp-vite vitest @mpcore/vitest
 ```
+
+只使用 Vitest 原生 API 和 headless simulator 时，无需安装 `@mpcore/vitest`，直接从 `weapp-vite/test` 导入对应能力即可。需要真实 DevTools automator 时再从 `weapp-vite/e2e` 导入。
 
 ## 配置与测试
 
 ```ts
 // vitest.config.ts
 import { mpcoreTest } from '@mpcore/vitest/config'
-import { buildWeappViteTestArtifact } from '@mpcore/weapp-vite'
 import { defineConfig } from 'vitest/config'
 
 export default defineConfig({
   plugins: [mpcoreTest({
-    artifact: { build: () => buildWeappViteTestArtifact({ cwd: process.cwd(), platform: 'weapp' }) },
+    artifact: {
+      build: () => import('weapp-vite/test').then(({ buildTestArtifact }) => buildTestArtifact({ cwd: import.meta.dirname })),
+      watch: callbacks => import('weapp-vite/test').then(({ watchTestArtifact }) => watchTestArtifact({ cwd: import.meta.dirname, ...callbacks })),
+    },
   })],
 })
 ```
 
 ```ts
-import { createMpcoreTest } from '@mpcore/vitest'
-import { expect } from 'vitest'
+import { createVitestProject } from '@mpcore/vitest'
+import { expect, test } from 'vitest'
 
-const test = createMpcoreTest()
-test('renders home', async ({ mpcore }) => {
-  const result = await mpcore.renderPage('/pages/index/index')
+test('renders home', async () => {
+  const project = createVitestProject()
+  const result = await project.renderPage('/pages/index/index')
   expect(result.screen.getByText('ready')).toBeInTheMiniProgram()
 })
 ```

@@ -48,7 +48,7 @@ CLI（含 `prepare`）与 Tailwind 集成发现实际 Node 版本超出该范围
 - 🎨 **内置 Tailwind CSS**：通过 `weapp.tailwindcss` 配置 `weapp-tailwindcss` 的 core 与 generator 集成；Tailwind CSS v4 项目引入 `tailwindcss` 后可自动启用
 - 🧩 **实验性 uni-app 组件库兼容**：通过显式依赖白名单与 `WotUiResolver()` 在微信小程序和 Web 中使用 Wot UI Vue SFC
 - 🧰 **IDE 命令增强**：通过 `wv ide <command>` 调用 `weapp-ide-cli`；保留旧顶层上传参数并提示未来弃用，SDK 与 IDE 边界见下文
-- 🧪 **真实产物单测**：`weapp-vite/test` 提供不启动 CLI 的程序化测试构建入口，可配合 `@mpcore/test` 测试页面和组件
+- 🧪 **真实产物单测**：`weapp-vite/test` 提供不启动 CLI 的程序化测试构建入口和 headless simulator，`weapp-vite/e2e` 提供微信开发者工具 automator
 - 🌍 **内置 i18n**：构建期编译 locale JSON，通过 WXS 翻译模板，并在逻辑层安全切换已构建语言
 
 ## 快速开始
@@ -591,7 +591,7 @@ const artifact = await buildTestArtifact({ cwd: process.cwd() })
 
 ## AI 改动验收
 
-通过 `wv accept --inspect --json` 检查环境；审阅配置后运行 `wv accept --trust --json`。现有 MCP 同时提供验收启动、状态、取消和报告工具，无需模型 Key。[接入指南](https://vite.weapp.dev/guide/acceptance)。独立 `weapp-agent` CLI 同仓维护并保留原命令。
+新项目的页面和组件验证直接使用 Vitest 原生 API、`weapp-vite/test` 的构建产物和 headless simulator；真实微信开发者工具验证使用 `weapp-vite/e2e` 的 automator 或仓库 `e2e/ide` 的 provider-compatible suites。模板不生成 acceptance 配置，也不需要为此安装 `@mpcore/*` 适配包。已有 `weapp-agent` 项目仍可通过 `wv accept` 读取兼容的验收配置。
 
 ## 微信开发者工具多版本
 

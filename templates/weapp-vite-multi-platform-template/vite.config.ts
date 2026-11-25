@@ -3,6 +3,7 @@ import { defineConfig } from 'weapp-vite'
 export default defineConfig({
   weapp: {
     srcRoot: 'src',
+    platform: 'weapp',
     multiPlatform: {
       enabled: true,
       targets: ['weapp', 'alipay', 'tt', 'swan', 'jd', 'xhs'],

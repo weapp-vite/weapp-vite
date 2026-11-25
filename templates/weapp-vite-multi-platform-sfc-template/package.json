@@ -16,6 +16,8 @@
     "dev:web": "wv dev -p web --host",
     "dev:open": "wv dev -p weapp -o",
     "build": "wv build -p weapp",
+    "test": "vitest run",
+    "test:dev": "vitest",
     "build:weapp": "wv build -p weapp",
     "build:alipay": "wv build -p alipay",
     "build:tt": "wv build -p tt",
@@ -43,6 +45,7 @@
     "miniprogram-api-typings": "catalog:",
     "stylelint": "catalog:",
     "typescript": "catalog:",
+    "vitest": "catalog:tilde",
     "vue-tsc": "catalog:",
     "weapp-vite": "workspace:*",
     "wevu": "workspace:*"

@@ -19,22 +19,27 @@ export default defineConfig({
 
 ## 接入
 
-```ts
-import { mpcoreTest } from '@mpcore/vitest/config'
-import { defineConfig } from 'vitest/config'
+页面与组件测试需要 Vitest 时，测试文件直接从 `vitest` 导入 `describe`、`it`、`test`、`expect` 等 API。产物与 headless simulator 从 `weapp-vite/test` 导入，IDE automator 从 `weapp-vite/e2e` 导入：
 
-export default defineConfig({
-  plugins: [mpcoreTest()],
+```ts
+import { beforeAll, expect, it } from 'vitest'
+import { buildTestArtifact, createTestProject } from 'weapp-vite/test'
+
+let artifact: Awaited<ReturnType<typeof buildTestArtifact>>
+beforeAll(async () => {
+  artifact = await buildTestArtifact({ cwd: import.meta.dirname })
 })
-```
 
-使用 `@mpcore/weapp-vite` 构建并缓存测试产物：
-
-```ts
-import { createWeappViteTestProject } from '@mpcore/weapp-vite'
-
-const project = await createWeappViteTestProject({ cwd: process.cwd() })
-const result = await project.renderPage('/pages/index/index?source=test')
+it('renders a page', async () => {
+  const project = createTestProject({ artifact })
+  try {
+    const result = await project.renderPage('/pages/index/index?source=test')
+    expect(result.screen.getByText('ready').textContent).toContain('ready')
+  }
+  finally {
+    await project.close()
+  }
+})
 ```
 
 默认在 `.weapp-vite/test-artifacts/` 下按进程、配置和构建批次创建独立产物。缓存同时检查源码、配置、编译依赖和产物内容；新构建不会覆盖正在运行的测试所用批次。显式 `outDir` 由调用方负责避免并发共享。所有测试关闭后，可以清理这个生成目录。
@@ -43,26 +48,16 @@ const result = await project.renderPage('/pages/index/index?source=test')
 
 ## Vitest watch 联动
 
-在配置中显式接入产物构建和监听：
+需要直接观察或监听构建产物时，使用 `weapp-vite/test` 导出的 API。真实微信开发者工具 automator 从 `weapp-vite/e2e` 导入：
 
 ```ts
-import { mpcoreTest } from '@mpcore/vitest/config'
-import { buildWeappViteTestArtifact, watchWeappViteTestArtifact } from '@mpcore/weapp-vite'
-import { defineConfig } from 'vitest/config'
-
-const options = { cwd: import.meta.dirname }
-
-export default defineConfig({
-  plugins: [mpcoreTest({
-    artifact: {
-      build: () => buildWeappViteTestArtifact(options),
-      watch: callbacks => watchWeappViteTestArtifact({ ...options, ...callbacks }),
-    },
-  })],
-})
+import { launchAutomator } from 'weapp-vite/e2e'
+import { buildTestArtifact, watchTestArtifact } from 'weapp-vite/test'
 ```
 
-测试文件从 `@mpcore/vitest` 导入 `createMpcoreTest()`，无参调用会使用当前 runner 提供的完整产物，每个测试创建独立运行时。一次性执行只构建一次；watch 在源码、配置及编译依赖重建完成后重新运行所属测试项目。退出会等待进行中的构建并关闭监听。不要从测试配置导入包含 fixture 的根入口，配置入口使用 `/config`。
+一次性执行只构建一次；watch 在源码、配置及编译依赖重建完成后发布新的构建代次。退出时关闭返回的 watcher。
+
+真实微信开发者工具运行由仓库 `e2e/ide` 的 provider-compatible suites 承担，同一场景通过 headless provider 和 DevTools 配置运行。模板本身不添加 acceptance 配置或专用测试依赖。
 
 Vitest 的源码覆盖率、生成的小程序 JS 覆盖率和模拟器自身覆盖率属于不同观察面；此适配不会把它们自动合并成业务源码覆盖率。
 
@@ -70,7 +65,7 @@ Vitest 的源码覆盖率、生成的小程序 JS 覆盖率和模拟器自身覆
 
 `renderComponent()` 通过内存 overlay 注入测试宿主页，组件和依赖仍来自真实产物。支持 properties、静态 WXML slots 与事件监听。
 
-每次测试应拥有独立 project/session，并在结束时 `close()`。`createMpcoreTest()` fixture 和 `createVitestProject()` 会自动注册清理，适用于 `test.concurrent`。
+每次测试应拥有独立 project/session，并在结束时 `close()`。需要并发测试时，为每个测试创建独立项目实例。
 
 ## 边界
 

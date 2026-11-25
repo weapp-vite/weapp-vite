@@ -12,7 +12,6 @@ import {
   hash,
   isTrusted,
   loadAcceptanceConfig,
-  projectConfigSchema,
   projectFingerprint,
   redactValue,
   safePath,
@@ -20,7 +19,7 @@ import {
   trustProject,
 } from '@weapp-agent/core/project'
 import { atomicJson } from './persistence.js'
-import { defaultVerification, detectProject } from './project.js'
+import { defaultAcceptanceConfig, detectProject } from './project.js'
 import { readRuntimeProjectConfig } from './projectConfig.js'
 import { runScenario, runtimeInvoker, scenarioSchema } from './scenario.js'
 import { sourceSnapshot } from './snapshot.js'
@@ -48,7 +47,7 @@ export interface AcceptanceReport {
 }
 
 export async function resolveProjectConfig(root: string, file?: string): Promise<ProjectConfig> {
-  return await loadAcceptanceConfig(root, file) ?? projectConfigSchema.parse({ verification: defaultVerification(await detectProject(root)) })
+  return await loadAcceptanceConfig(root, file) ?? await defaultAcceptanceConfig(root)
 }
 
 function alive(pid: number): boolean {

@@ -10,6 +10,8 @@
     "build": "wv build",
     "dev": "wv dev",
     "dev:open": "wv dev -o",
+    "test:dev": "vitest",
+    "test": "vitest run",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "postinstall": "wv prepare",
@@ -35,6 +37,7 @@
     "stylelint": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:",
+    "vitest": "catalog:tilde",
     "vue-tsc": "catalog:",
     "weapp-vite": "workspace:*"
   }

@@ -5,6 +5,7 @@ import process from 'node:process'
 import { configSchema, projectFingerprint } from '@weapp-agent/core'
 import { afterEach, beforeEach, expect, it } from 'vitest'
 import {
+  defaultAcceptanceConfig,
   defaultVerification,
   detectProject,
   projectInstructions,
@@ -59,6 +60,24 @@ it.each(['native', 'wevu'])(
     )
   },
 )
+it('does not discover legacy acceptance scenario files in the default configuration', async () => {
+  await mkdir(path.join(root, 'acceptance'))
+  await writeFile(path.join(root, 'package.json'), JSON.stringify({
+    packageManager: 'pnpm@12.6.0',
+    dependencies: { 'weapp-vite': '10.0.0' },
+    scripts: { build: 'wv build', test: 'vitest run' },
+  }))
+  await writeFile(path.join(root, 'acceptance/counter.json'), JSON.stringify({
+    version: 1,
+    name: 'counter',
+    steps: [{ action: 'route', path: '/pages/index/index' }],
+  }))
+
+  const config = await defaultAcceptanceConfig(root)
+
+  expect(config.verification.map(command => command.kind)).toEqual(['build', 'test'])
+  expect(config.acceptance.scenarios).toEqual([])
+})
 it('reports real exits and missing categories separately', async () => {
   const config = configSchema.parse({
     model: { provider: 'openai', name: 'test' },
