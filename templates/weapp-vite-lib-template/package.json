@@ -24,6 +24,8 @@
     "build": "wv build",
     "build:web": "wv build -p web",
     "build:lib": "wv build --config weapp-vite.lib.config.ts",
+    "test:dev": "vitest",
+    "test": "vitest run",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "open": "wv open",
@@ -45,6 +47,7 @@
     "sass": "catalog:",
     "stylelint": "catalog:",
     "typescript": "catalog:",
+    "vitest": "catalog:tilde",
     "weapp-vite": "workspace:*",
     "wevu": "workspace:*"
   }

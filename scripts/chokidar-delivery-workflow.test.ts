@@ -154,7 +154,7 @@ describe('Windows ordinary npm watcher delivery workflow', () => {
       ...frozenIdentity,
       node_version: ciNode,
       runs_on: '${{ inputs.runs_on }}',
-      build_command: 'pnpm exec turbo run build --filter=weapp-vite... --filter=@weapp-vite/react... --filter=rolldown-require... --filter=@mpcore/simulator... --filter=@mpcore/vitest... --filter=@mpcore/weapp-vite...',
+      build_command: 'pnpm exec turbo run build --filter=weapp-vite... --filter=@weapp-vite/react... --filter=rolldown-require... --filter=@mpcore/simulator...',
       main_command: 'node scripts/consumerArtifacts/manifest.mjs pack .cache/node-support-tarballs',
       build_artifact_name: build,
       artifact_name: archives,
@@ -187,7 +187,6 @@ describe('Windows ordinary npm watcher delivery workflow', () => {
     expect(child.jobs['dependency-compatibility'].strategy.matrix).toEqual({ manager: ['pnpm', 'npm'] })
     expect(child.jobs['dependency-compatibility'].with.main_command).toBe('pnpm exec cross-env WEAPP_VITE_DEPENDENCY_EVIDENCE=.cache/dependency-compatibility.json node packages/weapp-vite/scripts/verify-dependency-install.mjs ${{ matrix.manager }}')
     expect(child.jobs.contracts.with.main_command).toBe('node scripts/consumerArtifacts/contracts.mjs')
-    expect(child.jobs.contracts.with.build_artifact_scope).toBe('packages/weapp-vite,packages-runtime/wevu,mpcore/packages/simulator,mpcore/packages/test,mpcore/packages/vitest,mpcore/packages/weapp-vite')
     expect(child.jobs.consumer.strategy.matrix).toEqual({ toolchain: ['wv', 'vite', 'vite-plus'] })
     expect(child.jobs.consumer.with.main_command).toBe('node packages/weapp-vite/scripts/verify-vite-host-install.mjs ${{ matrix.toolchain }}')
     for (const [name, value] of Object.entries(child.jobs)) {

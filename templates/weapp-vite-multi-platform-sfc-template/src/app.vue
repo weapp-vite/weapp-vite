@@ -1,6 +1,6 @@
 <script setup lang="ts">
 defineAppJson({
-  pages: ['pages/index/index', 'pages/agent-proof/index'],
+  pages: ['pages/index/index'],
   window: {
     navigationBarTitleText: '多平台 SFC 模板',
     navigationBarBackgroundColor: '#ffffff',

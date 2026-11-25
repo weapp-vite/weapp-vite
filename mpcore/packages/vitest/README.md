@@ -1,22 +1,22 @@
 # @mpcore/vitest
 
-Vitest 5 integration for `@mpcore/test`. Import the configuration plugin from `@mpcore/vitest/config`; test files import the preconfigured `test` and native `expect` from `@mpcore/vitest`, using the same Vitest peer instance as setup and matchers.
+Vitest 5 integration for `@mpcore/test`. Import the configuration plugin from `@mpcore/vitest/config`; this entry does not replace Vitest's `expect`, `test`, `it` or `describe`. Test files should import those APIs directly from `vitest` and use `createVitestProject()` or the lower-level `@mpcore/test` APIs explicitly.
 
 Configure an explicit artifact factory. The integration does not depend on a particular compiler; for weapp-vite:
 
 ```ts
 // vitest.config.ts
 import { mpcoreTest } from '@mpcore/vitest/config'
-import { buildWeappViteTestArtifact, watchWeappViteTestArtifact } from '@mpcore/weapp-vite'
 import { defineConfig } from 'vitest/config'
+import { buildTestArtifact, watchTestArtifact } from 'weapp-vite/test'
 
-const options = { cwd: import.meta.dirname, platform: 'weapp' as const }
+const options = { cwd: import.meta.dirname }
 
 export default defineConfig({
   plugins: [mpcoreTest({
     artifact: {
-      build: () => buildWeappViteTestArtifact(options),
-      watch: callbacks => watchWeappViteTestArtifact({ ...options, ...callbacks }),
+      build: () => buildTestArtifact(options),
+      watch: callbacks => watchTestArtifact({ ...options, ...callbacks }),
     },
   })],
 })
@@ -26,20 +26,20 @@ Run mode calls `build` once per project. Watch mode calls `watch` instead; the r
 
 Vite+ uses the same plugin and `vp test`; import `defineConfig` from `vite-plus` in that host's configuration and keep its Vitest peer aligned with the runner.
 
-The package exports Vitest-compatible `test` and `it` functions with an isolated mini-program runtime fixture, plus Vitest's native `expect`. Other APIs such as `describe`, hooks, and `vi` continue to come directly from Vitest:
+Create an isolated mini-program project inside each native Vitest test. `createVitestProject()` reads the artifact injected by the plugin and closes the project when its test finishes:
 
 ```ts
-import { expect, test } from '@mpcore/vitest'
+import { createVitestProject } from '@mpcore/vitest'
+import { expect, test } from 'vitest'
 
-test('renders a page', async ({ mpcore }) => {
-  const result = await mpcore.renderPage('/pages/index/index')
+test('renders a page', async () => {
+  const project = createVitestProject()
+  const result = await project.renderPage('/pages/index/index')
   expect(result.screen.getByText('ready')).toBeInTheMiniProgram()
 })
 ```
 
-`createMpcoreTest()` remains available when a project needs a separately configured fixture. `createVitestProject()` remains available for tests that manage a project explicitly.
-
-`createMpcoreTest({ artifact: { projectPath: process.cwd() } })` still accepts an existing artifact directly. `createVitestProject()` also uses the configured artifact when omitted, and closes its runtime with the current test. Optional host mocks and `failOnConsoleError` can be passed without replacing the injected artifact. Calling either helper without a configured or explicit artifact reports an actionable error.
+`createVitestProject({ artifact: { projectPath: process.cwd() } })` accepts an existing artifact directly. Optional host mocks and `failOnConsoleError` can be passed without replacing the injected artifact. Calling it without a configured or explicit artifact reports an actionable error. New weapp-vite projects can import artifact and simulator APIs from `weapp-vite/test`, then import DevTools automator APIs from `weapp-vite/e2e`, without installing this integration package.
 
 Setup also registers the semantic tree snapshot serializer from `@mpcore/test`. Use `expect(result.screen).toMatchSnapshot()` or snapshot an individual node. Snapshots preserve public tree and event-binding semantics while removing runtime IDs, style scope markers and generated handler names. Full diagnostic snapshots returned by `page.snapshot()` remain unchanged; use `toMiniProgramSnapshot()` explicitly to serialize one.
 

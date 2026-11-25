@@ -47,9 +47,10 @@ Page({ data: { value, count: 0 }, tap() { this.setData({ count: this.data.count 
     'events.log': '',
     'owned/runtime.test.mjs': `import { access, appendFile, readFile } from 'node:fs/promises'
 import { join } from 'node:path'
-import { inject } from ${JSON.stringify(vitestEntry)}
-import { expect, test } from ${JSON.stringify(testEntry.href)}
-test('renders the explicitly built artifact', async ({ mpcore }) => {
+import { createVitestProject } from ${JSON.stringify(testEntry.href)}
+import { expect, inject, test } from ${JSON.stringify(vitestEntry)}
+test('renders the explicitly built artifact', async () => {
+  const mpcore = createVitestProject()
   const artifact = inject('mpcoreArtifact')
   for (const file of ['app.json', 'app.js', 'pages/home/index.json', 'pages/home/index.js', 'pages/home/index.wxml']) {
     await access(join(artifact.miniprogramRootPath, file))

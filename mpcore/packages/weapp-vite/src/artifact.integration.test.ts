@@ -2,10 +2,13 @@ import type { WeappViteTestArtifactWatcher } from './index'
 import fs from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
-import { createTestProject } from '@mpcore/test'
 import { expect, it } from 'vitest'
-import { isTestArtifactCurrent } from 'weapp-vite/test'
-import { buildWeappViteTestArtifact, clearWeappViteTestArtifactCache, watchWeappViteTestArtifact } from './index'
+import { createTestProject, isTestArtifactCurrent } from 'weapp-vite/test'
+import {
+  buildWeappViteTestArtifact,
+  clearWeappViteTestArtifactCache,
+  watchWeappViteTestArtifact,
+} from './index'
 
 async function createFixture(rootWatch = false) {
   const cwd = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-test-artifact-'))

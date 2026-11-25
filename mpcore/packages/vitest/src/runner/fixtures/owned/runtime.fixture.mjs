@@ -1,11 +1,12 @@
 import { appendFile } from 'node:fs/promises'
 import { basename } from 'node:path'
 import { threadId } from 'node:worker_threads'
-import { expect, test } from '@mpcore/vitest'
-import { inject } from 'vitest'
+import { createVitestProject } from '@mpcore/vitest'
+import { expect, inject, test } from 'vitest'
 
 for (const scenario of ['mutates first runtime', 'starts another clean runtime']) {
-  test(scenario, async ({ mpcore }) => {
+  test(scenario, async () => {
+    const mpcore = createVitestProject()
     const revision = basename(inject('mpcoreArtifact').projectPath)
     const result = await mpcore.renderPage('/pages/index/index')
     expect(result.screen.getByText(revision)).toBeInTheMiniProgram()
@@ -15,11 +16,3 @@ for (const scenario of ['mutates first runtime', 'starts another clean runtime']
     await appendFile(inject('mpcoreRunnerEventsFile'), `${JSON.stringify({ project: 'mpcore', revision, scenario, threadId })}\n`)
   })
 }
-
-test.each(['native each API'])('registers %s cases', scenario => {
-  expect(scenario).toBe('native each API')
-})
-
-test.runIf(true)('keeps the mpcore fixture on conditional native APIs', async ({ mpcore }) => {
-  expect(mpcore).toBeDefined()
-})

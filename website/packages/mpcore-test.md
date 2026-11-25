@@ -20,22 +20,33 @@ mpcore 测试环境直接执行微信小程序编译产物，模拟微信宿主�
 | -------------------- | ---------------------------------------------------------- |
 | `@mpcore/simulator`  | 编译产物执行、微信宿主、生命周期与资源调度内核             |
 | `@mpcore/test`       | 页面/组件 render、查询、交互、mock、diagnostics 与 matcher |
-| `@mpcore/vitest`     | matcher 注册、每测试 session 与自动 cleanup                |
-| `@mpcore/weapp-vite` | 通过 `weapp-vite/test` 构建并缓存真实测试产物              |
+| `weapp-vite/test`    | 构建并缓存真实产物，导出 mpcore simulator、render、query、交互和 matcher |
+| `weapp-vite/e2e`     | 导出微信开发者工具 automator API                             |
 
 ## 示例
 
 ```ts
-const project = await createWeappViteTestProject({ cwd: process.cwd() })
-const result = await project.renderComponent('components/counter/index', {
-  properties: { value: 1 },
-  slots: { default: '<text>计数器</text>' },
-  events: ['change'],
-})
+import { expect, test } from 'vitest'
+import { buildTestArtifact, createTestProject } from 'weapp-vite/test'
 
-await result.user.tap(result.screen.getByRole('button', { name: '增加' }))
-expect(result.screen.getByText('2')).toBeInTheMiniProgram()
-expect(result).toHaveEmitted('change', { value: 2 })
+test('renders and interacts with a component', async () => {
+  const artifact = await buildTestArtifact({ cwd: import.meta.dirname })
+  const project = createTestProject({ artifact })
+  try {
+    const result = await project.renderComponent('components/counter/index', {
+      properties: { value: 1 },
+      slots: { default: '<text>计数器</text>' },
+      events: ['change'],
+    })
+
+    await result.user.tap(result.screen.getByRole('button', { name: '增加' }))
+    expect(result.screen.getByText('2').textContent).toBe('2')
+    expect(result.emitted('change')).toEqual([{ value: 2 }])
+  }
+  finally {
+    await project.close()
+  }
+})
 ```
 
 查询支持 `ByText`、`ByRole`、`ByTestId`、`ByAttribute`、`within()` 与同步/异步变体。交互支持 `tap/input/change/blur/trigger`。不提供依赖 CSS layout 的可见性断言。
@@ -92,33 +103,30 @@ expect(result.screen.getByTestId('counter')).toMatchSnapshot()
 
 ## Vitest 与 Vite+ 测试
 
-配置文件使用不加载测试运行时的 `@mpcore/vitest/config` 入口：
+测试文件直接使用 Vitest 原生 API，并从 `weapp-vite/test` 导入构建产物与 headless simulator：
 
 ```ts
-import { mpcoreTest } from '@mpcore/vitest/config'
-import { buildWeappViteTestArtifact, watchWeappViteTestArtifact } from '@mpcore/weapp-vite'
-import { defineConfig } from 'vitest/config'
+import { beforeAll, expect, test } from 'vitest'
+import { buildTestArtifact, createTestProject } from 'weapp-vite/test'
 
-const options = { cwd: import.meta.dirname }
-
-export default defineConfig({
-  plugins: [mpcoreTest({
-    artifact: {
-      build: () => buildWeappViteTestArtifact(options),
-      watch: callbacks => watchWeappViteTestArtifact({ ...options, ...callbacks }),
-    },
-  })],
+let artifact: Awaited<ReturnType<typeof buildTestArtifact>>
+beforeAll(async () => {
+  artifact = await buildTestArtifact({ cwd: import.meta.dirname })
 })
 ```
 
-测试文件直接使用 `@mpcore/vitest` 提供的 Vitest `test` 入口，fixture 会自动创建并关闭每个测试的独立运行时：
+每个测试应创建并关闭自己的 project。这样可以直接使用 Vitest 的 `test.concurrent`、`test.each` 和其他原生 API：
 
 ```ts
-import { expect, test } from '@mpcore/vitest'
-
-test('首页', async ({ mpcore }) => {
-  const page = await mpcore.renderPage('/pages/index/index')
-  expect(page.screen.getByText('欢迎')).toBeInTheMiniProgram()
+test('首页', async () => {
+  const project = createTestProject({ artifact })
+  try {
+    const page = await project.renderPage('/pages/index/index')
+    expect(page.screen.getByText('欢迎').textContent).toContain('欢迎')
+  }
+  finally {
+    await project.close()
+  }
 })
 ```
 

@@ -60,27 +60,23 @@ it.each(['native', 'wevu'])(
     )
   },
 )
-it('uses project scripts by default and discovers optional runtime scenarios', async () => {
+it('does not discover legacy acceptance scenario files in the default configuration', async () => {
   await mkdir(path.join(root, 'acceptance'))
   await writeFile(path.join(root, 'package.json'), JSON.stringify({
     packageManager: 'pnpm@12.6.0',
     dependencies: { 'weapp-vite': '10.0.0' },
     scripts: { build: 'wv build', test: 'vitest run' },
   }))
-
-  const checks = await defaultAcceptanceConfig(root)
-  expect(checks.acceptance).toMatchObject({ requiredChecks: ['build', 'test'], scenarios: [] })
-
   await writeFile(path.join(root, 'acceptance/counter.json'), JSON.stringify({
     version: 1,
     name: 'counter',
-    steps: [{ action: 'route', path: '/pages/index/index' }, { action: 'assert', selector: '#count', text: '0' }],
+    steps: [{ action: 'route', path: '/pages/index/index' }],
   }))
-  const withScenario = await defaultAcceptanceConfig(root)
-  expect(withScenario.acceptance).toMatchObject({
-    requiredChecks: ['build', 'test', 'devtools'],
-    scenarios: ['acceptance/counter.json'],
-  })
+
+  const config = await defaultAcceptanceConfig(root)
+
+  expect(config.verification.map(command => command.kind)).toEqual(['build', 'test'])
+  expect(config.acceptance.scenarios).toEqual([])
 })
 it('reports real exits and missing categories separately', async () => {
   const config = configSchema.parse({

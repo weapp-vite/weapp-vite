@@ -14,7 +14,7 @@ Weapp Agent 提供工程检查和可重复的验收流程。Codex 等宿主继�
 
 ## 十分钟接入
 
-> 使用 weapp-vite 的用户优先阅读[统一验收入口](../acceptance)。下文保留独立 `weapp-agent` CLI 的兼容用法。验收配置文件是可选的。
+> 使用 weapp-vite 的用户优先阅读[统一验收入口](../acceptance)。下文保留独立 `weapp-agent` CLI 的兼容用法；新项目请使用 Vitest headless 测试和 `e2e/ide` DevTools suites，不需要 acceptance 配置。
 
 安装包含这些命令的本地构建包。在已有 weapp-vite 原生或 Wevu 微信项目中运行：
 

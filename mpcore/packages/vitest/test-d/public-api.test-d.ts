@@ -1,24 +1,22 @@
 import type { MiniProgramEmissionSource, MiniProgramNode } from '@mpcore/test'
-import { createMpcoreTest, createVitestProject, it, expect as mpcoreExpect, mpcoreTest, test } from '@mpcore/vitest'
+import { createVitestProject, mpcoreTest } from '@mpcore/vitest'
 import { mpcoreTest as configureMpcore } from '@mpcore/vitest/config'
 import { expectError, expectType } from 'tsd'
-import { expect, inject } from 'vitest'
+import { expect, inject, test } from 'vitest'
 import { defineConfig } from 'vitest/config'
 
 expectType<string>(mpcoreTest().name)
-expectType<void>(test('default fixture type', async ({ mpcore }) => {
-  expectType<Promise<void>>(mpcore.close())
-}))
+expectType<string>(inject('mpcoreArtifact').projectPath)
+expectType<Promise<void>>(createVitestProject().close())
 test.skip.each([{ value: 'skipped' }])('native skip.each type %s', ({ value }) => {
   expectType<string>(value)
 })
 test.concurrent.each([{ value: 'parallel' }])('native concurrent.each type %s', ({ value }) => {
   expectType<string>(value)
 })
-expectType<typeof test>(it)
-expectType<typeof expect>(mpcoreExpect)
-expectType<string>(inject('mpcoreArtifact').projectPath)
-expectType<Promise<void>>(createVitestProject().close())
+test.runIf(true)('native conditional test type', () => {
+  expectType<Promise<void>>(createVitestProject().close())
+})
 defineConfig({
   plugins: [configureMpcore({ artifact: {
     build: async () => ({ projectPath: 'fixture' }),
@@ -30,17 +28,6 @@ defineConfig({
   } })],
 })
 expectError(configureMpcore({ artifact: { build: () => 'not-an-artifact' } }))
-createMpcoreTest()('injected fixture type', async ({ mpcore }) => {
-  expectType<Promise<void>>(mpcore.close())
-})
-
-const configuredTest = createMpcoreTest({
-  artifact: { projectPath: '/project' },
-})
-
-configuredTest('fixture type', async ({ mpcore }) => {
-  expectType<Promise<void>>(mpcore.close())
-})
 
 declare const emission: MiniProgramEmissionSource
 declare const node: MiniProgramNode

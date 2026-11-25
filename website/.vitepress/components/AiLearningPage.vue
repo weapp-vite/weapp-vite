@@ -14,7 +14,7 @@ const props = withDefaults(defineProps<{
 const { isDark } = useData()
 
 const mcpActions = [
-  { title: '改动验收', desc: '按模板验收配置运行 Vitest/mpcore 与 DevTools 场景，并读取分项证据。', href: '/guide/acceptance' },
+  { title: '改动验收', desc: '使用 Vitest、headless simulator 和 DevTools E2E 验证改动。', href: '/guide/acceptance' },
   {
     title: '/guide/ai',
     desc: '作用、启动、客户端接入与测试建议。',

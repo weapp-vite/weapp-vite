@@ -44,7 +44,7 @@ jobs:
       runs_on: ${{ inputs.runs_on }}
       node_version: ${{ fromJSON(inputs.ci_toolchain).node.ci }}
       timeout_minutes: 30
-      build_command: pnpm exec turbo run build --filter=weapp-vite... --filter=@weapp-vite/react... --filter=rolldown-require... --filter=@mpcore/simulator... --filter=@mpcore/vitest... --filter=@mpcore/weapp-vite...
+      build_command: pnpm exec turbo run build --filter=weapp-vite... --filter=@weapp-vite/react... --filter=rolldown-require... --filter=@mpcore/simulator...
       main_command: node scripts/consumerArtifacts/manifest.mjs pack .cache/node-support-tarballs
       resolve_node_support: ${{ inputs.verification_topology == 'optimized-v2' }}
       prepare_consumer_batches: ${{ inputs.verification_topology == 'optimized-v2' && inputs.runs_on == 'ubuntu-latest' }}
@@ -168,7 +168,7 @@ jobs:
       timeout_minutes: 30
       consume_build_artifact: consumer-${{ inputs.runs_on }}-node-24-build
       build_artifact_node_major: '24'
-      build_artifact_scope: packages/weapp-vite,packages-runtime/wevu,mpcore/packages/simulator,mpcore/packages/test,mpcore/packages/vitest,mpcore/packages/weapp-vite
+      build_artifact_scope: packages/weapp-vite,packages-runtime/wevu,mpcore/packages/simulator
       consume_aux_artifact: consumer-tarballs-${{ inputs.runs_on }}
       aux_artifact_path: .cache/node-support-tarballs
       consumer_tarballs: .cache/node-support-tarballs

@@ -1,4 +1,4 @@
-import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { mkdtemp, rm, writeFile } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import { afterEach, expect, it, vi } from 'vitest'
@@ -16,12 +16,6 @@ it.each([undefined, '{invalid', '[]', 'null'])('diagnoses invalid artifact proje
   roots.push(root)
   vi.stubEnv('WEAPP_AGENT_STATE_DIR', path.join(root, 'state'))
   await writeFile(path.join(root, 'package.json'), '{"dependencies":{"weapp-vite":"7.11.1"}}')
-  await mkdir(path.join(root, 'acceptance'))
-  await writeFile(path.join(root, 'acceptance/runtime.json'), JSON.stringify({
-    version: 1,
-    name: 'runtime-check',
-    steps: [{ action: 'route', path: '/pages/index/index' }, { action: 'assert', selector: '#ready', text: 'yes' }],
-  }))
   if (source !== undefined) {
     await writeFile(path.join(root, 'project.config.json'), source)
   }

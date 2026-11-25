@@ -8,7 +8,6 @@ export interface TemplateDefinition {
   visibility: 'default' | 'advanced' | 'experimental'
   framework: 'native' | 'wevu' | 'react'
   skills: readonly string[]
-  workflowSkills?: readonly string[]
 }
 
 /** 脚手架、发布和 smoke 共用的模板元数据，不因菜单可见性缩减支持范围。 */

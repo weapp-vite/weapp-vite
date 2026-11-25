@@ -3,8 +3,7 @@
   "pages": [
     "pages/index/index",
     "pages/profile/index",
-    "pages/layouts/index",
-    "pages/agent-proof/index"
+    "pages/layouts/index"
   ],
   "window": {},
   "style": "v2",

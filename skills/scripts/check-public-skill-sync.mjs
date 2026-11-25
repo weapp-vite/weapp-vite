@@ -193,16 +193,6 @@ async function validateDistribution(skills, issues) {
       issues.push(`${template.id}: skills must be an array containing only package-owned consumer guidance`)
       continue
     }
-    const workflowSkills = template.workflowSkills ?? []
-    if (new Set(workflowSkills).size !== workflowSkills.length || workflowSkills.some(name => name !== 'weapp-acceptance')) {
-      issues.push(`${template.id}: workflowSkills may contain only unique shared workflow skills`)
-    }
-    for (const name of workflowSkills) {
-      if (!skills.includes(name)) {
-        issues.push(`${template.id}: workflowSkills contains unknown public skill ${name}`)
-      }
-    }
-    const selectedForGuidance = [...selected, ...workflowSkills]
     const required = Object.hasOwn(TEMPLATE_SKILLS_BY_FRAMEWORK, template.framework) ? TEMPLATE_SKILLS_BY_FRAMEWORK[template.framework] : undefined
     const selectedSkills = new Set(selected)
     if (!required) {
@@ -213,7 +203,7 @@ async function validateDistribution(skills, issues) {
     }
     const guidance = generatedAgentGuidelines[template.id] ?? ''
     for (const name of skills) {
-      if (guidance.includes(`$${name}`) !== selectedForGuidance.includes(name)) {
+      if (guidance.includes(`$${name}`) !== selected.includes(name)) {
         issues.push(`${template.id}: template guidance differs from selected skills: ${name}`)
       }
     }

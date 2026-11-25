@@ -168,4 +168,11 @@ wv mcp doctor codex
 
 ## 确定性验收
 
-使用 `wv accept --init` 创建配置、`wv accept --inspect --json` 检查环境。审阅后 `wv accept --trust --json`，通过 `wv accept --report <jobId> --json` 读取报告。现有 MCP 的 weapp_project_inspect 和 weapp_acceptance_start/status/cancel/report 支持相同流程；使用 weapp-acceptance Skill。缺失必需检查、过期证据和单张截图都不能代表完整验收通过。
+新项目把验收拆成两层。页面和组件语义使用 Vitest 原生 API，以及 `weapp-vite/test` 提供的真实构建产物与 headless simulator；真实微信开发者工具行为使用 `weapp-vite/e2e` 的 automator 或 `e2e/ide/**` 的 provider-compatible suites。模板不需要 `weapp-acceptance.config.json`，也不需要为测试安装 `@mpcore/*` 适配包。
+
+```bash
+pnpm test
+pnpm e2e:ide
+```
+
+已有 `weapp-agent` 项目仍可通过 `wv accept` 和 MCP acceptance 工具运行旧场景。该兼容入口不作为新模板或新测试的默认路径。

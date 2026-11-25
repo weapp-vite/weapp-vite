@@ -6,7 +6,6 @@ const packageDir = import.meta.dirname
 
 export default defineProject({
   test: {
-    include: ['test/**/*.test.ts'],
     alias: [
       {
         find: '@',

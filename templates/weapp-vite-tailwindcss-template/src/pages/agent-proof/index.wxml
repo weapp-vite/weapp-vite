@@ -1,4 +1,0 @@
-<view class="page">
-  <text id="count" data-testid="count">{{count}}</text>
-  <button id="increment" data-testid="increment" bindtap="increment">增加一次</button>
-</view>

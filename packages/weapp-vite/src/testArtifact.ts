@@ -284,3 +284,4 @@ export async function watchTestArtifact(options: WatchTestArtifactOptions = {}):
     rebuild: () => requestRebuild(true),
   }
 }
+export * from '@mpcore/test'

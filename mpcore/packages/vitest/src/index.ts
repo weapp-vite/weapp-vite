@@ -2,18 +2,13 @@ import type {
   CreateTestProjectOptions,
   MiniProgramEmissionSource,
   MiniProgramNode,
-  MiniProgramTestProject,
 } from '@mpcore/test'
 import { createTestProject, mpcoreMatchers } from '@mpcore/test'
-import { inject, onTestFinished, expect as vitestExpect, test as vitestTest } from 'vitest'
+import { expect, inject, onTestFinished } from 'vitest'
 import { MPCORE_ARTIFACT_KEY } from './artifact'
 
 export { mpcoreTest } from './config'
 export type { MpcoreArtifactFactory, MpcoreArtifactWatchCallbacks, MpcoreArtifactWatcher, MpcoreVitestOptions, MpcoreVitestPlugin } from './config'
-
-export interface MpcoreVitestFixture {
-  mpcore: MiniProgramTestProject
-}
 
 export type MpcoreTestProjectOptions = Omit<CreateTestProjectOptions, 'artifact'> & Partial<Pick<CreateTestProjectOptions, 'artifact'>>
 
@@ -25,25 +20,6 @@ function projectOptions(options: MpcoreTestProjectOptions = {}): CreateTestProje
   return { ...options, artifact }
 }
 
-export function createMpcoreTest(options?: MpcoreTestProjectOptions) {
-  return vitestTest.extend<MpcoreVitestFixture>({
-    // eslint-disable-next-line no-empty-pattern -- Vitest 要求 fixture 的首个参数使用对象解构语法。
-    mpcore: async ({}, use) => {
-      const project = createTestProject(projectOptions(options))
-      try {
-        await use(project)
-      }
-      finally {
-        await project.close()
-      }
-    },
-  })
-}
-
-/** 默认 Vitest 入口提供隔离的 mpcore fixture，并保留原生测试 API。 */
-const test = createMpcoreTest()
-const it = test
-
 export function createVitestProject(options?: MpcoreTestProjectOptions) {
   const project = createTestProject(projectOptions(options))
   onTestFinished(async () => {
@@ -53,10 +29,8 @@ export function createVitestProject(options?: MpcoreTestProjectOptions) {
 }
 
 export function registerMpcoreMatchers() {
-  vitestExpect.extend(mpcoreMatchers)
+  expect.extend(mpcoreMatchers)
 }
-
-export { vitestExpect as expect, it, test }
 
 declare module 'vitest' {
   interface Matchers<R, T> {

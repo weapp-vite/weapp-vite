@@ -1,5 +1,5 @@
 {
-  "pages": ["pages/index/index", "pages/agent-proof/index"],
+  "pages": ["pages/index/index"],
   "window": {
     "navigationBarTitleText": "React 小程序"
   }

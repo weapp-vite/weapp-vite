@@ -12,7 +12,6 @@ import {
   hash,
   isTrusted,
   loadAcceptanceConfig,
-  projectConfigSchema,
   projectFingerprint,
   redactValue,
   safePath,
@@ -48,11 +47,7 @@ export interface AcceptanceReport {
 }
 
 export async function resolveProjectConfig(root: string, file?: string): Promise<ProjectConfig> {
-  const configured = await loadAcceptanceConfig(root, file)
-  if (configured) {
-    return configured
-  }
-  return projectConfigSchema.parse(await defaultAcceptanceConfig(root))
+  return await loadAcceptanceConfig(root, file) ?? await defaultAcceptanceConfig(root)
 }
 
 function alive(pid: number): boolean {
@@ -148,7 +143,6 @@ export class AcceptanceService {
         scenarioProblems.push(`${file}: ${String(error)}`)
       }
     }
-    const runtimeRequired = config.acceptance.requiredChecks.includes('devtools') || config.acceptance.scenarios.length > 0
     const missingChecks = config.acceptance.requiredChecks.filter(kind => kind !== 'devtools' && !config.verification.some(c => c.kind === kind))
     let hasTestAppId = false
     let projectConfigProblem: string | undefined
@@ -177,9 +171,9 @@ export class AcceptanceService {
         ...scenarioProblems.map(problem => `Repair scenario: ${problem}`),
         ...(!trusted ? ['Review project scripts/configuration, then explicitly run wv accept --trust.'] : []),
         ...(!localMcp ? ['Install the project dependencies to provide the local weapp-vite MCP.'] : []),
-        ...(runtimeRequired && !config.acceptance.scenarios.length ? ['Add acceptance.scenarios to the selected acceptance configuration for runtime assertions.'] : []),
-        ...(runtimeRequired && projectConfigProblem ? [projectConfigProblem] : runtimeRequired && !hasTestAppId ? ['Configure a real test AppID in project.config.json before runtime checks.'] : []),
-        ...(runtimeRequired ? ['Runtime checks require logged-in WeChat DevTools, its service port enabled, and a real test AppID. Connection has not been probed.'] : []),
+        ...(!config.acceptance.scenarios.length ? ['Add acceptance.scenarios to the selected acceptance configuration for runtime assertions.'] : []),
+        ...(projectConfigProblem ? [projectConfigProblem] : !hasTestAppId ? ['Configure a real test AppID in project.config.json before runtime checks.'] : []),
+        'Runtime checks require logged-in WeChat DevTools, its service port enabled, and a real test AppID. Connection has not been probed.',
       ],
     }
   }

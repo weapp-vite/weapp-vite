@@ -36,9 +36,6 @@
   "devDependencies": {
     "@icebreakers/eslint-config": "catalog:",
     "@icebreakers/stylelint-config": "catalog:",
-    "@mpcore/test": "workspace:*",
-    "@mpcore/vitest": "workspace:*",
-    "@mpcore/weapp-vite": "workspace:*",
     "@types/node": "catalog:",
     "@weapp-vite/dashboard": "workspace:*",
     "eslint": "catalog:",
