@@ -6,10 +6,13 @@ import {
   defineElements,
   NATIVE_COMPONENT_STYLE,
   ROUTE_COUPLED_WEB_TAGS,
+  setupRpx,
+  setupWebViewport,
   WEB_VISUAL_COMPONENT_TAGS,
 } from '@weapp-vite/web/elements'
 import { describe, expect, it } from 'vitest'
 import { VISUAL_WEB_COMPONENT_CONSTRUCTORS } from '../src/runtime/nativeComponents/registry'
+import { getRuntimeRpxSize } from '../src/runtime/rpx'
 import { NATIVE_COMPONENT_DESCRIPTORS } from '../src/shared/nativeComponents'
 
 const srcDir = path.resolve(import.meta.dirname, '../src')
@@ -127,5 +130,14 @@ describe('elements 子路径入口', () => {
   it('导出的样式常量与注入内容一致', () => {
     expect(NATIVE_COMPONENT_STYLE).toContain('weapp-swiper')
     expect(NATIVE_COMPONENT_STYLE).toContain('weapp-scroll-view')
+  })
+
+  it('rpx 的 CSS 变量与 JS 换算共用同一视口基准', () => {
+    setupWebViewport({ mode: 'responsive' })
+    setupRpx({ designWidth: 375, varName: '--contract-rpx' })
+    expect(document.documentElement.getAttribute('data-weapp-viewport-mode')).toBe('responsive')
+    expect(getRuntimeRpxSize()).toBeGreaterThan(0)
+    expect(document.documentElement.style.getPropertyValue('--contract-rpx'))
+      .toBe(`${getRuntimeRpxSize()}px`)
   })
 })

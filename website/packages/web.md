@@ -41,12 +41,16 @@ pnpm add -D @weapp-vite/web
 `@weapp-vite/web/elements` 只提供原生组件的自定义元素、基础样式与交互，不安装小程序全局对象，也不引入模板编译器、页面栈或 `wx.*` API，因此可以在任意 Web 项目中按标签注册：
 
 ```ts
-import { defineElements, setupRpx } from '@weapp-vite/web/elements'
+import { defineElements, setupRpx, setupWebViewport } from '@weapp-vite/web/elements'
 
 defineElements(['weapp-view', 'weapp-scroll-view', 'weapp-swiper'])
-// 模板里沿用 rpx 单位时同步 --rpx 变量，designWidth 默认 750
-setupRpx()
+// 属性值沿用 rpx 单位时（例如 previous-margin="60rpx"）需要 --rpx 基准
+setupRpx({ designWidth: 750 })
+// 视口基准默认是小程序模式：文档宽度 ≥600px 时按 375px 封顶；跟随真实宽度用 responsive
+setupWebViewport({ mode: 'responsive' })
 ```
+
+`setupRpx` 与 `setupWebViewport` 共同决定同一个换算基准：CSS 侧写入的 `--rpx` 和 JS 侧的 rpx 换算（例如 `scroll-view` 的 `refresher-threshold="100rpx"`）读的是同一份配置，因此不要只在样式表里写 `--rpx: calc(100vw / 750)`——那条式子不会跟随小程序视口封顶规则，两个元素上的同一个 `100rpx` 会算出不同的长度。没有 rpx 需求时这两个调用都可以省略。
 
 元素是标准 `HTMLElement` 子类，属性用 HTML attribute 配置，事件是标准 `CustomEvent`，`detail` 保持小程序命名习惯（`change`、`scroll`、`pickstart`、`animationfinish` 等）：
 

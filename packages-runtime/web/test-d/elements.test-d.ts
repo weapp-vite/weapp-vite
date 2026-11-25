@@ -1,4 +1,4 @@
-import { defineElements, ROUTE_COUPLED_WEB_TAGS, setupRpx, WEB_VISUAL_COMPONENT_TAGS } from '@weapp-vite/web/elements'
+import { defineElements, ROUTE_COUPLED_WEB_TAGS, setupRpx, setupWebViewport, WEB_VISUAL_COMPONENT_TAGS } from '@weapp-vite/web/elements'
 import { expectAssignable, expectError, expectType } from 'tsd'
 
 expectType<void>(defineElements())
@@ -11,3 +11,7 @@ expectAssignable<readonly string[]>(ROUTE_COUPLED_WEB_TAGS)
 expectType<void>(setupRpx({ designWidth: 375, varName: '--rpx' }))
 expectType<void>(setupRpx())
 expectError(setupRpx({ designWidth: '375' }))
+expectType<'mini-program' | 'responsive'>(setupWebViewport({ mode: 'responsive' }).mode)
+expectType<'mini-program' | 'responsive'>(setupWebViewport().mode)
+expectError(setupWebViewport({ mode: 'desktop' }))
+expectError(setupWebViewport({ maxWidth: '900' }))

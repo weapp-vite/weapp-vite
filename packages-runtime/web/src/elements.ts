@@ -5,10 +5,12 @@ import {
 } from './runtime/nativeComponents/registry'
 import { ensureNativeComponentStyle, NATIVE_COMPONENT_STYLE } from './runtime/nativeComponents/style'
 import { setupRpx } from './runtime/rpx'
+import { setupWebViewport } from './runtime/viewport'
 
 export type { VisualWebComponentTag } from './runtime/nativeComponents/registry'
 export { ROUTE_COUPLED_WEB_TAGS } from './runtime/nativeComponents/registry'
 export type { RpxConfig } from './runtime/rpx'
+export type { WebViewportConfig } from './runtime/viewport/types'
 export type { NativeComponentWebTag } from './shared/nativeComponents'
 
 /**
@@ -33,5 +35,6 @@ export {
   ensureNativeComponentStyle,
   NATIVE_COMPONENT_STYLE,
   setupRpx,
+  setupWebViewport,
   WEB_VISUAL_COMPONENT_TAGS,
 }
