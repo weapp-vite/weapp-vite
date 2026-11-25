@@ -303,6 +303,19 @@ refresh(() => {});
 }
 
 #[test]
+fn compiler_batch_skips_page_call_collection_when_not_requested() {
+    let code = "function setup() { onResize(() => {}); router.onReachBottom(() => {}) }";
+    let allocator = oxc_allocator::Allocator::default();
+    let program = crate::parse_program(&allocator, code, Some("page.ts".to_string()), true)
+        .expect("script should parse");
+    let mut visitor = CompilerDiagnosticVisitor::default();
+
+    visitor.visit_program(&program);
+
+    assert!(visitor.page_feature_calls.is_empty());
+}
+
+#[test]
 fn compiler_batch_collects_scroll_diagnostics_with_page_features_in_one_parse() {
     let code = "import { onPageScroll } from 'wevu'\nonPageScroll(() => {\n  this.setData({ top: 1 })\n  wx.getStorageSync('key')\n})";
     let mut input = page_feature_input(code);

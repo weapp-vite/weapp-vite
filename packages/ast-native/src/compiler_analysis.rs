@@ -57,7 +57,7 @@ pub struct NativeCompilerScriptAnalysis {
 }
 
 #[derive(Default)]
-struct CompilerDiagnosticVisitor {
+struct CompilerDiagnosticVisitor<'a> {
     has_lone_surrogate_literal: bool,
     has_default_export: bool,
     has_ts_module_declaration: bool,
@@ -66,15 +66,16 @@ struct CompilerDiagnosticVisitor {
     page_feature_namespace_locals: HashSet<String>,
     page_feature_modules: HashSet<String>,
     page_feature_hook_to_feature: HashMap<String, String>,
-    page_feature_calls: Vec<PageFeatureCall>,
+    page_feature_analysis_enabled: bool,
+    page_feature_calls: Vec<PageFeatureCall<'a>>,
 }
 
-enum PageFeatureCall {
-    Named(String),
-    Namespace { namespace: String, hook: String },
+enum PageFeatureCall<'a> {
+    Named(&'a str),
+    Namespace { namespace: &'a str, hook: &'a str },
 }
 
-impl<'a> Visit<'a> for CompilerDiagnosticVisitor {
+impl<'a> Visit<'a> for CompilerDiagnosticVisitor<'a> {
     fn visit_export_default_declaration(
         &mut self,
         export: &oxc_ast::ast::ExportDefaultDeclaration<'a>,
@@ -145,20 +146,22 @@ impl<'a> Visit<'a> for CompilerDiagnosticVisitor {
 
     fn visit_call_expression(&mut self, call: &oxc_ast::ast::CallExpression<'a>) {
         self.reserved_props.inspect_call(call);
-        match call.callee.without_parentheses() {
-            Expression::Identifier(identifier) => {
-                self.page_feature_calls
-                    .push(PageFeatureCall::Named(identifier.name.to_string()));
-            }
-            Expression::StaticMemberExpression(member) => {
-                if let Expression::Identifier(object) = &member.object {
-                    self.page_feature_calls.push(PageFeatureCall::Namespace {
-                        namespace: object.name.to_string(),
-                        hook: member.property.name.to_string(),
-                    });
+        if self.page_feature_analysis_enabled {
+            match call.callee.without_parentheses() {
+                Expression::Identifier(identifier) => {
+                    self.page_feature_calls
+                        .push(PageFeatureCall::Named(identifier.name.as_str()));
                 }
+                Expression::StaticMemberExpression(member) => {
+                    if let Expression::Identifier(object) = &member.object {
+                        self.page_feature_calls.push(PageFeatureCall::Namespace {
+                            namespace: object.name.as_str(),
+                            hook: member.property.name.as_str(),
+                        });
+                    }
+                }
+                _ => {}
             }
-            _ => {}
         }
         walk::walk_call_expression(self, call);
     }
@@ -230,6 +233,7 @@ fn analyze_compiler_script_program(
     let collect_page_feature_flags = page_feature_config.is_some();
     let mut diagnostics = CompilerDiagnosticVisitor::default();
     if let Some((modules, hook_to_feature)) = page_feature_config {
+        diagnostics.page_feature_analysis_enabled = true;
         diagnostics.page_feature_modules = modules.iter().cloned().collect();
         diagnostics.page_feature_hook_to_feature = hook_to_feature;
     }
@@ -250,7 +254,7 @@ fn analyze_compiler_script_program(
     })
 }
 
-impl CompilerDiagnosticVisitor {
+impl CompilerDiagnosticVisitor<'_> {
     fn collect_page_feature_flags(&self) -> Vec<String> {
         let mut seen = HashSet::new();
         let mut flags = Vec::new();
@@ -258,12 +262,12 @@ impl CompilerDiagnosticVisitor {
             let feature = match call {
                 PageFeatureCall::Named(local) => self
                     .page_feature_named_hook_locals
-                    .get(local)
+                    .get(*local)
                     .and_then(|hook| self.page_feature_hook_to_feature.get(hook)),
                 PageFeatureCall::Namespace { namespace, hook }
-                    if self.page_feature_namespace_locals.contains(namespace) =>
+                    if self.page_feature_namespace_locals.contains(*namespace) =>
                 {
-                    self.page_feature_hook_to_feature.get(hook)
+                    self.page_feature_hook_to_feature.get(*hook)
                 }
                 PageFeatureCall::Namespace { .. } => None,
             };
