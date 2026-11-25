@@ -10,7 +10,7 @@ import {
   setupWebViewport,
   WEB_VISUAL_COMPONENT_TAGS,
 } from '@weapp-vite/web/elements'
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { VISUAL_WEB_COMPONENT_CONSTRUCTORS } from '../src/runtime/nativeComponents/registry'
 import { getRuntimeRpxSize } from '../src/runtime/rpx'
 import { NATIVE_COMPONENT_DESCRIPTORS } from '../src/shared/nativeComponents'
@@ -63,6 +63,10 @@ function collectRuntimeGraph(entryFile: string) {
 }
 
 describe('elements 子路径入口', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
   const graph = collectRuntimeGraph(path.join(srcDir, 'elements.ts'))
 
   it('不引入构建期与小程序页面层模块', () => {
@@ -130,6 +134,12 @@ describe('elements 子路径入口', () => {
   it('导出的样式常量与注入内容一致', () => {
     expect(NATIVE_COMPONENT_STYLE).toContain('weapp-swiper')
     expect(NATIVE_COMPONENT_STYLE).toContain('weapp-scroll-view')
+  })
+
+  it('缺少 customElements 宿主时注册保持空操作', () => {
+    vi.stubGlobal('customElements', undefined)
+    expect(() => defineElements()).not.toThrow()
+    expect(() => defineElements(['weapp-view'])).not.toThrow()
   })
 
   it('rpx 的 CSS 变量与 JS 换算共用同一视口基准', () => {
