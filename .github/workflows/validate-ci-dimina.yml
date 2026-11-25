@@ -66,7 +66,7 @@ jobs:
           node-version: ${{ matrix.node }}
       - uses: ./.github/actions/refresh-workspace-deps
         with:
-          build-command: pnpm --filter 'weapp-vite...' --filter '@weapp-vite/react...' build
+          build-command: pnpm --filter 'weapp-vite...' --filter '@weapp-vite/react...' --filter '@mpcore/vitest...' --filter '@mpcore/weapp-vite...' build
       - name: Compute SDK cache identity
         id: sdk-key
         run: pnpm --filter @weapp-vite/dimina-playground cache:key

@@ -38,6 +38,16 @@ it('keeps explicit SDK preparation, strict browser acceptance and bounded cache/
   ])
 })
 
+it('builds mpcore workspace packages before Vitest loads template projects', () => {
+  const workflow = readWorkflowFixture('validate-ci-dimina.yml') as {
+    jobs: Record<string, { steps: { uses?: string, with?: Record<string, unknown> }[] }>
+  }
+  const refresh = workflow.jobs.web!.steps.find(step => step.uses === './.github/actions/refresh-workspace-deps')
+  const buildCommand = String(refresh?.with?.['build-command'])
+  expect(buildCommand).toContain('@mpcore/vitest...')
+  expect(buildCommand).toContain('@mpcore/weapp-vite...')
+})
+
 afterEach(() => {
   vi.doUnmock('node:path')
   vi.resetModules()
