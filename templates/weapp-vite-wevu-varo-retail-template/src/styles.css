@@ -34,7 +34,7 @@ page {
 }
 
 .shop-page--with-bar {
-  padding-bottom: 180rpx;
+  padding-bottom: 150rpx;
 }
 
 .shop-heading {
@@ -117,8 +117,8 @@ page {
   gap: 18rpx;
   align-items: center;
   justify-content: space-between;
-  min-height: 132rpx;
-  padding: 16rpx 28rpx calc(16rpx + env(safe-area-inset-bottom));
+  min-height: 108rpx;
+  padding: 12rpx 28rpx calc(12rpx + env(safe-area-inset-bottom));
   background: var(--shop-surface);
   border-top: 2rpx solid var(--shop-border);
 }
@@ -212,6 +212,7 @@ page {
 }
 
 .shop-product-card__price {
+  padding-right: 94rpx;
   margin-top: 10rpx;
   font-size: 36rpx;
 }
@@ -253,16 +254,19 @@ page {
 
 .shop-line__controls {
   display: flex;
+  flex-wrap: wrap;
+  gap: 10rpx;
   align-items: center;
   justify-content: space-between;
   margin-top: 14rpx;
 }
 
 .shop-link {
-  min-height: 72rpx;
+  min-height: 62rpx;
   padding: 0 12rpx;
   font-size: 24rpx;
   color: var(--shop-accent);
+  white-space: nowrap;
   text-decoration: underline;
   text-underline-offset: 6rpx;
 }

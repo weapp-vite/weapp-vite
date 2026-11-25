@@ -23,6 +23,7 @@ export default defineConfig({
         include: 'app.vue',
       })),
       { source: 'styles.css', include: 'app.vue' },
+      { source: 'shop-controls.css', include: 'app.vue' },
     ],
     tailwindcss: {
       appType: 'weapp-vite',

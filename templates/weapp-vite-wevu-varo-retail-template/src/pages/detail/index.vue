@@ -89,11 +89,11 @@ function openCart() {
     </view>
 
     <view class="shop-bottom-bar">
-      <VButton variant="outline" aria-label="查看购物车" @click="openCart">
+      <VButton size="sm" variant="text" aria-label="查看购物车" @click="openCart">
         购物车 {{ cartQuantity || '' }}
       </VButton>
       <view class="shop-bottom-bar__actions">
-        <VButton variant="outline" @click="addToCart">
+        <VButton size="sm" variant="text" @click="addToCart">
           加入购物车
         </VButton>
         <VButton @click="buyNow">

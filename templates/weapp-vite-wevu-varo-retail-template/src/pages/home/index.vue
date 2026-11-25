@@ -54,9 +54,7 @@ function quickAdd(productId: string) {
       v-model:value="keyword"
       aria-label="搜索商品"
       clearable
-      prefix-icon="search"
       placeholder="搜索咖啡豆、挂耳或器具"
-      size="lg"
     />
 
     <view class="shop-home__categories" aria-label="商品分类">

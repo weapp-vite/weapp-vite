@@ -32,12 +32,13 @@ const emit = defineEmits<{
     </view>
     <VButton
       class-name="shop-product-card__add"
-      shape="square"
       size="sm"
-      icon="plus"
+      variant="text"
       :aria-label="`将${props.product.title}加入购物车`"
       @click="emit('add', props.product.id)"
-    />
+    >
+      加购
+    </VButton>
   </view>
 </template>
 

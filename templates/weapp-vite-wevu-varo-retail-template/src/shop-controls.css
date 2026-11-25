@@ -1,0 +1,79 @@
+page {
+  --varo-ui-primary: var(--shop-accent);
+  --varo-ui-primary-dark: #1b493b;
+  --varo-ui-primary-hover: var(--varo-ui-primary-dark);
+  --varo-ui-primary-soft: var(--shop-accent-soft);
+  --varo-ui-primary-foreground: var(--shop-surface);
+  --varo-ui-primary-hover-foreground: var(--shop-surface);
+  --varo-ui-primary-text: var(--shop-accent);
+  --varo-ui-button-height-sm: 58rpx;
+  --varo-ui-button-height-md: 72rpx;
+  --varo-ui-button-height-lg: 84rpx;
+  --varo-ui-button-radius: 16rpx;
+}
+
+.shop-page .varo-button {
+  padding: 0 24rpx;
+  font-size: 26rpx;
+  white-space: nowrap;
+}
+
+.shop-page .varo-button[data-size='sm'] {
+  padding: 0 14rpx;
+  font-size: 24rpx;
+}
+
+.shop-page .shop-product-card__add[data-size='sm'] {
+  padding: 0 8rpx;
+}
+
+.shop-cart-line .varo-checkbox__icon {
+  width: 36rpx;
+  height: 36rpx;
+  border-color: var(--shop-muted);
+  border-radius: 8rpx;
+}
+
+.shop-cart-line .varo-checkbox[data-state='checked'] .varo-checkbox__icon {
+  background: var(--shop-surface);
+  border-color: var(--shop-muted);
+}
+
+.shop-cart-line .varo-checkbox[data-state='checked'] .varo-checkbox__icon::before {
+  content: none;
+}
+
+.shop-cart-line .varo-checkbox[data-state='checked'] .varo-checkbox__icon::after {
+  width: 9rpx;
+  height: 16rpx;
+  content: '';
+  border: solid var(--shop-text);
+  border-width: 0 3rpx 3rpx 0;
+  transform: translateY(-2rpx) rotate(45deg);
+}
+
+.shop-cart-line .varo-checkbox[data-state='checked'] .varo-checkbox__icon .varo-icon {
+  display: none;
+}
+
+.shop-page .varo-input-number {
+  width: 190rpx;
+  min-width: 0;
+  border-radius: 12rpx;
+  box-shadow: none;
+}
+
+.shop-page .varo-input-number .varo-input-number__minus,
+.shop-page .varo-input-number .varo-input-number__plus {
+  width: 58rpx;
+  min-width: 0;
+  height: 62rpx;
+  background: var(--varo-ui-surface);
+}
+
+.shop-page .varo-input-number .varo-input-number__input {
+  width: 0;
+  height: 62rpx;
+  font-size: 26rpx;
+  border: 0;
+}
