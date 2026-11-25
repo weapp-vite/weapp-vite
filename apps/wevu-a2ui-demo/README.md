@@ -53,12 +53,21 @@ pnpm exec stylelint 'apps/wevu-a2ui-demo/src/**/*.vue'
 
 ```sh
 pnpm exec cross-env WEAPP_VITE_E2E_RUNTIME_PROVIDER=headless pnpm vitest run -c e2e/vitest.e2e.headless.config.ts e2e/ide/wevu-a2ui.runtime.test.ts
-pnpm exec cross-env WEAPP_VITE_E2E_RUNTIME_PROVIDER=devtools pnpm vitest run -c e2e/vitest.e2e.devtools.config.ts e2e/ide/wevu-a2ui.runtime.test.ts
+
+pnpm exec cross-env WEAPP_VITE_E2E_RUNTIME_PROVIDER=devtools \
+  WEAPP_VITE_E2E_DEVTOOLS_CLI_PATH="<已登记的微信开发者工具 cli 路径>" \
+  WEAPP_VITE_E2E_ACCEPTED_DEVTOOLS_VERSION=<所选版本> \
+  WEAPP_VITE_E2E_ACCEPTED_DEVTOOLS_CHANNEL=<stable|rc|nightly> \
+  pnpm vitest run -c e2e/vitest.e2e.devtools.config.ts e2e/ide/wevu-a2ui.runtime.test.ts
 ```
 
-同一 suite 共享一个 automator，按路由 `reLaunch` 验证。第二条命令需要本机已登记微信开发者工具**稳定版**安装；只有 RC/nightly 时按渠道策略记录为未完成，不静默换版、不绕过登录。`test/noEval.test.ts` 从公共入口把会话、目录与消息处理打成一份 bundle，在禁用 `Function` / `eval` 的 `vm` 上下文里执行，确认初始化、校验、投影、增量更新全程没有动态求值尝试。
+同一 suite 共享一个 automator，按路由 `reLaunch` 验证。第二条命令默认需要本机已登记微信开发者工具**稳定版**安装；RC/nightly 只在显式指定渠道与版本时运行，不静默换版、不绕过登录。`test/noEval.test.ts` 从公共入口把会话、目录与消息处理打成一份 bundle，在禁用 `Function` / `eval` 的 `vm` 上下文里执行，确认初始化、校验、投影、增量更新全程没有动态求值尝试。
+
+页面度量通过 `page.callMethodWithOptions('readMetrics', { routeOnly: true })` 读取：2026-11-25 的 Nightly 实测中，开发者工具原生 `Page.callMethod` 协议在本页返回 `this.readMetrics is not a function`，`routeOnly` 改走 AppService 的 `getCurrentPages()` 路径，headless 与真实 IDE 双端一致，也与本仓库其他 Wevu IDE 用例的读法相同。
 
 包级单测 10 项、应用单测 6 项（含 noEval）；headless runtime suite 4 项全部通过，覆盖基础目录页、递归宿主与真实输入/点击事件、增量更新后的输入保留、异常消息保留上一版界面、失败重试与卸载取消。2026-11-25 固定场景实测：dist 总量 880588 字节（主包约 860 KB，包含 `@a2ui/web_core` 依赖图）。
+
+同一天按维护者显式指定的 Nightly 2.02.2611232（基础库 3.18.1）运行真实 IDE 分支：4 项断言全部通过，其中包含开发者工具截图路径与增量场景度量 8 次 / 53624 字节，与 headless 数值一致。本轮 teardown 未完成：`weapp-ide-cli` 的活动 MAIN 日志识别仅在 macOS 生效（`windowClose/activeLog.ts` 在非 darwin 直接回退），Windows 回退为按目录扫描且要求同版本 MAIN 日志唯一，而同一 profile 会随每次启动累积多份 MAIN 日志，故窗口关闭证据被判为歧义、机器租约与 journal 按策略保留待恢复，不影响上述断言结果。
 
 `src/runtime/metrics.ts` 仅统计当前应用页面的 `setData`，用于观察递归宿主的重渲染规模；runtime suite 输出本次产物总字节数、测量范围内的调用次数与 JSON UTF-8 字节数（增量场景实测 8 次 / 53624 字节），并断言卸载后 `lateSetData` 为 0、`cancelledTasks` 大于 0，即在途任务确实被取消且没有迟到的宿主写入。
 

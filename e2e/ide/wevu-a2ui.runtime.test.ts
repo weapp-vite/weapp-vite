@@ -133,7 +133,8 @@ describe('Wevu A2UI runtime', { concurrent: false }, () => {
     expect(await reasonValue(page)).toBe('请保留这段内容')
     expect(await page.data('model.title')).toBe('申请售后 · 专属服务')
     expect(await page.data('model.steps')).toHaveLength(3)
-    process.stdout.write(`a2ui stream metrics: ${JSON.stringify(await page.callMethod('readMetrics'))}\n`)
+    // 页面方法走 AppService 路由协议读取，真实开发者工具与 headless 都支持该路径。
+    process.stdout.write(`a2ui stream metrics: ${JSON.stringify(await page.callMethodWithOptions('readMetrics', { routeOnly: true }))}\n`)
     await (await page.$('#invalid')).tap()
     await expect.poll(() => page.data('model.error')).not.toBe('')
     expect(await (await element(page, 'text', 'progress')).text()).toContain('24 小时')
@@ -168,7 +169,7 @@ describe('Wevu A2UI runtime', { concurrent: false }, () => {
     const blank = await miniProgram.reLaunch('/pages/blank/index')
     // 等待超过假 agent 回包和首批增量任务的期限，检查卸载后没有宿主写入。
     await new Promise(resolve => setTimeout(resolve, 700))
-    const metrics = await blank.callMethod('readMetrics')
+    const metrics = await blank.callMethodWithOptions('readMetrics', { routeOnly: true })
     // 卸载时确实有在途任务被取消（>0），且没有任何一次迟到 setData（=0）。
     expect(metrics.cancelledTasks, JSON.stringify(metrics)).toBeGreaterThan(0)
     expect(metrics.lateSetData).toBe(0)
