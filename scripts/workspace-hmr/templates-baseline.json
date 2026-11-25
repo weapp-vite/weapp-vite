@@ -440,6 +440,9 @@
           "pendingCount": 27,
           "emittedCount": 27,
           "impactFiles": 6
+        },
+        "vue-style": {
+          "impactFiles": 1
         }
       }
     },

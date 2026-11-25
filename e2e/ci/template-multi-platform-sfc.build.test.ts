@@ -72,7 +72,7 @@ describe('multi-platform SFC template build matrix', { concurrent: false }, () =
       expect(await fs.pathExists(path.join(projectRoot, projectConfigFile))).toBe(true)
       expect(await fs.pathExists(`${pageRoot}.${styleExt}`)).toBe(true)
       expect(await fs.pathExists(`${componentRoot}.${styleExt}`)).toBe(true)
-      expect(appConfig.pages).toEqual(['pages/index/index'])
+      expect(appConfig.pages).toEqual(['pages/index/index', 'pages/agent-proof/index'])
       expect(pageConfig.navigationBarTitleText).toBe('多平台 SFC 模板')
       expect(pageConfig.usingComponents?.['platform-card']).toBe('/components/PlatformCard/index')
       expect(componentConfig.component).toBe(true)
