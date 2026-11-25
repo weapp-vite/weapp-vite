@@ -44,10 +44,10 @@ pnpm add -D @weapp-vite/web
 import { defineElements, setupRpx, setupWebViewport } from '@weapp-vite/web/elements'
 
 defineElements(['weapp-view', 'weapp-scroll-view', 'weapp-swiper'])
+// 先选择视口模式，再根据设备设计宽度设置 rpx
+setupWebViewport({ mode: 'responsive' })
 // 属性值沿用 rpx 单位时（例如 previous-margin="60rpx"）需要 --rpx 基准
 setupRpx({ designWidth: 750 })
-// 视口基准默认是小程序模式：文档宽度 ≥600px 时按 375px 封顶；跟随真实宽度用 responsive
-setupWebViewport({ mode: 'responsive' })
 ```
 
 `setupRpx` 与 `setupWebViewport` 共同决定同一个换算基准：CSS 侧写入的 `--rpx` 和 JS 侧的 rpx 换算（例如 `scroll-view` 的 `refresher-threshold="100rpx"`）读的是同一份配置，因此不要只在样式表里写 `--rpx: calc(100vw / 750)`——那条式子不会跟随小程序视口封顶规则，两个元素上的同一个 `100rpx` 会算出不同的长度。没有 rpx 需求时这两个调用都可以省略。

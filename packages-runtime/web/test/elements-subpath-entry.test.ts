@@ -65,6 +65,7 @@ function collectRuntimeGraph(entryFile: string) {
 describe('elements 子路径入口', () => {
   afterEach(() => {
     vi.unstubAllGlobals()
+    vi.restoreAllMocks()
   })
 
   const graph = collectRuntimeGraph(path.join(srcDir, 'elements.ts'))
@@ -143,11 +144,27 @@ describe('elements 子路径入口', () => {
   })
 
   it('rpx 的 CSS 变量与 JS 换算共用同一视口基准', () => {
-    setupWebViewport({ mode: 'responsive' })
-    setupRpx({ designWidth: 375, varName: '--contract-rpx' })
-    expect(document.documentElement.getAttribute('data-weapp-viewport-mode')).toBe('responsive')
-    expect(getRuntimeRpxSize()).toBeGreaterThan(0)
-    expect(document.documentElement.style.getPropertyValue('--contract-rpx'))
-      .toBe(`${getRuntimeRpxSize()}px`)
+    const app = document.createElement('div')
+    app.id = 'app'
+    document.body.append(app)
+    const appWidth = vi.spyOn(app, 'clientWidth', 'get').mockImplementation(() => {
+      return document.documentElement.getAttribute('data-weapp-viewport-mode') === 'responsive' ? 900 : 375
+    })
+    try {
+      setupWebViewport({ mode: 'mini-program' })
+      setupRpx({ designWidth: 375, varName: '--contract-rpx' })
+      expect(document.documentElement.style.getPropertyValue('--contract-rpx')).toBe('1px')
+
+      setupWebViewport({ mode: 'responsive' })
+      expect(document.documentElement.getAttribute('data-weapp-viewport-mode')).toBe('responsive')
+      expect(getRuntimeRpxSize()).toBe(2.4)
+      expect(document.documentElement.style.getPropertyValue('--contract-rpx'))
+        .toBe(`${getRuntimeRpxSize()}px`)
+    }
+    finally {
+      appWidth.mockRestore()
+      app.remove()
+      setupWebViewport({ mode: 'mini-program' })
+    }
   })
 })
