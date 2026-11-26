@@ -1,5 +1,6 @@
+import type { Signal } from '@a2ui/web_core/reactivity'
 import type { DataContext } from '@a2ui/web_core/resolution'
-import { getValue, type Signal } from '@a2ui/web_core/reactivity'
+import { getValue } from '@a2ui/web_core/reactivity'
 import { describe, expect, it, vi } from 'vitest'
 import { createA2uiCatalog } from './catalog'
 import { createSurfaceMessage, setupSession } from './sessionTestUtils'

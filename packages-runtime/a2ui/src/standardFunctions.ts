@@ -4,11 +4,11 @@
  */
 import type { FunctionImplementation } from '@a2ui/web_core/catalog'
 import type { DataContext } from '@a2ui/web_core/resolution'
+import type { A2uiLocale } from './types'
 import { A2uiExpressionError } from '@a2ui/web_core/errors'
 import { ExpressionParser } from '@a2ui/web_core/expressions'
 import { computed, getValue, isSignal } from '@a2ui/web_core/reactivity'
 import { analyzeRegex, MAX_REGEX_VALUE_CODE_POINTS } from '@a2ui/web_core/v1_0'
-import type { A2uiLocale } from './types'
 import { formatA2uiCurrency, formatA2uiDate, formatA2uiNumber, formatA2uiPluralize } from './standardFormatting'
 
 type BuiltinFunction = Pick<FunctionImplementation, 'returnType' | 'execute'>
