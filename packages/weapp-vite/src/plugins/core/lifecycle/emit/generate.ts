@@ -823,6 +823,8 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
       rewriteBundleDynamicGlobalResolution(rewriteBundle)
       checkpointRewrite('generateRewritePlatformMs')
 
+      // prelude 与框架运行时块只安装依赖命中的提前集合，候选 targets 仍保留给各 chunk 按需识别。
+      const requestGlobalsEagerTargets = injectRequestGlobalsOptions?.eagerTargets ?? injectRequestGlobalsOptions?.targets ?? []
       const installerChunks = injectRequestGlobalsOptions?.targets?.length
         ? injectRequestGlobalsBundleRuntime(
             rolldownBundle,
@@ -830,6 +832,7 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
             injectRequestGlobalsOptions.mode,
             injectRequestGlobalsOptions.networkDefaults,
             requestGlobalsAnalysis,
+            requestGlobalsEagerTargets,
           )
         : new Map<string, string>()
       if (injectRequestGlobalsOptions?.targets?.length) {
@@ -875,7 +878,7 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
               installerChunks,
               mode: injectRequestGlobalsOptions?.mode ?? 'explicit',
               networkDefaults: injectRequestGlobalsOptions?.networkDefaults,
-              targets: injectRequestGlobalsOptions?.targets ?? [],
+              targets: requestGlobalsEagerTargets,
             },
             asset => this.emitFile(asset),
             requestGlobalsAnalysis,

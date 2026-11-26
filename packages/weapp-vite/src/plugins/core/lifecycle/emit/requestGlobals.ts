@@ -70,6 +70,16 @@ function resolvePreludeRequestGlobalsTargets(
   return mode === 'auto' ? targets : resolveChunkRequestGlobalsTargets(code, targets, mode)
 }
 
+/**
+ * @description 框架自带的 request globals 运行时/支持块。
+ * @description 这类 chunk 的文本是框架 polyfill 源码，不能当作业务使用信号参与按需识别。
+ */
+function isRequestGlobalsFrameworkChunkFileName(fileName: string) {
+  const baseName = path.basename(toPosixPath(fileName))
+  return baseName.startsWith('request-globals-')
+    || baseName === 'web-apis-shared.js'
+}
+
 export function resolveRequestGlobalsInstallerName(code: string, analysis?: RequestGlobalsAnalysisOptions, filename = '') {
   const facts = getRequestGlobalsContentFacts(code, filename, analysis)
   return facts ? facts.installerName : findRequestGlobalsInstaller(code)
@@ -158,6 +168,7 @@ export function injectRequestGlobalsBundleRuntime(
   mode: 'auto' | 'explicit',
   networkDefaults?: MiniProgramNetworkDefaults,
   analysis?: RequestGlobalsAnalysisOptions,
+  eagerTargets?: WeappInjectRequestGlobalsTarget[],
 ) {
   const installerChunks = new Map<string, string>()
   if (targets.length === 0) {
@@ -180,7 +191,10 @@ export function injectRequestGlobalsBundleRuntime(
     if (chunk.code.includes(REQUEST_GLOBAL_BUNDLE_MARKER)) {
       continue
     }
-    const chunkTargets = resolveChunkRequestGlobalsTargets(chunk.code, targets, mode, analysis, chunk.fileName)
+    // auto 模式下框架运行时块只承担提前安装，不把自身 polyfill 文本当作业务使用信号。
+    const chunkTargets = mode === 'auto' && eagerTargets !== undefined && isRequestGlobalsFrameworkChunkFileName(chunk.fileName)
+      ? eagerTargets
+      : resolveChunkRequestGlobalsTargets(chunk.code, targets, mode, analysis, chunk.fileName)
     if (chunkTargets.length === 0) {
       continue
     }
@@ -434,12 +448,6 @@ function toRequireRequestPath(fromFileName: string, toFileName: string) {
   return relativePath.startsWith('.') ? relativePath : `./${relativePath}`
 }
 
-function isRequestGlobalsSupportChunkFileName(fileName: string) {
-  const baseName = path.basename(toPosixPath(fileName))
-  return baseName.startsWith('request-globals-')
-    || baseName === 'web-apis-shared.js'
-}
-
 function rewriteChunkRequireLiteral(
   chunk: OutputChunk,
   fromFileName: string,
@@ -668,7 +676,7 @@ export function collapseRequestGlobalsRuntimeSupportChunk(bundle: OutputBundle) 
     }
     if (
       resolvedImport === REQUEST_GLOBAL_RUNTIME_CHUNK_FILE_BASENAME
-      || !isRequestGlobalsSupportChunkFileName(resolvedImport)
+      || !isRequestGlobalsFrameworkChunkFileName(resolvedImport)
     ) {
       continue
     }

@@ -49,8 +49,12 @@ const REQUEST_RUNTIME_CORE_USAGE_TARGETS = new Set<WeappInjectWebRuntimeGlobalsT
   'XMLHttpRequest',
 ])
 
-// ky 与 stream-markdown-parser 会在模块初始化期读取 Web 能力，必须参与自动识别。
+// 自定义 targets 的 auto 规则沿用这份完整依赖表，避免收窄后不再匹配实时通信项目。
 const DEFAULT_REQUEST_GLOBAL_DEPENDENCIES = ['axios', 'graphql-request', 'socket.io-client', 'engine.io-client', 'ky', 'stream-markdown-parser']
+// 实时通信依赖需要 WebSocket 在 app 初始化阶段就可用，提前安装集合与候选集合保持一致。
+const DEFAULT_WEBSOCKET_GLOBAL_DEPENDENCIES = ['socket.io-client', 'engine.io-client']
+// 普通请求与流式解析依赖的提前安装集合收敛到请求运行时组，不为未使用的 WebSocket 等能力做预装。
+const DEFAULT_FETCH_GLOBAL_DEPENDENCIES = ['axios', 'graphql-request', 'ky', 'stream-markdown-parser']
 const DEFAULT_STREAM_GLOBAL_DEPENDENCIES = ['eventsource-parser']
 const DEFAULT_ABORT_GLOBAL_DEPENDENCIES = ['@tanstack/query-core', '@tanstack/vue-query']
 const WEBSOCKET_USAGE_HINT_RE = /\bwebsocket\b/iu
@@ -70,11 +74,20 @@ const REQUEST_GLOBAL_FREE_BINDING_TARGETS = new Set<WeappRequestGlobalFreeBindin
 export interface InjectRequestGlobalsAutoRule {
   dependencyPatterns: (string | RegExp)[]
   targets: WeappInjectWebRuntimeGlobalsTarget[]
+  /**
+   * @description 依赖命中后需要提前安装（app prelude 与框架运行时 chunk）的目标集合。
+   * @description 缺省与 `targets` 相同，用于保留“候选全量、预装按依赖收窄”的差异。
+   */
+  eagerTargets?: WeappInjectWebRuntimeGlobalsTarget[]
 }
 
 export interface ResolvedInjectRequestGlobalsOptions {
   mode: 'auto' | 'explicit'
   targets: WeappInjectWebRuntimeGlobalsTarget[]
+  /**
+   * @description auto 模式下提前安装的目标集合；explicit 模式与 `targets` 相同，因此不单独返回。
+   */
+  eagerTargets?: WeappInjectWebRuntimeGlobalsTarget[]
   dependencyPatterns?: (string | RegExp)[]
   networkDefaults?: MiniProgramNetworkDefaults
   prelude: boolean
@@ -215,9 +228,11 @@ function resolveAutoPrelude(config?: boolean | WeappInjectRequestGlobalsConfig) 
 
 function resolveAutoRules(config?: boolean | WeappInjectRequestGlobalsConfig): InjectRequestGlobalsAutoRule[] {
   if (hasCustomAutoRuleConfig(config)) {
+    const targets = resolveTargets(config)
     return [{
       dependencyPatterns: resolveDependencyPatterns(config),
-      targets: resolveTargets(config),
+      targets,
+      eagerTargets: targets,
     }]
   }
 
@@ -225,14 +240,22 @@ function resolveAutoRules(config?: boolean | WeappInjectRequestGlobalsConfig): I
     {
       dependencyPatterns: DEFAULT_STREAM_GLOBAL_DEPENDENCIES,
       targets: [...FULL_REQUEST_GLOBAL_TARGETS],
+      eagerTargets: [...STREAM_REQUEST_GLOBAL_TARGETS],
     },
     {
-      dependencyPatterns: DEFAULT_REQUEST_GLOBAL_DEPENDENCIES,
+      dependencyPatterns: DEFAULT_WEBSOCKET_GLOBAL_DEPENDENCIES,
       targets: [...FULL_REQUEST_GLOBAL_TARGETS],
+      eagerTargets: [...FULL_REQUEST_GLOBAL_TARGETS],
+    },
+    {
+      dependencyPatterns: DEFAULT_FETCH_GLOBAL_DEPENDENCIES,
+      targets: [...FULL_REQUEST_GLOBAL_TARGETS],
+      eagerTargets: [...REQUEST_RUNTIME_REQUEST_TARGETS],
     },
     {
       dependencyPatterns: DEFAULT_ABORT_GLOBAL_DEPENDENCIES,
       targets: [...ABORT_REQUEST_GLOBAL_TARGETS],
+      eagerTargets: [...ABORT_REQUEST_GLOBAL_TARGETS],
     },
   ]
 }
@@ -272,12 +295,16 @@ export function resolveInjectRequestGlobalsOptions(
 
   const autoRules = resolveAutoRules(config)
   const matchedTargets = new Set<WeappInjectWebRuntimeGlobalsTarget>()
+  const matchedEagerTargets = new Set<WeappInjectWebRuntimeGlobalsTarget>()
   for (const rule of autoRules) {
     if (!hasMatchedDependency(packageJson, rule.dependencyPatterns)) {
       continue
     }
     for (const target of rule.targets) {
       matchedTargets.add(target)
+    }
+    for (const target of rule.eagerTargets ?? rule.targets) {
+      matchedEagerTargets.add(target)
     }
   }
 
@@ -288,6 +315,7 @@ export function resolveInjectRequestGlobalsOptions(
   return {
     mode: 'auto',
     targets: [...matchedTargets],
+    eagerTargets: [...matchedEagerTargets],
     prelude: resolveAutoPrelude(config),
   }
 }
