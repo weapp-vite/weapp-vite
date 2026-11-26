@@ -24,11 +24,24 @@ export interface A2uiSurfaceView {
 
 export type A2uiInteraction
   = | { readonly type: 'input', readonly nodeId: string, readonly value: A2uiJsonValue, readonly bindingName?: string }
-    | { readonly type: 'action', readonly nodeId: string, readonly actionName?: string }
+    | { readonly type: 'action', readonly nodeId: string, readonly actionName?: string, readonly eventId?: string }
 
 export interface A2uiActionMessage {
   readonly version: '1.0'
   readonly action: ActionPayload
+}
+
+/** 内置标准函数支持的确定性本地语言环境。 */
+export type A2uiLocale = 'zh-CN' | 'en-US'
+
+/** A2UI 1.0 renderer data model transport metadata。 */
+export interface A2uiRendererDataModel {
+  readonly version: '1.0'
+  readonly surfaces: Record<string, Record<string, A2uiJsonValue>>
+}
+
+export interface A2uiTransportMetadata {
+  readonly a2uiRendererDataModel?: A2uiRendererDataModel
 }
 
 /** Core 通过 surface 事件上报的运行时或消息处理错误。 */
@@ -44,8 +57,8 @@ export interface A2uiErrorMessage {
 
 export interface A2uiSessionListeners {
   onSurfaces: (views: A2uiSurfaceView[]) => void
-  onAction: (message: A2uiActionMessage) => void | Promise<void>
-  onError?: (error: A2uiErrorMessage) => void | Promise<void>
+  onAction: (message: A2uiActionMessage, metadata?: A2uiTransportMetadata) => void | Promise<void>
+  onError?: (error: A2uiErrorMessage, metadata?: A2uiTransportMetadata) => void | Promise<void>
 }
 
 export type A2uiFunctionHandler = (args: Record<string, unknown>) => unknown | Promise<unknown>
@@ -53,8 +66,10 @@ export type A2uiFunctionHandler = (args: Record<string, unknown>) => unknown | P
 export interface A2uiSessionOptions extends A2uiSessionListeners {
   /** A2UI 1.0 catalog 文档；组件与函数由消费方声明。 */
   catalog: Record<string, any>
-  /** 可选 catalog 函数实现；未提供的已声明函数在调用时通过 onError 报错。 */
+  /** 可选 catalog 函数实现；宿主实现优先于内置标准函数，其余未实现函数在调用时通过 onError 报错。 */
   functionImplementations?: Readonly<Record<string, A2uiFunctionHandler>>
+  /** 内置数字、货币、日期与复数函数的输出语言；默认 zh-CN。 */
+  locale?: A2uiLocale
 }
 
 export interface A2uiSession {

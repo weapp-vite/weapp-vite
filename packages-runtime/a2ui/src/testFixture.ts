@@ -3,6 +3,8 @@
  * Copyright 2024 Google LLC，Apache-2.0（https://www.apache.org/licenses/LICENSE-2.0）。
  * 仅用于本包单测，不作为发布资产。
  */
+import { testCatalogFunctions } from './testCatalogFunctions'
+
 export const TEST_CATALOG_ID = 'weapp-vite/test-a2ui'
 
 export const testCatalog = {
@@ -48,53 +50,63 @@ export const testCatalog = {
       required: ['component', 'text'],
     },
     TextField: {
-      type: 'object',
-      properties: {
-        component: { const: 'TextField' },
-        label: { $ref: 'common_types.json#/$defs/DynamicString' },
-        value: { $ref: 'common_types.json#/$defs/DynamicString' },
-        placeholder: { $ref: 'common_types.json#/$defs/DynamicString' },
-        variant: {
-          type: 'string',
-          enum: ['longText', 'number', 'shortText', 'obscured'],
-          default: 'shortText',
+      allOf: [
+        { $ref: 'common_types.json#/$defs/Checkable' },
+        {
+          type: 'object',
+          properties: {
+            component: { const: 'TextField' },
+            label: { $ref: 'common_types.json#/$defs/DynamicString' },
+            value: { $ref: 'common_types.json#/$defs/DynamicString' },
+            placeholder: { $ref: 'common_types.json#/$defs/DynamicString' },
+            variant: {
+              type: 'string',
+              enum: ['longText', 'number', 'shortText', 'obscured'],
+              default: 'shortText',
+            },
+          },
+          required: ['component', 'label'],
         },
-      },
-      required: ['component', 'label'],
+      ],
     },
     Button: {
-      type: 'object',
-      properties: {
-        component: { const: 'Button' },
-        child: { $ref: 'common_types.json#/$defs/Child' },
-        variant: { type: 'string', enum: ['default', 'primary', 'borderless'], default: 'default' },
-        action: {
-          description: 'REF:common_types.json#/$defs/Action|Dispatches an event with a nonempty name to the application.',
-          allOf: [{ $ref: 'common_types.json#/$defs/Action' }],
-          not: {
-            anyOf: [
-              {
-                type: 'object',
-                properties: { functionCall: {} },
-                required: ['functionCall'],
-              },
-              {
-                type: 'object',
-                properties: {
-                  event: {
+      allOf: [
+        { $ref: 'common_types.json#/$defs/Checkable' },
+        {
+          type: 'object',
+          properties: {
+            component: { const: 'Button' },
+            child: { $ref: 'common_types.json#/$defs/Child' },
+            variant: { type: 'string', enum: ['default', 'primary', 'borderless'], default: 'default' },
+            action: {
+              description: 'REF:common_types.json#/$defs/Action|Dispatches an event with a nonempty name to the application.',
+              allOf: [{ $ref: 'common_types.json#/$defs/Action' }],
+              not: {
+                anyOf: [
+                  {
                     type: 'object',
-                    properties: { name: { const: '' } },
-                    required: ['name'],
+                    properties: { functionCall: {} },
+                    required: ['functionCall'],
                   },
-                },
-                required: ['event'],
+                  {
+                    type: 'object',
+                    properties: {
+                      event: {
+                        type: 'object',
+                        properties: { name: { const: '' } },
+                        required: ['name'],
+                      },
+                    },
+                    required: ['event'],
+                  },
+                ],
               },
-            ],
+            },
+            secondaryAction: { $ref: 'common_types.json#/$defs/Action' },
           },
+          required: ['component'],
         },
-        secondaryAction: { $ref: 'common_types.json#/$defs/Action' },
-      },
-      required: ['component'],
+      ],
     },
     Tabs: {
       type: 'object',
@@ -117,23 +129,5 @@ export const testCatalog = {
       required: ['component', 'tabs'],
     },
   },
-  functions: {
-    resolveValue: {
-      type: 'object',
-      returnType: 'string',
-      properties: {
-        '@call': { const: 'resolveValue' },
-        'args': {
-          type: 'object',
-          properties: {
-            value: { type: 'string' },
-            delay: { type: 'number' },
-          },
-          required: ['value'],
-          additionalProperties: false,
-        },
-      },
-      required: ['@call'],
-    },
-  },
+  functions: testCatalogFunctions,
 } as const

@@ -158,7 +158,8 @@ describe('createA2uiSession regressions', () => {
     expect(result.actions).toHaveLength(0)
     expect(result.errors).toHaveLength(1)
     expect(result.errors[0]).toMatchObject({ code: 'EXPRESSION_ERROR', surfaceId: 's1' })
-    expect(result.errors[0]!.message).toContain('未实现 catalog 函数 \'resolveValue\'')
+    expect(result.errors[0]!.message).toContain('Function \'resolveValue\'')
+    expect(result.errors[0]!.message).toContain('schema-only and has no implementation')
     result.session.dispose()
   })
 
@@ -251,7 +252,8 @@ describe('createA2uiSession regressions', () => {
 
     expect(result.actions).toHaveLength(0)
     expect(result.errors).toHaveLength(1)
-    expect(result.errors[0]!.message).toContain('未实现 catalog 函数 \'toString\'')
+    expect(result.errors[0]!.message).toContain('Function \'toString\'')
+    expect(result.errors[0]!.message).toContain('schema-only and has no implementation')
     result.session.dispose()
   })
 })

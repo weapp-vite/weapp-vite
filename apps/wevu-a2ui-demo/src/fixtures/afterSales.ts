@@ -16,6 +16,14 @@ function setComponents(components: unknown[]) {
   return envelope('updateComponents', { surfaceId: SURFACE_ID, components })
 }
 
+function reasonChecks() {
+  const value = { '@path': '/form/reason' }
+  return [
+    { condition: { '@call': 'required', args: { value } }, message: '请填写售后原因' },
+    { condition: { '@call': 'length', args: { value, min: 4 } }, message: '至少填写四个字' },
+  ]
+}
+
 /**
  * 首屏：一条 createSurface 同时给出组件表与数据模型。
  *
@@ -38,6 +46,7 @@ export function createInitialMessages(): unknown[] {
           label: '遇到了什么问题？',
           placeholder: '例如：收到的杯盖有划痕',
           value: { '@path': '/form/reason' },
+          '@checks': reasonChecks(),
         },
         {
           id: 'detail',
@@ -48,7 +57,17 @@ export function createInitialMessages(): unknown[] {
           variant: 'longText',
         },
         { id: 'hint', component: 'Text', text: { '@path': '/form/hint' }, variant: 'caption' },
-        { id: 'submit', component: 'Button', child: 'submitLabel', variant: 'primary', action: { event: { name: 'submit', context: { reason: { '@path': '/form/reason' } } } } },
+        {
+          id: 'submit',
+          component: 'Button',
+          child: 'submitLabel',
+          variant: 'primary',
+          action: { event: { name: 'submit', context: { reason: { '@path': '/form/reason' } } } },
+          '@checks': [{
+            condition: { '@call': 'and', args: { values: reasonChecks().map(check => check.condition) } },
+            message: '请先填写有效的售后原因',
+          }],
+        },
         { id: 'submitLabel', component: 'Text', text: '提交申请' },
         { id: 'inspect', component: 'Button', child: 'inspectLabel', action: { event: { name: 'inspect' } } },
         { id: 'inspectLabel', component: 'Text', text: '查看订单信息' },
@@ -119,6 +138,9 @@ export function agentReplies(message: A2uiActionMessage): unknown[] {
   const reason = String(context.reason ?? '').trim()
   if (!reason) {
     return [setPath('/error', '请先填写售后原因')]
+  }
+  if (reason.length < 4) {
+    return [setPath('/error', '请至少填写四个字')]
   }
   if (reason.includes('失败')) {
     return [

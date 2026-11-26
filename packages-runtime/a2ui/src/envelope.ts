@@ -53,3 +53,21 @@ export function readA2uiEnvelope(message: unknown): A2uiEnvelope {
     message: { version: '1.0', [type]: payload } as A2uiEnvelopeMessage,
   }
 }
+
+/** 展开标准消息数组或 `{ messages }` wrapper，并在应用前完成整批形状校验。 */
+export function readA2uiEnvelopes(message: unknown): A2uiEnvelope[] {
+  if (Array.isArray(message)) {
+    return Array.from(message, item => readA2uiEnvelope(item))
+  }
+  if (typeof message === 'object' && message !== null) {
+    const keys = Reflect.ownKeys(message)
+    if (keys.length === 1 && keys[0] === 'messages') {
+      const messages = (message as { messages?: unknown }).messages
+      if (!Array.isArray(messages)) {
+        throw new A2uiValidationError('Expected an array of A2UI 1.0 surface state messages.')
+      }
+      return Array.from(messages, item => readA2uiEnvelope(item))
+    }
+  }
+  return [readA2uiEnvelope(message)]
+}
