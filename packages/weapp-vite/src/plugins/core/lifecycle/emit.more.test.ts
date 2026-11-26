@@ -22,7 +22,7 @@ import {
 } from '@weapp-core/constants'
 import MagicString from 'magic-string'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { FULL_REQUEST_GLOBAL_TARGETS } from '../../../runtime/config/internal/injectRequestGlobals'
+import { FULL_REQUEST_GLOBAL_TARGETS, REQUEST_RUNTIME_REQUEST_TARGETS } from '../../../runtime/config/internal/injectRequestGlobals'
 import { createRuntimeState } from '../../../runtime/runtimeState'
 import { createGenerateBundleHook, createRenderStartHook } from './emit'
 import { collectActiveHmrImportedChunkIds, createSubPackageMatcher, shouldWarmupBundleScriptAnalysis } from './emit/generate'
@@ -1846,6 +1846,81 @@ describe('core lifecycle emit hook extra branches', () => {
     expect(bundle['pages/request-globals/fetch.js'].code).toContain(`var WebSocket = ${REQUEST_GLOBAL_CHUNK_HOST_REF}.WebSocket`)
   })
 
+  it('keeps unrequested WebSocket out of auto-mode framework runtime chunk and app prelude', async () => {
+    const state = createState({
+      subPackageMeta: null,
+      entriesMap: new Map([
+        ['app', { type: 'app', path: 'app' }],
+        ['pages/request-globals/fetch', { type: 'page', path: 'pages/request-globals/fetch' }],
+      ]),
+      ctx: {
+        configService: {
+          packageJson: {
+            dependencies: {
+              axios: '^1.8.0',
+            },
+          },
+          weappViteConfig: {},
+          relativeAbsoluteSrcRoot: (id: string) => id.replace('/project/src/', ''),
+        },
+        scanService: {
+          subPackageMap: new Map(),
+          appEntry: {},
+        },
+      },
+    })
+    const hook = createGenerateBundleHook(state, false)
+    const installerFile = 'weapp-vendors/request-globals-web-apis-shared.js'
+    const bundle = {
+      [installerFile]: {
+        type: 'chunk',
+        fileName: installerFile,
+        code: [
+          'function vn(e={}){const t=e.targets??[`fetch`,`Headers`,`Request`,`Response`,`TextEncoder`,`TextDecoder`,`AbortController`,`AbortSignal`,`XMLHttpRequest`,`WebSocket`];return { fetch: Promise.resolve, WebSocket: Object }}',
+          `Object.defineProperty(vn,${JSON.stringify(REQUEST_GLOBAL_INSTALLER_MARKER)},{value:true});`,
+          'Object.defineProperty(exports,`At`,{enumerable:!0,get:function(){return vn}})',
+        ].join(';'),
+        imports: [],
+        dynamicImports: [],
+      },
+      'pages/request-globals/fetch.js': {
+        type: 'chunk',
+        fileName: 'pages/request-globals/fetch.js',
+        code: `const e=require("../../${installerFile}");const response = fetch("/api");Page({ response })`,
+        imports: [installerFile],
+        dynamicImports: [],
+      },
+      'app.js': {
+        type: 'chunk',
+        fileName: 'app.js',
+        isEntry: true,
+        code: `const e=require("./${installerFile}");App({})`,
+        imports: [installerFile],
+        dynamicImports: [],
+      },
+    } as any
+
+    const emitFile = vi.fn((asset: any) => {
+      bundle[asset.fileName] = {
+        type: 'asset',
+        fileName: asset.fileName,
+        source: asset.source,
+      }
+    })
+
+    await hook.call({ emitFile }, {}, bundle)
+
+    const eagerTargetsLiteral = JSON.stringify([...REQUEST_RUNTIME_REQUEST_TARGETS])
+    const installerCode = bundle[installerFile].code
+    expect(installerCode).toContain(`= vn({ targets: ${eagerTargetsLiteral} }) || globalThis`)
+    expect(installerCode).not.toMatch(/targets: \[[^\]]*"WebSocket"/)
+    expect(bundle['pages/request-globals/fetch.js'].code).toContain('var fetch =')
+    expect(bundle['pages/request-globals/fetch.js'].code).not.toContain('"WebSocket"')
+    const preludeSource = String((bundle['app.prelude.js'] as any).source)
+    expect(preludeSource).toContain('"fetch"')
+    expect(preludeSource).not.toContain('"WebSocket"')
+  })
+
   it('preserves native page sourcemaps through the complete request globals hook', async () => {
     const source = 'src/pages/request-globals/fetch.ts'
     const pageSource = [
@@ -2025,7 +2100,7 @@ describe('core lifecycle emit hook extra branches', () => {
     expect(code).toContain(REQUEST_GLOBAL_BUNDLE_MARKER)
     expect(code).toContain('function fetch(input){return input}')
     expect(code).not.toContain('var fetch =')
-    expect(code).toContain('var WebSocket =')
+    expect(code).toContain('var XMLHttpRequest =')
   })
 
   it('still injects top-level local bindings when chunk already contains setup-scoped request globals host bindings', async () => {

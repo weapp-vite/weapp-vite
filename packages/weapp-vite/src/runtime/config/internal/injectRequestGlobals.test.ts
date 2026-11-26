@@ -50,6 +50,20 @@ describe('injectRequestGlobals helpers', () => {
     'TextDecoderStream',
     'EventSource',
   ] as const
+  const requestRuntimeTargets = [
+    'fetch',
+    'Headers',
+    'Request',
+    'Response',
+    'TextEncoder',
+    'TextDecoder',
+    'AbortController',
+    'AbortSignal',
+    'XMLHttpRequest',
+    'ReadableStream',
+    'WritableStream',
+    'TransformStream',
+  ] as const
 
   it('enables auto injection when matching dependencies are present', () => {
     expect(resolveInjectRequestGlobalsOptions(undefined, {
@@ -60,6 +74,7 @@ describe('injectRequestGlobals helpers', () => {
       mode: 'auto',
       prelude: true,
       targets: [...fullWebRuntimeTargets],
+      eagerTargets: [...requestRuntimeTargets],
     })
   })
 
@@ -72,6 +87,7 @@ describe('injectRequestGlobals helpers', () => {
       mode: 'auto',
       prelude: true,
       targets: [...fullWebRuntimeTargets],
+      eagerTargets: [...requestRuntimeTargets],
     })
   })
 
@@ -84,6 +100,7 @@ describe('injectRequestGlobals helpers', () => {
       mode: 'auto',
       prelude: true,
       targets: [...fullWebRuntimeTargets],
+      eagerTargets: [...requestRuntimeTargets],
     })
   })
 
@@ -96,6 +113,7 @@ describe('injectRequestGlobals helpers', () => {
       mode: 'auto',
       prelude: true,
       targets: [...fullWebRuntimeTargets],
+      eagerTargets: [...fullWebRuntimeTargets],
     })
   })
 
@@ -111,7 +129,22 @@ describe('injectRequestGlobals helpers', () => {
         'AbortController',
         'AbortSignal',
       ],
+      eagerTargets: [
+        'AbortController',
+        'AbortSignal',
+      ],
     })
+  })
+
+  it('keeps unrequested WebSocket out of eager targets while candidates stay full', () => {
+    const resolved = resolveInjectRequestGlobalsOptions(undefined, {
+      dependencies: {
+        axios: '^1.0.0',
+      },
+    })
+
+    expect(resolved?.targets).toContain('WebSocket')
+    expect(resolved?.eagerTargets).not.toContain('WebSocket')
   })
 
   it('allows explicit auto mode to opt out of prelude timing', () => {
@@ -125,6 +158,7 @@ describe('injectRequestGlobals helpers', () => {
       mode: 'auto',
       prelude: false,
       targets: [...fullWebRuntimeTargets],
+      eagerTargets: [...requestRuntimeTargets],
     })
   })
 
@@ -165,6 +199,7 @@ describe('injectRequestGlobals helpers', () => {
       mode: 'auto',
       prelude: true,
       targets: [...fullWebRuntimeTargets],
+      eagerTargets: [...requestRuntimeTargets],
     })
   })
 
