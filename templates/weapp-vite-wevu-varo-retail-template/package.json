@@ -30,9 +30,9 @@
     "postinstall": "wv prepare"
   },
   "dependencies": {
-    "@varo-ui/headless": "3.0.0",
-    "@varo-ui/theme": "3.0.0",
-    "@weapp-tailwindcss/merge": "^2.2.4",
+    "@varo-ui/headless": "3.0.1",
+    "@varo-ui/theme": "3.0.1",
+    "@weapp-tailwindcss/merge": "^2.2.7",
     "clsx": "catalog:"
   },
   "devDependencies": {

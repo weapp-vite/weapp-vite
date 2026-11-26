@@ -15,6 +15,24 @@ export type Toolchain = 'wv' | 'vite' | 'vite-plus'
 const VITE_PLUS_VERSION = vitePlusVersions.version
 const VITE_PLUS_VITEST_VERSION = vitePlusVersions.vitest
 const VITE_PLUS_CORE = `npm:@voidzero-dev/vite-plus-core@${VITE_PLUS_VERSION}`
+const VITE_PLUS_VITEST_PACKAGES = [
+  'vitest',
+  '@vitest/browser',
+  '@vitest/browser-playwright',
+  '@vitest/browser-preview',
+  '@vitest/coverage-istanbul',
+  '@vitest/coverage-v8',
+  '@vitest/expect',
+  '@vitest/mocker',
+  '@vitest/pretty-format',
+  '@vitest/snapshot',
+  '@vitest/spy',
+  '@vitest/ui',
+  '@vitest/utils',
+] as const
+const VITE_PLUS_VITEST_OVERRIDES = Object.fromEntries(
+  VITE_PLUS_VITEST_PACKAGES.map(packageName => [packageName, VITE_PLUS_VITEST_VERSION]),
+)
 
 /** 工具链与业务模板正交，非法选择必须在复制模板前失败。 */
 export function validateToolchain(value: unknown): asserts value is Toolchain {
@@ -36,12 +54,18 @@ export async function validateToolchainWorkspace(root: string, toolchain: Toolch
   if (document.getIn(['overrides', 'vite']) !== VITE_PLUS_CORE) {
     throw new Error(`Vite+ 项目所属工作区须先配置 overrides.vite: ${VITE_PLUS_CORE}，以保证所有成员使用同一 Vite 引擎。`)
   }
-  if (document.getIn(['overrides', 'vitest']) !== VITE_PLUS_VITEST_VERSION) {
-    throw new Error(`Vite+ 项目所属工作区须先配置 overrides.vitest: ${VITE_PLUS_VITEST_VERSION}，以保证测试包与 vp test 使用同一 runner。`)
+  for (const packageName of VITE_PLUS_VITEST_PACKAGES) {
+    if (document.getIn(['overrides', packageName]) !== VITE_PLUS_VITEST_VERSION) {
+      throw new Error(`Vite+ 项目所属工作区须先配置 overrides.${packageName}: ${VITE_PLUS_VITEST_VERSION}，以保证测试包与 vp test 使用同一 runner。`)
+    }
   }
   const vitePeers = document.getIn(['peerDependencyRules', 'allowedVersions', 'vite'])
   if (typeof vitePeers !== 'string' || !satisfies(VITE_PLUS_VERSION, vitePeers)) {
     throw new Error(`Vite+ 项目所属工作区须先配置 peerDependencyRules.allowedVersions.vite: ${VITE_PLUS_VERSION}，以声明 core alias 的工具链版本兼容并保留严格 peer 检查。`)
+  }
+  const browserPeers = document.getIn(['peerDependencyRules', 'allowedVersions', '@vitest/browser-playwright'])
+  if (typeof browserPeers !== 'string' || !satisfies(VITE_PLUS_VITEST_VERSION, browserPeers)) {
+    throw new Error(`Vite+ 项目所属工作区须先配置 peerDependencyRules.allowedVersions.@vitest/browser-playwright: ${VITE_PLUS_VITEST_VERSION}，以声明 Vitest patch 版本兼容并保留严格 peer 检查。`)
   }
 }
 
@@ -86,16 +110,19 @@ export async function applyToolchain(root: string, pkg: PackageJson, toolchain: 
   }
   pkg.devDependencies['vite-plus'] = VITE_PLUS_VERSION
   pkg.devDependencies.vite = VITE_PLUS_CORE
-  pkg.overrides = { ...pkg.overrides, vite: VITE_PLUS_CORE, vitest: VITE_PLUS_VITEST_VERSION }
+  pkg.overrides = { ...pkg.overrides, vite: VITE_PLUS_CORE, ...VITE_PLUS_VITEST_OVERRIDES }
   pkg.engines.node = '^24.22.1 || >=26.12.1'
   const workspace = await findPnpmWorkspaceRoot(root)
   if (workspace && path.resolve(workspace) === path.resolve(root)) {
     const fileName = path.join(workspace, 'pnpm-workspace.yaml')
     const document = parseDocument(await fs.readFile(fileName, 'utf8'))
     document.setIn(['overrides', 'vite'], VITE_PLUS_CORE)
-    document.setIn(['overrides', 'vitest'], VITE_PLUS_VITEST_VERSION)
+    for (const [packageName, version] of Object.entries(VITE_PLUS_VITEST_OVERRIDES)) {
+      document.setIn(['overrides', packageName], version)
+    }
     // core 使用工具链版本号，声明精确 alias 版本兼容，其他依赖仍保持严格 peer 检查。
     document.setIn(['peerDependencyRules', 'allowedVersions', 'vite'], VITE_PLUS_VERSION)
-    await fs.writeFile(fileName, document.toString())
+    document.setIn(['peerDependencyRules', 'allowedVersions', '@vitest/browser-playwright'], VITE_PLUS_VITEST_VERSION)
+    await fs.writeFile(fileName, document.toString({ singleQuote: true }))
   }
 }

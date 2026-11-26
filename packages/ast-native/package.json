@@ -62,10 +62,10 @@
     "@weapp-vite/ast-native-win32-x64-msvc": "workspace:*"
   },
   "devDependencies": {
-    "@napi-rs/cli": "^3.10.12",
+    "@napi-rs/cli": "^3.11.1",
     "@types/node": "catalog:",
     "eslint": "catalog:",
-    "vitest": "5.1.1"
+    "vitest": "catalog:"
   },
   "napi": {
     "binaryName": "weapp_vite_ast_native",

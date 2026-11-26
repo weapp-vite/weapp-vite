@@ -64,7 +64,7 @@
     "@weapp-vite/ast": "workspace:*",
     "@weapp-vite/wxml": "workspace:*",
     "fast-glob": "catalog:",
-    "ignore": "^7.0.16",
+    "ignore": "^7.0.17",
     "picomatch": "catalog:"
   },
   "devDependencies": {

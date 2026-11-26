@@ -112,9 +112,10 @@ describe('offline PR admission contract', () => {
     })).toContainEqual(expect.objectContaining({ name: '审批 Environment' }))
   })
 
-  it.each(['environment', 'checkout', 'permissions', 'command', 'plan'])('rejects weakened automatic changeset %s boundaries', (field) => {
+  it.each(['environment', 'checkout', 'permissions', 'command', 'plan', 'toolchain', 'plan-needs', 'version'])('rejects weakened automatic changeset %s boundaries', (field) => {
     const checks = failures(({ workflows }) => {
-      const job = workflows['release-intent-auto.yml'].jobs.apply
+      const jobs = workflows['release-intent-auto.yml'].jobs
+      const job = jobs.apply
       if (field === 'environment') {
         job.environment = 'unprotected'
       }
@@ -128,7 +129,16 @@ describe('offline PR admission contract', () => {
         job.steps.at(-1).run += '\npnpm exec repo release snapshot --publish'
       }
       if (field === 'plan') {
-        delete workflows['release-intent-auto.yml'].jobs.plan.environment
+        delete jobs.plan.environment
+      }
+      if (field === 'toolchain') {
+        jobs.toolchain.uses = './.github/workflows/untrusted-toolchain.yml'
+      }
+      if (field === 'plan-needs') {
+        delete jobs.plan.needs
+      }
+      if (field === 'version') {
+        jobs.apply.env.REPOCTL_VERSION = '6.6.7'
       }
     })
     expect(checks.some(row => row.name.startsWith('自动 changeset'))).toBe(true)

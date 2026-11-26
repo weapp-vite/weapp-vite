@@ -92,8 +92,8 @@
     "@weapp-vite/language-service": "workspace:*",
     "execa": "catalog:",
     "jsonc-parser": "^3.3.1",
-    "make-fetch-happen": "^16.0.1",
-    "npm-registry-fetch": "^20.0.1",
+    "make-fetch-happen": "^16.0.2",
+    "npm-registry-fetch": "^20.0.2",
     "pathe": "catalog:",
     "picomatch": "catalog:",
     "pkg-types": "catalog:",
@@ -106,7 +106,7 @@
     "@types/npmcli__config": "^6.0.4",
     "@weapp-vite/oxfmt": "workspace:*",
     "@weapp-vite/oxlint": "workspace:*",
-    "oxfmt": "0.79.0",
+    "oxfmt": "0.80.0",
     "vite-plus": "catalog:"
   }
 }

@@ -59,7 +59,7 @@
     "zod": "catalog:fixed"
   },
   "devDependencies": {
-    "@types/react": "^19.3.0",
+    "@types/react": "^19.3.3",
     "@weapp-agent/core": "workspace:*",
     "@weapp-agent/mini-program": "workspace:*",
     "@weapp-agent/providers": "workspace:*",
