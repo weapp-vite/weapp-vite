@@ -169,6 +169,66 @@ WARN  [分包] 分包 packages/order 样式入口 ../shared/styles/components.sc
 
 > 自动导入组件：主包与每个分包的 `components/**/*.wxml` 会默认被自动扫描。若分包需独立 Resolver/Typed 输出，可通过 `subPackages.<root>.autoImportComponents` 进一步覆盖；若某个分包不希望自动导入，也可以设置 `subPackages.<root>.autoImportComponents = false`。构建器会在主包与独立构建时分别应用对应配置，保证 `OrderMetrics` 等本地组件无需重复维护 `usingComponents`。
 
+## 将现有原生小程序渐进接入为一个分包
+
+如果要把一个已有原生小程序的业务页面放进另一个小程序，推荐把宿主小程序作为唯一应用入口，在同一个 `srcRoot` 下把旧项目的页面、组件和资源组织为一个分包，再由 `weapp-vite` 一次构建宿主应用。原生 `.wxml`、`.wxss`、`.js`、`.json` 和 `.wxs` 可以继续保留，不需要先迁移成 Vue SFC。
+
+例如将旧小程序的页面放到 `src/packages/legacy`：
+
+```text
+src/
+├─ app.json
+├─ app.ts
+├─ app.wxss
+├─ pages/
+│  └─ home/index.ts
+└─ packages/
+   └─ legacy/
+      ├─ pages/
+      │  ├─ index/index.ts
+      │  └─ detail/index.ts
+      └─ components/
+```
+
+在宿主的 `src/app.json` 中保留主包路由，并声明旧项目页面所属的分包。`pages` 数组里的路径相对于 `root`：
+
+```json
+{
+  "pages": ["pages/home/index"],
+  "subPackages": [
+    {
+      "root": "packages/legacy",
+      "name": "legacy",
+      "pages": ["pages/index/index", "pages/detail/index"]
+    }
+  ]
+}
+```
+
+构建仍使用宿主项目的 `srcRoot`：
+
+```ts
+import { defineConfig } from 'weapp-vite/config'
+
+export default defineConfig({
+  weapp: {
+    srcRoot: 'src',
+  },
+})
+```
+
+接入时把旧项目的页面、页面级 JSON、组件、WXS、图片和其他静态资源按实际引用关系放进分包。应用级的 `App()`、`app.json`、全局样式、`window`、`tabBar`、插件与云开发配置仍由宿主应用统一承载，需要合并或适配，不能把旧项目当作第二个完整应用直接嵌入。页面跳转路径也要包含新的分包根目录，例如跳转到详情页时使用 `/packages/legacy/pages/detail/index`。
+
+若当前只开发这个业务域，可以通过 scope 缩小本轮构建：
+
+```bash
+wv dev --scope main,packages/legacy
+```
+
+`buildScope` 和 CLI `--scope` 用于同一个应用内的局部开发与验证，不会把独立小程序自动合并进宿主。scope 构建生成的 `app.json` 只登记参与本轮构建的主包和分包；发布前应使用宿主配置执行完整的 `wv build`，再检查完整路由、依赖落位和包体积。若旧项目必须保留在独立仓库并独立输出，需要另行实现并验证产物合并流程，不能直接用 scope 构建结果覆盖宿主产物目录。
+
+只有目标分包必须在不下载主包的情况下启动时，才将它配置为独立分包。独立分包仍属于宿主小程序，不能用来承载另一套 `App()` 或应用级配置，并且不能依赖主包中的 JS、模板、样式、组件或静态资源。
+
 ## npm 依赖分配规则
 
 - `weapp.npm.mainPackage.dependencies` 控制主包 `miniprogram_npm` 的输出范围。
