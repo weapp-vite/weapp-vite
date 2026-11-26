@@ -27,7 +27,7 @@
     "build:web": "wv build -p web",
     "open:weapp": "wv open -p weapp",
     "open:alipay": "wv open -p alipay",
-    "typecheck": "vue-tsc --noEmit -p .weapp-vite/tsconfig.app.json",
+    "typecheck": "vue-tsc --noEmit -p .weapp-vite/tsconfig.app.json && tsc --noEmit -p test/tsconfig.json",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "stylelint": "stylelint \"src/**/*.{css,scss,vue,wxss,acss,ttss,jxss,qss,tyss}\" --allow-empty-input",

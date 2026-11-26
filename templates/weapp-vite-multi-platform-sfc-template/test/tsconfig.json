@@ -1,0 +1,4 @@
+{
+  "extends": "../.weapp-vite/tsconfig.node.json",
+  "include": ["./**/*.ts"]
+}
