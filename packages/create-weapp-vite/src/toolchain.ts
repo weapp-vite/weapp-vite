@@ -13,8 +13,9 @@ import vitePlusVersions from './vitePlusVersions.json'
 export type Toolchain = 'wv' | 'vite' | 'vite-plus'
 
 const VITE_PLUS_VERSION = vitePlusVersions.version
+const VITE_PLUS_CORE_VERSION = vitePlusVersions.core
 const VITE_PLUS_VITEST_VERSION = vitePlusVersions.vitest
-const VITE_PLUS_CORE = `npm:@voidzero-dev/vite-plus-core@${VITE_PLUS_VERSION}`
+const VITE_PLUS_CORE = `npm:@voidzero-dev/vite-plus-core@${VITE_PLUS_CORE_VERSION}`
 const VITE_PLUS_VITEST_PACKAGES = [
   'vitest',
   '@vitest/browser',
@@ -60,8 +61,8 @@ export async function validateToolchainWorkspace(root: string, toolchain: Toolch
     }
   }
   const vitePeers = document.getIn(['peerDependencyRules', 'allowedVersions', 'vite'])
-  if (typeof vitePeers !== 'string' || !satisfies(VITE_PLUS_VERSION, vitePeers)) {
-    throw new Error(`Vite+ 项目所属工作区须先配置 peerDependencyRules.allowedVersions.vite: ${VITE_PLUS_VERSION}，以声明 core alias 的工具链版本兼容并保留严格 peer 检查。`)
+  if (typeof vitePeers !== 'string' || !satisfies(VITE_PLUS_CORE_VERSION, vitePeers)) {
+    throw new Error(`Vite+ 项目所属工作区须先配置 peerDependencyRules.allowedVersions.vite: ${VITE_PLUS_CORE_VERSION}，以声明 core alias 的工具链版本兼容并保留严格 peer 检查。`)
   }
   const browserPeers = document.getIn(['peerDependencyRules', 'allowedVersions', '@vitest/browser-playwright'])
   if (typeof browserPeers !== 'string' || !satisfies(VITE_PLUS_VITEST_VERSION, browserPeers)) {
@@ -120,8 +121,8 @@ export async function applyToolchain(root: string, pkg: PackageJson, toolchain: 
     for (const [packageName, version] of Object.entries(VITE_PLUS_VITEST_OVERRIDES)) {
       document.setIn(['overrides', packageName], version)
     }
-    // core 使用工具链版本号，声明精确 alias 版本兼容，其他依赖仍保持严格 peer 检查。
-    document.setIn(['peerDependencyRules', 'allowedVersions', 'vite'], VITE_PLUS_VERSION)
+    // core 使用独立版本号，声明 alias 版本兼容，其他依赖仍保持严格 peer 检查。
+    document.setIn(['peerDependencyRules', 'allowedVersions', 'vite'], VITE_PLUS_CORE_VERSION)
     document.setIn(['peerDependencyRules', 'allowedVersions', '@vitest/browser-playwright'], VITE_PLUS_VITEST_VERSION)
     await fs.writeFile(fileName, document.toString({ singleQuote: true }))
   }
