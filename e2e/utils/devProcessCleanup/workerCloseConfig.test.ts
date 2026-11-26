@@ -8,6 +8,11 @@ it.each(['ci', 'ci.build-only', 'headless', 'devtools', 'internal', 'utils', 'hm
   expect(source).toMatch(/hookTimeout:\s*DEV_PROCESS_CLEANUP_HOOK_TIMEOUT_MS/u)
 })
 
+it('keeps feature 1087 recovery hooks under the IDE cleanup budget', async () => {
+  const source = await readFile(new URL('../../ide/github-issues.runtime.feature1087.test.ts', import.meta.url), 'utf8')
+  expect(source).toMatch(/beforeEach\(async \(\) => \{[\s\S]*?\}, DEV_PROCESS_CLEANUP_HOOK_TIMEOUT_MS\)/u)
+})
+
 it('uses a separate zero-timeout final close gate instead of abandoning native work at the hook timer', async () => {
   const source = await readFile(new URL('../../vitest.e2e.dev-process.setup.ts', import.meta.url), 'utf8')
   expect(source).toContain('beginWindowsKernelQueryScope()')

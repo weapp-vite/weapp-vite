@@ -1,21 +1,16 @@
 ---
 name: weapp-acceptance
-description: Validate changes in weapp-vite native or Wevu WeChat projects with Weapp Agent build checks, deterministic DevTools scenarios, and source-bound evidence. Use after implementing a mini-program feature or investigating a failed acceptance task.
+description: Verify changes in weapp-vite native, Wevu, or React mini-program projects with native Vitest APIs, the weapp-vite headless simulator, and provider-compatible DevTools E2E. Use after implementing a mini-program feature or investigating a runtime regression.
 ---
 
-# Weapp acceptance
+# Weapp verification
 
-Keep planning and code edits in the host agent. Weapp Agent executes checks and collects evidence; it does not need another model or API key.
+Keep planning, code edits, assertions, and test execution in the host agent. Use the project's existing Vitest entry and the public weapp-vite testing namespaces.
 
-1. Call `weapp_project_inspect` when available, or `wv accept <project> --inspect --json`. Limit acceptance claims to supported weapp-vite native/Wevu projects on WeChat.
-2. Maintain `acceptance.scenarios` in `weapp-acceptance.config.json` for the requested behavior. Read [scenarios.md](references/scenarios.md) when creating or changing a scenario. Preserve unrelated checks and user changes. Choose assertions from the requested outcome, not from whichever output the current code produces.
-3. Start `weapp_acceptance_start`, retain its `jobId`, and query `weapp_acceptance_status` until it is no longer `running`. Use CLI `wv accept <project> --json` if MCP is unavailable; CLI waits for completion. Do not launch duplicate jobs to poll progress.
-4. Read `weapp_acceptance_report` and relevant named artifacts. Repair the cause of failures within the user's task, then run a new acceptance job. Repeated environment failures require resolving the stated prerequisite, not repeated navigation or input.
+1. Read the project's `AGENTS.md`, package scripts, and existing tests. Preserve the project's package manager, test configuration, and current test organization.
+2. For page or component behavior, use `test`, `it`, `expect`, and hooks directly from `vitest`. Build the actual mini-program artifact with `buildTestArtifact()` and create an isolated simulator project with `createTestProject({ artifact })`, both from `weapp-vite/test`. Close each project in `finally` or a native Vitest teardown hook.
+3. Run the focused test first, then the project's normal Vitest command. Add a regression assertion for the requested behavior instead of inferring expected values from the current output.
+4. Use `launchAutomator()` from `weapp-vite/e2e` or the repository's provider-compatible `e2e/ide/**` suites when the change depends on WeChat DevTools runtime behavior. Run the headless provider and DevTools provider for touched shared scenarios, following `$weapp-devtools-e2e-best-practices` for automator reuse, environment checks, and cleanup.
+5. Report headless and DevTools results separately. A headless simulator result does not establish that the official DevTools runtime passed, and an unavailable DevTools environment remains unverified.
 
-Honor existing host authorization. A tool's `action_required` result does not authorize silently adding `--trust`. Explain the concrete scripts/configuration that need review. Scenario edits invalidate the stored trust decision. Never lower required checks, delete assertions, or replace actual values with expected values to obtain a pass.
-
-Reports use `version: 2`. Claim acceptance passed only when `passed` is true and `snapshot.stale` is false; state the report's `requiredChecks`. Build-only acceptance is not runtime verification. `verify --json` is the legacy command report and is not a full acceptance verdict.
-
-Report failures, missing evidence, and environment blockers distinctly. Screenshots support inspection but do not prove visual correctness. `runtime: wechat-devtools` describes the developer-tool simulator, not a physical device. Interrupted tasks are not replayed: inspect the last recorded step and current state before starting a fresh job.
-
-When reporting completion, provide the job ID, checks performed, failed/unverified categories, and relevant screenshot/log artifacts. Do not claim a runtime action occurred unless the report records it.
+Do not create `weapp-acceptance.config.json` or `acceptance/*.json` for new project tests. Use the legacy `wv accept` flow only when the user explicitly asks to run or maintain that existing workflow.

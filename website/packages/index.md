@@ -39,7 +39,7 @@ keywords:
 - 使用 Vite+ 或 Oxlint 检查小程序 runtime 与 Wevu API：用 `@weapp-vite/oxlint`
 - 使用 Vite+ 或 Oxfmt 统一小程序源码格式：用 `@weapp-vite/oxfmt`
 - 需要复用多平台模板与脚本模块分析、作用域及结构化诊断：用 `@weapp-vite/language-service`
-- 想用 Vitest 测试真实小程序编译产物：用 `@mpcore/test`、`@mpcore/vitest` 与 `@mpcore/weapp-vite`
+- 想用 Vitest 测试真实小程序编译产物：用 `weapp-vite/test` 与 Vitest 原生 API；需要连接真实微信开发者工具时再用 `weapp-vite/e2e`
 - 想低成本测试不依赖模板的 Wevu Composition API：用 `@wevu/test-utils`
 - 想跨页面共享服务端数据、协调请求并在变更后刷新列表：用 `@wevu/query`
 - 想在 Wevu 中渲染受组件目录约束的 JSON 界面：用实验性的 `@wevu/json-render`
@@ -57,7 +57,7 @@ keywords:
 | Vue SFC、响应式和小程序生命周期 | `wevu` + `weapp-vite` | 使用 `script setup`，把小程序 API 通过 `@weapp-core/api` 接入 |
 | React 19 JSX/TSX | `@weapp-vite/react` | 确认 `weapp.react` 配置和原生组件 bridge，不安装 `react-dom` |
 | 原生 API、跨平台 API 或 Web API | `@weapp-core/api`、`@wevu/web-apis` | 先确认目标平台，再按需安装 polyfill，避免无条件注入全部 Web API |
-| 页面测试和 headless runtime | `@mpcore/test` + `@mpcore/vitest` + `@mpcore/weapp-vite` | 先构建真实 weapp-vite 产物，再运行隔离测试会话 |
+| 页面测试和 headless runtime | `weapp-vite/test` | 构建真实 weapp-vite 产物并运行隔离测试会话 |
 | DevTools 自动化、截图、上传或日志 | `weapp-ide-cli`、`@weapp-vite/miniprogram-automator` | 优先使用 `wv screenshot`、`wv compare`、`wv ide logs` |
 | AI 代码助手接入 | `@weapp-vite/mcp` 或 `@weapp-agent/cli` | 先运行 `wv mcp init <client>` 或 `weapp-agent doctor` |
 | Tailwind CSS | `@weapp-vite/tailwindcss` | 让 `weapp-vite` 负责宿主监听和输出，控制器本身不写文件 |
@@ -136,7 +136,7 @@ keywords:
 | `@mpcore/core` | mpcore 生态元信息入口 | 需要读取 mpcore 生态标识 | [/packages/mpcore-core](/packages/mpcore-core) |
 | `@mpcore/simulator` | headless 小程序运行时 | 不启动 IDE 的运行时和页面断言 | [/packages/mpcore-simulator](/packages/mpcore-simulator) |
 | `@mpcore/vitest` | Vitest 集成 | 将 mpcore 会话注入 Vitest 测试 | [/packages/mpcore-vitest](/packages/mpcore-vitest) |
-| `@mpcore/weapp-vite` | weapp-vite 产物适配器 | 为 mpcore 测试构建真实产物 | [/packages/mpcore-weapp-vite](/packages/mpcore-weapp-vite) |
+| `@mpcore/weapp-vite` | weapp-vite 兼容适配器 | 组合产物构建与 mpcore headless 测试 API | [/packages/mpcore-weapp-vite](/packages/mpcore-weapp-vite) |
 | `@weapp-vite/acceptance` | 确定性验收与证据 | 编排 build、DevTools 和报告步骤 | [/packages/acceptance](/packages/acceptance) |
 | `@weapp-vite/devtools-runtime` | DevTools runtime 辅助层 | 编写仓库内 DevTools provider | [/packages/devtools-runtime](/packages/devtools-runtime) |
 | `@weapp-vite/miniprogram-automator` | automator 现代实现 | 启动 DevTools、查询页面和交互 | [/packages/miniprogram-automator](/packages/miniprogram-automator) |

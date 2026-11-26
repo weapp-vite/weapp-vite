@@ -1,7 +1,7 @@
-import type { ProjectInfo, VerificationCommand } from '@weapp-agent/core/project'
+import type { ProjectConfig, ProjectInfo, VerificationCommand } from '@weapp-agent/core/project'
 import { access, readdir, readFile, realpath } from 'node:fs/promises'
 import path from 'node:path'
-import { bounded, safePath } from '@weapp-agent/core/project'
+import { bounded, projectConfigSchema, safePath } from '@weapp-agent/core/project'
 
 async function json(file: string): Promise<Record<string, any>> {
   try {
@@ -148,6 +148,13 @@ export function defaultVerification(
       timeoutMs: 120_000,
     }))
 }
+
+export async function defaultAcceptanceConfig(root: string): Promise<ProjectConfig> {
+  return projectConfigSchema.parse({
+    verification: defaultVerification(await detectProject(root)),
+  })
+}
+
 export async function projectInstructions(
   project: ProjectInfo,
 ): Promise<string> {

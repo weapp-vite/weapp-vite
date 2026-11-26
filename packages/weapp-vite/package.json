@@ -90,6 +90,10 @@
       "types": "./dist/test.d.mts",
       "import": "./dist/test.mjs"
     },
+    "./e2e": {
+      "types": "./dist/e2e.d.mts",
+      "import": "./dist/e2e.mjs"
+    },
     "./compatibility": {
       "types": "./dist/compatibility.d.mts",
       "import": "./dist/compatibility.mjs"
@@ -166,7 +170,7 @@
     "test:dev": "vitest",
     "test": "vitest run",
     "test:types": "pnpm run test:types:check",
-    "test:types:check": "cd test-d/auto-import-presets && tsd --files \"**/*.test-d.ts\" && cd ../auto-routes-define-app-json && tsd --files \"**/*.test-d.ts\" && cd ../config-define-config && tsd --files \"**/*.test-d.ts\" && cd ../config-public-types && tsd --files \"**/*.test-d.ts\" && cd ../upload-config && tsd --files \"**/*.test-d.ts\" && cd ../i18n-public-types && tsd --files \"**/*.test-d.ts\" && cd ../internal-src-types && tsd --files \"**/*.test-d.ts\" && cd ../resolvers-public-types && tsd --files \"**/*.test-d.ts\" && cd ../runtime-public-types && tsd --files \"**/*.test-d.ts\" && cd ../test-artifact-public-types && tsd --files \"**/*.test-d.ts\" && cd ../dashboard-public-types && tsd --files \"**/*.test-d.ts\" && cd ../vite-public-types && tsd --files \"**/*.test-d.ts\" && cd ../doctor-public-types && tsd --files \"**/*.test-d.ts\" && cd ../volar-public-types && tsd --files \"**/*.test-d.ts\" && cd ../client-public-types && tsd --files \"**/*.test-d.ts\" && cd ../i18n-isolated-types && tsd --files \"**/*.test-d.ts\"",
+    "test:types:check": "cd test-d/auto-import-presets && tsd --files \"**/*.test-d.ts\" && cd ../auto-routes-define-app-json && tsd --files \"**/*.test-d.ts\" && cd ../config-define-config && tsd --files \"**/*.test-d.ts\" && cd ../config-public-types && tsd --files \"**/*.test-d.ts\" && cd ../upload-config && tsd --files \"**/*.test-d.ts\" && cd ../i18n-public-types && tsd --files \"**/*.test-d.ts\" && cd ../internal-src-types && tsd --files \"**/*.test-d.ts\" && cd ../resolvers-public-types && tsd --files \"**/*.test-d.ts\" && cd ../runtime-public-types && tsd --files \"**/*.test-d.ts\" && cd ../test-artifact-public-types && tsd --files \"**/*.test-d.ts\" && cd ../e2e-public-types && tsd --files \"**/*.test-d.ts\" && cd ../dashboard-public-types && tsd --files \"**/*.test-d.ts\" && cd ../vite-public-types && tsd --files \"**/*.test-d.ts\" && cd ../doctor-public-types && tsd --files \"**/*.test-d.ts\" && cd ../volar-public-types && tsd --files \"**/*.test-d.ts\" && cd ../client-public-types && tsd --files \"**/*.test-d.ts\" && cd ../i18n-isolated-types && tsd --files \"**/*.test-d.ts\"",
     "lint:src": "eslint src --ext .ts",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "sync": "repo release sync-npmmirror --package weapp-vite"
@@ -192,6 +196,7 @@
     "@jridgewell/remapping": "catalog:",
     "@modelcontextprotocol/node": "catalog:",
     "@modelcontextprotocol/server": "catalog:",
+    "@mpcore/test": "workspace:*",
     "@types/picomatch": "catalog:",
     "@types/set-value": "catalog:",
     "@typescript-eslint/parser": "catalog:",

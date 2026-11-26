@@ -65,7 +65,7 @@ description: 面向采用 weapp-vite 项目布局仓库或已安装 `weapp-vite`
    - AI / 调试：`weapp.forwardConsole`、`weapp.mcp`、`wv mcp init|print|doctor`、`wv screenshot`、`wv compare`、`wv ide logs --open`
    - 产物与结构：`subPackages`、`npm`、`chunks`、`worker`、`weapp.analyze.budgets` / `history`
    - 进阶链路：`web`、`lib`
-   - 页面/组件单测：`@mpcore/weapp-vite` 构建产物，`@mpcore/test` 提供 render/query/user，`@mpcore/vitest` 提供每测试隔离和 matcher
+   - 页面/组件单测：测试文件直接从 `vitest` 导入原生测试 API，从 `weapp-vite/test` 导入真实产物构建、headless simulator、render/query/user 和 matcher；需要真实微信开发者工具时才从 `weapp-vite/e2e` 导入 automator
    - i18n：通过 `import { i18n } from 'weapp-vite/i18n'` 获取构建实例；Native Component 与 Component Page 使用 `behaviors: [i18n.behavior]`，传统 `Page({...})` 使用 `i18n.page(options)`；主包与普通分包共享实例，独立分包从默认语言创建实例；无 Vite 原生项目直接使用 `@weapp-vite/i18n`
    - React 项目：这里只判断项目级 `weapp.react` 和构建所有权，TSX/runtime/bridge 细节转交 `weapp-vite-react-best-practices`
 4. CLI 与 IDE 所有权保持清晰：

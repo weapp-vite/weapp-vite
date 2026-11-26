@@ -1,6 +1,6 @@
 import type { ScrollPosition } from './helpers'
 import { getNativeComponentDescriptor } from '../../../shared/nativeComponents'
-import { registerControlledAttributeCommit } from '../../controlledAttributes'
+import { registerControlledAttributeCommit } from '../../controlledAttributes/state'
 import { dispatchMiniProgramEvent, readBooleanAttribute, resolveContainingShadowRoot } from '../helpers'
 import { ensureNativeComponentStyle } from '../style'
 import { createScrollBoundaryTracker } from './boundaries'

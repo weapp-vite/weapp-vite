@@ -83,6 +83,7 @@ pnpm approve
 | Skill                                   | 适用任务                                                                            | 优先读取                                                                     |
 | --------------------------------------- | ----------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
 | `$weapp-vite-best-practices` | 配置、构建、分包、路由和 CLI | `node_modules/weapp-vite/dist/docs/` |
+| `$weapp-acceptance`                     | 使用 Vitest 原生 API、`weapp-vite/test` 模拟器和 DevTools E2E 验证小程序改动          | 模板 `test/**`、`weapp-vite/test`、`weapp-vite/e2e`、`e2e/ide/**`             |
 | `$docs-and-website-sync`                | 根据真实实现同步 `website`、README、skills、AI 指南和随包 `dist/docs`               | 源码、CLI、类型定义、`packages/weapp-vite/docs/**`、`website/.vitepress/**`  |
 | `$release-and-changeset-best-practices` | pnpm change intent、repoctl 发布检查、GitHub issue 修复、worktree 与 PR 闭环        | `repoctl.config.ts`、`.changeset/**`、`e2e-apps/github-issues`、发布检查脚本 |
 | `$weapp-devtools-e2e-best-practices`    | `e2e/ide/**`、automator 复用、`miniProgram.reLaunch(...)`、真实运行时截图和日志验收 | `e2e/ide/**`、`e2e/scripts/**`、DevTools 配置                                |
@@ -136,4 +137,4 @@ node skills/scripts/verify-package-skills.mjs
 
 ## 改动验收
 
-使用 [小程序改动验收](./acceptance) 和 `weapp-acceptance` Skill，通过现有 MCP 完成检查、场景运行和报告读取，无需第二个模型。
+使用 `$weapp-acceptance` 编写并运行 Vitest headless 测试。只有改动依赖真实微信开发者工具行为时，才继续使用 `$weapp-devtools-e2e-best-practices` 和 `e2e/ide` provider。

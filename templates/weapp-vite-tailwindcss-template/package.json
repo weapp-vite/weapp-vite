@@ -22,6 +22,8 @@
     "dev:ui": "wv dev --ui",
     "dev:open:ui": "wv dev --ui -o",
     "build": "wv build",
+    "test": "vitest run",
+    "test:dev": "vitest",
     "build:web": "wv build -p web",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
@@ -45,6 +47,7 @@
     "stylelint": "catalog:",
     "tailwindcss": "catalog:tailwind4",
     "typescript": "catalog:",
+    "vitest": "catalog:tilde",
     "weapp-vite": "workspace:*",
     "wevu": "workspace:*"
   }

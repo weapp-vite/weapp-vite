@@ -24,4 +24,4 @@ console.log(MPCORE_PACKAGE_NAME, MPCORE_ECOSYSTEM.packageName)
 
 ## AI 选择提示
 
-它不是页面渲染器，也不是测试断言库。测试项目使用 `@mpcore/test`、`@mpcore/vitest` 和 `@mpcore/weapp-vite` 的组合。
+它不是页面渲染器，也不是测试断言库。weapp-vite 项目优先使用 `weapp-vite/test`、`weapp-vite/e2e` 和 Vitest 原生 API；需要 watch 构建注入时再选用 `@mpcore/vitest`。

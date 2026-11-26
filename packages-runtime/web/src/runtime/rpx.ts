@@ -1,4 +1,4 @@
-import { getWebViewportWidth } from './viewport'
+import { getWebViewportWidth, onWebViewportChange } from './viewport'
 
 export interface RpxConfig {
   designWidth?: number
@@ -43,5 +43,6 @@ export function setupRpx(config?: RpxConfig) {
   if (!initialized && typeof window !== 'undefined') {
     initialized = true
     window.addEventListener('resize', apply)
+    onWebViewportChange(apply)
   }
 }

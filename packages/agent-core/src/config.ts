@@ -191,7 +191,7 @@ export async function projectFingerprint(
 
   const projectFiles: Array<[string, string]> = []
 
-  for (const file of ['project.config.json', 'vite.config.ts', 'vite.config.js', 'vite.config.mts', 'vite.config.mjs', 'vite.config.cts', 'vite.config.cjs', 'pnpm-workspace.yaml', 'pnpm-lock.yaml', 'package-lock.json', 'yarn.lock', 'bun.lock']) {
+  for (const file of ['weapp-acceptance.config.json', configFilename, 'project.config.json', 'vite.config.ts', 'vite.config.js', 'vite.config.mts', 'vite.config.mjs', 'vite.config.cts', 'vite.config.cjs', 'pnpm-workspace.yaml', 'pnpm-lock.yaml', 'package-lock.json', 'yarn.lock', 'bun.lock']) {
     try {
       projectFiles.push([file, hash(await readFile(await safePath(root, file), 'utf8'))])
     }

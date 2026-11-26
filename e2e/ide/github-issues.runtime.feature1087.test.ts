@@ -4,6 +4,7 @@ import process from 'node:process'
 import { fs } from '@weapp-core/shared/node'
 import path from 'pathe'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
+import { DEV_PROCESS_CLEANUP_HOOK_TIMEOUT_MS } from '../utils/devProcessCleanup/shutdown'
 import { createDomAcceptance } from '../utils/domAcceptance'
 import {
   currentPage,
@@ -59,11 +60,12 @@ describe('e2e app: github-issues / feature #1087 scroll restoration', { concurre
     miniProgram = await getSharedMiniProgram()
   }, PREPARE_GITHUB_ISSUES_BUILD_TIMEOUT)
 
+  // 沿用 DevTools 配置的 hook 清理预算，给受管会话恢复和最终回收留出时间。
   beforeEach(async () => {
     const native = await relaunchPage(miniProgram, NATIVE, undefined, 30_000, { forceRelaunch: true })
     assert(native)
     await native.callMethod('_reset')
-  }, 45_000)
+  }, DEV_PROCESS_CLEANUP_HOOK_TIMEOUT_MS)
 
   afterEach(async () => {
     await releaseSharedMiniProgram(miniProgram)
@@ -151,7 +153,7 @@ describe('e2e app: github-issues / feature #1087 scroll restoration', { concurre
 
   it('restores actual Skyline scroll-view coordinates without using page scrolling', async (ctx) => {
     await miniProgram.reLaunch(SKYLINE)
-    const first = await currentPage(miniProgram, SKYLINE)
+    const first = await currentPage(miniProgram, SKYLINE, 45_000)
     const probe = await snapshot(first)
     process.stdout.write(`[feature1087 Skyline capability] ${JSON.stringify({ SDKVersion: probe.SDKVersion, renderer: probe.renderer, apis: probe.apis })}\n`)
     expect(probe.renderer, 'Skyline must really be selected; a WebView fallback is not acceptance').toBe('skyline')
@@ -159,7 +161,7 @@ describe('e2e app: github-issues / feature #1087 scroll restoration', { concurre
     await setListPosition(first, 350, 0, 570)
     await miniProgram.reLaunch(NATIVE)
     await miniProgram.reLaunch(SKYLINE)
-    const restored = await currentPage(miniProgram, SKYLINE)
+    const restored = await currentPage(miniProgram, SKYLINE, 45_000)
     await expectListPosition(restored, 350, 0, 570)
     expect((await snapshot(restored)).errors).toEqual([])
     const dom = createDomAcceptance(ctx, 'e2e-apps/github-issues', [{

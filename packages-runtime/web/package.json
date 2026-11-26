@@ -32,6 +32,10 @@
       "types": "./dist/index.d.mts",
       "import": "./dist/index.mjs"
     },
+    "./elements": {
+      "types": "./dist/elements.d.mts",
+      "import": "./dist/elements.mjs"
+    },
     "./plugin": {
       "types": "./dist/plugin.d.mts",
       "import": "./dist/plugin.mjs"

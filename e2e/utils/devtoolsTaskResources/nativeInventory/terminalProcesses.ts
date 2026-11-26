@@ -24,6 +24,30 @@ export function verifiedTerminalProcesses(inventory: NativeInventory, installati
     const enumerated = row.entry.enumeratedIdentity
     const parent = closure.rows.get(enumerated.parentPid)
     const parentIdentity = parent?.identity
+    const finalParent = final.rows.get(enumerated.parentPid)
+    if (entry.firstPhase === 'closure2' && !entry.changed
+      && row.identity === null && row.finalIdentity === null && row.images === null
+      && !row.entry.confirmation && hasNativeExitEvidence(row) && finalParent && finalParent.identity) {
+      const parentSeconds = BigInt(finalParent.identity.startedSeconds)
+      const childSeconds = BigInt(enumerated.startedSeconds)
+      if (parentSeconds <= childSeconds && (parentSeconds !== childSeconds
+        || BigInt(finalParent.identity.startedMicroseconds) <= BigInt(enumerated.startedMicroseconds))) {
+        const ancestry = preparedForeignAncestry(inventory, final, finalParent.pid, installationRoot)
+        if (ancestry) {
+          // 最后一帧同一观察中的完整 ESRCH 证明已确认该外部短命进程退出。
+          proofs.push({
+            process: inventory.gap(entry),
+            terminalIdentity: metadata({ ...row, identity: enumerated }),
+            firstTerminalPhase: 'closure2',
+            proof: 'post-anchor-enumeration-then-kernel-exit',
+            phases: ['closure2'],
+            ancestry: [metadata(finalParent), ...ancestry],
+            semantics: 'terminated-task-without-executable-or-rss; no-ownership-inference',
+          })
+          continue
+        }
+      }
+    }
     if (entry.firstPhase === 'closure1' && !entry.changed && !final.rows.has(pid)
       && row.identity === null && row.finalIdentity === null && row.images === null
       && !row.entry.confirmation && hasNativeExitEvidence(row) && parent && parentIdentity) {

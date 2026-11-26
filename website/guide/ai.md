@@ -298,4 +298,4 @@ export default defineConfig({
 
 ## 改动验收
 
-使用 [小程序改动验收](./acceptance) 和 `weapp-acceptance` Skill，通过现有 MCP 完成检查、场景运行和报告读取，无需第二个模型。
+页面和组件改动直接使用 Vitest 原生 API、`weapp-vite/test` 的真实构建产物与 headless simulator。涉及微信开发者工具行为时，使用 `weapp-vite/e2e` automator 或仓库 `e2e/ide` 中对应的 provider-compatible suite。详见[小程序改动验收](./acceptance)。

@@ -2,7 +2,7 @@
   "name": "@mpcore/weapp-vite",
   "type": "module",
   "version": "1.1.9",
-  "description": "weapp-vite artifact adapter for @mpcore/test",
+  "description": "Compatibility adapter for weapp-vite test artifacts and mpcore E2E APIs",
   "author": "ice breaker <1324318532@qq.com>",
   "license": "MIT",
   "homepage": "https://github.com/weapp-vite/weapp-vite#readme",
@@ -27,6 +27,14 @@
     ".": {
       "types": "./dist/index.d.mts",
       "import": "./dist/index.mjs"
+    },
+    "./test": {
+      "types": "./dist/test.d.mts",
+      "import": "./dist/test.mjs"
+    },
+    "./e2e": {
+      "types": "./dist/e2e.d.mts",
+      "import": "./dist/e2e.mjs"
     }
   },
   "main": "./dist/index.mjs",
@@ -48,7 +56,6 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@mpcore/test": "workspace:*",
     "weapp-vite": "workspace:*"
   },
   "publishConfig": {

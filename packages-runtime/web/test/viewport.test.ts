@@ -1,6 +1,7 @@
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   getWebViewportWidth,
+  onWebViewportChange,
   resolveWebViewportConfig,
   setupWebViewport,
 } from '../src/runtime/viewport'
@@ -68,6 +69,8 @@ describe('web viewport', () => {
       head: { append: () => {} },
       querySelector: (selector: string) => selector === '#app' ? null : selector === '#weapp-web-viewport-style' ? style : null,
     }
+    const onViewportChange = vi.fn()
+    const removeViewportChangeListener = onWebViewportChange(onViewportChange)
     Object.assign(globalThis, {
       document: documentRef,
       window: { innerWidth: 800 },
@@ -76,12 +79,15 @@ describe('web viewport', () => {
     expect(setupWebViewport({ mode: 'mini-program', maxWidth: 375 })).toMatchObject({
       maxWidth: 375,
     })
+    expect(onViewportChange).toHaveBeenCalledTimes(1)
     expect(style.textContent).toContain('--weapp-viewport-max-width')
     expect(getWebViewportWidth()).toBe(375)
 
     root.clientWidth = 320
     expect(getWebViewportWidth()).toBe(320)
+    removeViewportChangeListener()
     setupWebViewport({ mode: 'responsive' })
+    expect(onViewportChange).toHaveBeenCalledTimes(1)
     expect(style.textContent).toContain('width: 100%')
   })
 

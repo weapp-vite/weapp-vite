@@ -6,7 +6,7 @@ import path from 'node:path'
 
 import { afterEach, expect, it } from 'vitest'
 
-import { configurationSource, loadAcceptanceConfig, projectFingerprint } from '../src/config.js'
+import { configurationSource, loadAcceptanceConfig, projectConfigSchema, projectFingerprint } from '../src/config.js'
 
 const roots: string[] = []
 
@@ -74,4 +74,14 @@ it('rejects model configuration in the new model-free file', async () => {
   await writeFile(path.join(root, 'weapp-acceptance.config.json'), JSON.stringify({ model: { provider: 'openai', name: 'unexpected' } }))
 
   await expect(loadAcceptanceConfig(root)).rejects.toThrow()
+})
+
+it('invalidates auto-detected acceptance trust when a configuration file is added', async () => {
+  const root = await fixture()
+  const inferred = projectConfigSchema.parse({ verification: [{ kind: 'build', command: 'pnpm', args: ['build'] }] })
+  const before = await projectFingerprint(root, inferred)
+
+  await writeFile(path.join(root, 'weapp-acceptance.config.json'), JSON.stringify({ acceptance: { requiredChecks: ['build'] } }))
+
+  expect(await projectFingerprint(root, inferred)).not.toBe(before)
 })

@@ -437,7 +437,7 @@ pnpm skills:score:json
 
 | ID | 提问 | 预期 skill | 实际 skill | 备注 |
 | --- | --- | --- | --- | --- |
-| M1 | 改完登录表单后，保存并重跑验收场景，给我断言和日志 | weapp-acceptance | | |
-| M2 | 检查这份小程序验收截图是否对应当前代码 | weapp-acceptance | | |
+| M1 | 改完登录表单后，直接用 Vitest 和 weapp-vite headless simulator 验证交互 | weapp-acceptance | | |
+| M2 | 页面改动完成后，说明如何用原生 Vitest 和 weapp-vite/test 模拟器做运行时验收 | weapp-acceptance | | |
 | M3 | 排查仓库的 automator 全局串行与 provider parity | weapp-devtools-e2e-best-practices | | 边界 |
-| X14 | Codex 写完页面后运行现有场景并查询报告，不修改底层 E2E | weapp-acceptance | | 冲突 |
+| X14 | Codex 写完页面后用模板 Vitest 测试验证，不创建 acceptance JSON 配置 | weapp-acceptance | | 冲突 |

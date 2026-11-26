@@ -16,7 +16,8 @@ const nativeNames: Record<string, string> = {
 }
 
 function isGlibcLinux() {
-  return process.platform !== 'linux' || Boolean(process.report?.getReport?.().header?.glibcVersionRuntime)
+  const report = process.report?.getReport?.() as { header?: { glibcVersionRuntime?: string } } | undefined
+  return process.platform !== 'linux' || Boolean(report?.header?.glibcVersionRuntime)
 }
 
 export function defaultAddonPath(root: string) {
