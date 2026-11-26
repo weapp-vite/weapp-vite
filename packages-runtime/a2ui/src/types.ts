@@ -24,7 +24,7 @@ export interface A2uiSurfaceView {
 
 export type A2uiInteraction
   = | { readonly type: 'input', readonly nodeId: string, readonly value: A2uiJsonValue, readonly bindingName?: string }
-    | { readonly type: 'action', readonly nodeId: string, readonly actionName?: string }
+    | { readonly type: 'action', readonly nodeId: string, readonly actionName?: string, readonly eventId?: string }
 
 export interface A2uiActionMessage {
   readonly version: '1.0'

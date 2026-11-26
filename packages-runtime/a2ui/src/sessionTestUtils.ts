@@ -1,4 +1,4 @@
-import type { A2uiActionMessage, A2uiErrorMessage, A2uiFunctionHandler, A2uiNode, A2uiSurfaceView } from './types'
+import type { A2uiActionMessage, A2uiErrorMessage, A2uiFunctionHandler, A2uiNode, A2uiSessionOptions, A2uiSurfaceView } from './types'
 import { createA2uiSession } from './session'
 import { TEST_CATALOG_ID, testCatalog } from './testFixture'
 
@@ -13,6 +13,7 @@ export interface SessionSetupResult {
 export function setupSession(
   functionImplementations?: Readonly<Record<string, A2uiFunctionHandler>>,
   catalog: Record<string, any> = testCatalog,
+  listeners: Partial<Pick<A2uiSessionOptions, 'onAction' | 'onError'>> = {},
 ): SessionSetupResult {
   const batches: A2uiSurfaceView[][] = []
   const actions: A2uiActionMessage[] = []
@@ -22,9 +23,11 @@ export function setupSession(
     onSurfaces: views => batches.push(views),
     onAction: (message) => {
       actions.push(message)
+      return listeners.onAction?.(message)
     },
     onError: (error) => {
       errors.push(error)
+      return listeners.onError?.(error)
     },
     functionImplementations,
   })

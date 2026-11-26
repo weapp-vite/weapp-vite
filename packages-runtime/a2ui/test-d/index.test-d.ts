@@ -40,6 +40,7 @@ const session: A2uiSession = createA2uiSession({
 expectType<void>(session.receive({ version: '1.0', deleteSurface: { surfaceId: 's1' } }))
 expectType<Promise<void>>(session.interact('s1', { type: 'action', nodeId: 'n1' }))
 expectType<Promise<void>>(session.interact('s1', { type: 'action', nodeId: 'n1', actionName: 'secondary' }))
+expectType<Promise<void>>(session.interact('s1', { type: 'action', nodeId: 'n1', eventId: 'event-1' }))
 expectType<Promise<void>>(session.interact('s1', { type: 'input', nodeId: 'n1', value: 'x' }))
 expectType<Promise<void>>(session.interact('s1', { type: 'input', nodeId: 'n1', bindingName: 'value', value: true }))
 expectType<Promise<void>>(session.interact('s1', { type: 'input', nodeId: 'n1', bindingName: 'value', value: 1 }))
@@ -47,6 +48,8 @@ expectType<void>(session.dispose())
 
 expectError(session.interact('s1', { type: 'input', nodeId: 'n1' }))
 expectError(session.interact('s1', { type: 'action', nodeId: 'n1', value: 'x' }))
+expectError(session.interact('s1', { type: 'action', nodeId: 'n1', eventId: 1 }))
+expectError(session.interact('s1', { type: 'input', nodeId: 'n1', value: 'x', eventId: 'event-1' }))
 expectError(session.interact('s1', { type: 'unknown', nodeId: 'n1' }))
 expectError(session.receive())
 

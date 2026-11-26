@@ -51,14 +51,14 @@ const session = createA2uiSession({
 
 session.receive(message) // 单个 A2UI 1.0 状态消息
 await session.interact(surfaceId, { type: 'input', nodeId, bindingName: 'value', value: 'hello' })
-await session.interact(surfaceId, { type: 'action', nodeId, actionName: 'action' })
+await session.interact(surfaceId, { type: 'action', nodeId, actionName: 'action', eventId: 'event-1' })
 session.dispose()
 ```
 
 | API | 行为 |
 | --- | --- |
 | `receive(message)` | 校验并应用 `createSurface`、`updateComponents`、`updateDataModel`、`deleteSurface`；RPC、内部操作、批量消息及空 `surfaceId` 直接拒绝 |
-| `interact(surfaceId, event)` | `input` 写回选定的可写绑定；`action` 执行选定的 Core 动作并把产生的 `ActionPayload` 按顺序交给 `onAction` |
+| `interact(surfaceId, event)` | `input` 写回选定的可写绑定；`action` 执行选定的 Core 动作并把产生的 `ActionPayload` 按顺序交给 `onAction`，可用 `eventId` 去重 |
 | `onSurfaces(views)` | 每次可见状态变化后整体推送；`updateDataModel` 的标量写入与 `null` 删除只更新绑定值，不替换节点 |
 | `onAction(message)` | 可返回 Promise；单个动作产生的消息按序串行等待，不同 `interact` 的异步回调可能交错；本地函数动作不会外发 |
 | `onError(error)` | 可选；接收 Core surface、消息处理与表达式错误，可返回 Promise |
@@ -103,10 +103,12 @@ interface A2uiSession {
 
 type A2uiInteraction
   = | { type: 'input', nodeId: string, value: A2uiJsonValue, bindingName?: string }
-    | { type: 'action', nodeId: string, actionName?: string }
+    | { type: 'action', nodeId: string, actionName?: string, eventId?: string }
 ```
 
 `interact` 使用投影时的操作表；节点已被替换或 surface 已删除时静默忽略。
+
+动作交互可携带非空 `eventId`。去重范围限定在单个 surface 内：相同 `eventId` 的进行中动作共享同一次执行与 `onAction` 投递；成功动作在 30 秒内直接忽略重复调用，命中时更新最近使用顺序，最多保留 256 条。动作执行或 `onAction` 投递失败时不写入成功缓存，可用相同 `eventId` 重试；`dispose()` 会清空进行中与成功记录。`input` 不支持 `eventId`。
 
 ## 渲染宿主
 
@@ -164,7 +166,7 @@ Chat 消息编排的参考实现采用同样的 envelope 校验、generation 操
 
 ## 验证与发布边界
 
-包级 28 项单测覆盖投影绑定、多绑定/多动作选择、嵌套槽位、输入回写、动作外发、异步动作隔离、本地 `functionCall`、标准函数与校验反馈、函数错误与继承成员边界、模板列表 respawn、路径删除、消息校验、失败回滚与幂等销毁；tsd 锁定公开类型。构建产物为 ESM + d.mts，`@a2ui/web_core` 作为外部依赖由宿主应用打包。
+包级 33 项单测覆盖投影绑定、多绑定/多动作选择、嵌套槽位、输入回写、动作外发、异步动作隔离、动作幂等去重、本地 `functionCall`、标准函数与校验反馈、函数错误与继承成员边界、模板列表 respawn、路径删除、消息校验、失败回滚与幂等销毁；tsd 锁定公开类型。构建产物为 ESM + d.mts，`@a2ui/web_core` 作为外部依赖由宿主应用打包。
 
 `apps/wevu-a2ui-demo` 与 `e2e/ide/wevu-a2ui.runtime.test.ts` 提供 headless 与真实微信 DevTools 的同场景验收，覆盖基础目录页、递归宿主、校验错误展示与清除、输入写回、增量替换后的输入保留、异常消息保留上一版界面和卸载清理。应用的 `test/noEval.test.ts` 从公共入口打包，在禁用 `Function` / `eval` 的 `vm` 上下文执行。
 

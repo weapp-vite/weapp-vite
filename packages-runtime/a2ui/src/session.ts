@@ -9,6 +9,9 @@ import { createA2uiCatalog } from './catalog'
 import { A2UI_STATE_MESSAGES, readA2uiEnvelope } from './envelope'
 import { projectA2uiSurface } from './projection'
 
+const ACTION_IDEMPOTENCY_WINDOW_MS = 30_000
+const ACTION_IDEMPOTENCY_CAPACITY = 256
+
 function clonePayload<T>(payload: T): T {
   return JSON.parse(JSON.stringify(payload)) as T
 }
@@ -79,6 +82,8 @@ export function createA2uiSession(options: A2uiSessionOptions): A2uiSession {
   let published = false
   let dispatch: A2uiActionMessage[] | undefined
   let actionQueue: Promise<void> = Promise.resolve()
+  const pendingActions = new Map<string, Promise<void>>()
+  const completedActions = new Map<string, number>()
   const actionSubscription = processor.model.onAction.subscribe((action) => {
     if (!disposed && dispatch) {
       dispatch.push({ version: '1.0', action: clonePayload(action) })
@@ -177,6 +182,26 @@ export function createA2uiSession(options: A2uiSessionOptions): A2uiSession {
       if (disposed) {
         return
       }
+      let actionKey: string | undefined
+      if (event.type === 'action' && event.eventId !== undefined) {
+        if (typeof event.eventId !== 'string' || event.eventId.trim().length === 0) {
+          throw new TypeError('动作 eventId 必须是非空字符串。')
+        }
+        actionKey = JSON.stringify([surfaceId, event.eventId])
+        const completedAt = completedActions.get(actionKey)
+        if (completedAt !== undefined) {
+          if (Date.now() - completedAt < ACTION_IDEMPOTENCY_WINDOW_MS) {
+            completedActions.delete(actionKey)
+            completedActions.set(actionKey, completedAt)
+            return
+          }
+          completedActions.delete(actionKey)
+        }
+        const pending = pendingActions.get(actionKey)
+        if (pending) {
+          return pending
+        }
+      }
       const operation = surfaces.get(surfaceId)?.operations.get(event.nodeId)
       if (!operation) {
         return
@@ -209,12 +234,36 @@ export function createA2uiSession(options: A2uiSessionOptions): A2uiSession {
         }
       })
       actionQueue = execution.catch(() => {})
-      await execution
-      for (const message of messages) {
-        if (disposed) {
-          return
+      const completion = (async () => {
+        await execution
+        for (const message of messages) {
+          if (disposed) {
+            return
+          }
+          await options.onAction(message)
         }
-        await options.onAction(message)
+      })()
+      if (actionKey !== undefined) {
+        pendingActions.set(actionKey, completion)
+      }
+      try {
+        await completion
+      }
+      finally {
+        if (actionKey !== undefined && pendingActions.get(actionKey) === completion) {
+          pendingActions.delete(actionKey)
+        }
+      }
+      if (actionKey !== undefined && !disposed) {
+        completedActions.delete(actionKey)
+        completedActions.set(actionKey, Date.now())
+        while (completedActions.size > ACTION_IDEMPOTENCY_CAPACITY) {
+          const oldest = completedActions.keys().next().value
+          if (oldest === undefined) {
+            break
+          }
+          completedActions.delete(oldest)
+        }
       }
     },
     dispose() {
@@ -222,6 +271,8 @@ export function createA2uiSession(options: A2uiSessionOptions): A2uiSession {
         return
       }
       disposed = true
+      pendingActions.clear()
+      completedActions.clear()
       stopProjection()
       actionSubscription.unsubscribe()
       errorSubscription.unsubscribe()
