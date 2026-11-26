@@ -42,7 +42,7 @@ const weappViteFixtures = [
 const weappViteContracts = weappViteFixtures.map((fixture, index) =>
   `cd ${index === 0 ? 'test-d/' : '../'}${fixture} && tsd --files "**/*.test-d.ts"`,
 ).join(' && ')
-const packages: readonly (readonly [directory: string, build: string, check: string, prebuild?: boolean, pure?: boolean, host?: boolean, isolated?: boolean])[] = [
+const packages: readonly (readonly [directory: string, build: string, check: string, prebuild?: boolean, pure?: boolean, host?: boolean, isolated?: boolean, extraStandaloneCheck?: string])[] = [
   ['@weapp-core/api', '', 'tsd', true, true, false, true],
   ['@weapp-core/logger', '', 'tsd --typings dist/index.d.ts --files test/index.test-d.ts'],
   ['@weapp-core/schematics', 'build', standardContracts],
@@ -67,7 +67,7 @@ const packages: readonly (readonly [directory: string, build: string, check: str
   ['packages/weapp-ide-cli', 'build', standardContracts],
   ['packages/weapp-vite', '', weappViteContracts],
   ['packages/wxml', 'build', standardContracts],
-  ['packages-runtime/a2ui', 'build', standardContracts],
+  ['packages-runtime/a2ui', 'build', standardContracts, false, false, false, false, 'pnpm run test:types:consumer'],
   ['packages-runtime/glass-easel-web-adapter', 'build', 'tsd --typings dist/index.d.mts --files test-d/public-api.test-d.ts'],
   ['packages-runtime/i18n', 'build', standardContracts, false, true, false, true],
   ['packages-runtime/json-render', 'build', jsxContracts],
@@ -156,10 +156,10 @@ describe('public type tests in CI', () => {
     expect(actual.sort()).toEqual([...packages.map(([directory]) => directory), 'e2e-apps/lib-mode'].sort())
   })
 
-  it.each(packages.map(([directory, build, check, prebuild, pure, host, isolated]) => ({ directory, build, check, prebuild, pure, host, isolated })))('$directory preserves standalone freshness and checks every real contract', async ({ directory, build, check, prebuild, pure, host, isolated }) => {
+  it.each(packages.map(([directory, build, check, prebuild, pure, host, isolated, extraStandaloneCheck]) => ({ directory, build, check, prebuild, pure, host, isolated, extraStandaloneCheck })))('$directory preserves standalone freshness and checks every real contract', async ({ directory, build, check, prebuild, pure, host, isolated, extraStandaloneCheck }) => {
     const packageRoot = path.join(root, directory)
     const manifest = await readManifest(packageRoot)
-    expect(manifest.scripts['test:types']).toBe(`${build ? `pnpm ${build} && ` : ''}pnpm run test:types:check`)
+    expect(manifest.scripts['test:types']).toBe(`${build ? `pnpm ${build} && ` : ''}pnpm run test:types:check${extraStandaloneCheck ? ` && ${extraStandaloneCheck}` : ''}`)
     expect(manifest.scripts['pretest:types']).toBe(prebuild ? 'pnpm build' : undefined)
     const expectedCheck = `${check}${host ? ' && pnpm run test:types:host' : ''}${pure ? ' && pnpm run test:types:pure' : ''}${isolated ? ' && pnpm run test:types:isolated' : ''}`
     expect(manifest.scripts['test:types:check']).toBe(expectedCheck)
