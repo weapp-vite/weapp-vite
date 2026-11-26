@@ -9,6 +9,7 @@ import type { DevBuildWatcherController } from './devBuildWatcher'
 import { EventEmitter } from 'node:events'
 import { realpathSync } from 'node:fs'
 import os from 'node:os'
+import nodePath from 'node:path'
 import process from 'node:process'
 import { WEAPP_VITE_CLASSIC_SETTLEMENT_KEY } from '@weapp-core/constants'
 import { fs } from '@weapp-core/shared/fs'
@@ -4072,13 +4073,49 @@ describe('runtime buildPlugin service', () => {
     await firstBuild
 
     const [patterns] = chokidarWatchMock.mock.calls[0]!
-    expect(patterns).toContain('/workspace/packages/shared')
+    expect(patterns).toContain(nodePath.resolve('/workspace/packages/shared').replaceAll('\\', '/'))
 
     sidecarWatcher.emit('change', '/workspace/packages/shared/message.ts')
     await flushAsyncTasks()
 
     expect(buildMock).toHaveBeenCalledTimes(1)
     expect(ctx.runtimeState.build.hmr.dirtyEntrySet).toEqual(new Set())
+  })
+
+  it('applies user build watch include and exclude before source and sidecar scheduling', async () => {
+    const watcher = createManualWatcher()
+    const sidecarWatcher = createManualSidecarWatcher()
+    chokidarWatchMock.mockReturnValue(sidecarWatcher)
+    buildMock
+      .mockResolvedValueOnce(watcher)
+      .mockResolvedValue({ output: [] })
+    const ctx = createMockContext()
+    const entry = '/project/src/pages/logs/index.ts'
+    ctx.configService.inlineConfig = {
+      build: {
+        watch: {
+          include: ['/project/src/pages/logs/**'],
+          exclude: ['**/ignored/**'],
+        },
+      },
+    }
+    ctx.runtimeState.build.hmr.resolvedEntryMap.set(entry, { id: entry })
+    ctx.moduleGraphService.collectAffectedEntries.mockReturnValue(new Set([entry]))
+    const service = createBuildService(ctx)
+
+    const firstBuild = service.build({ skipNpm: true })
+    await watcher.subscribed
+    watcher.emit('START')
+    watcher.emit('END')
+    await firstBuild
+
+    emitSourceChange({ event: 'update', file: '/project/src/pages/logs/ignored/index.wxml' })
+    await flushAsyncTasks()
+    expect(buildMock).toHaveBeenCalledTimes(1)
+
+    emitSourceChange({ event: 'update', file: '/project/src/pages/logs/index.wxml' })
+    await waitForMockCalls(buildMock, 2)
+    expect(ctx.runtimeState.build.hmr.dirtyEntrySet).toEqual(new Set([entry]))
   })
 
   it('ignores generated output updates in snapshot sidecar watcher', async () => {
@@ -4268,6 +4305,41 @@ describe('runtime buildPlugin service', () => {
     expect(loggerSuccessMock).not.toHaveBeenCalledWith(expect.stringContaining('小程序已重新构建'))
     expect(loggerSuccessMock).toHaveBeenCalledWith('Vite 配置已重新加载，小程序开发构建已重启。')
   })
+
+  it.each(['.env', '.env.local', '.env.development', '.env.development.local'])(
+    'restarts the dev watcher after %s changes with a restrictive build watch include',
+    async (envFile) => {
+      const watcher = createManualWatcher()
+      const restartedWatcher = createManualWatcher()
+      chokidarWatchMock
+        .mockReturnValueOnce(createManualSidecarWatcher())
+        .mockReturnValueOnce(createManualSidecarWatcher())
+      buildMock
+        .mockResolvedValueOnce(watcher)
+        .mockResolvedValueOnce(restartedWatcher)
+      const ctx = createMockContext()
+      ctx.configService.inlineConfig = { build: { watch: { include: ['src/**'] } } }
+      const service = createBuildService(ctx)
+
+      const firstBuild = service.build({ skipNpm: true })
+      await watcher.subscribed
+      watcher.emit('START')
+      watcher.emit('END')
+      await firstBuild
+
+      chokidarWatchMock.mock.results[0]!.value.emit('change', `/project/${envFile}`)
+      watcher.emit('START')
+      watcher.emit('END')
+
+      await restartedWatcher.subscribed
+      restartedWatcher.emit('START')
+      restartedWatcher.emit('END')
+      await flushAsyncTasks()
+
+      expect(ctx.configService.load).toHaveBeenCalledWith(ctx.configService.loadOptions)
+      expect(buildMock).toHaveBeenCalledTimes(2)
+    },
+  )
 
   it('keeps the app entry scan error when config restart cannot reload entries', async () => {
     const watcher = createManualWatcher()

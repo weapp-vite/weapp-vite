@@ -1,5 +1,6 @@
+import path from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { createSidecarWatchOptions, createViteWatchIgnored, resolvePollingWatchOptions } from './options'
+import { createDevConfigWatchFiles, createDevWatchIgnored, createSidecarWatchOptions, createViteWatchIgnored, resolvePollingWatchOptions } from './options'
 
 describe('runtime sidecar watch options', () => {
   afterEach(() => {
@@ -81,6 +82,37 @@ describe('runtime sidecar watch options', () => {
 })
 
 describe('Vite watch ignored', () => {
+  it('keeps config dependencies and mode env files eligible after config resolution', () => {
+    const root = path.resolve('dev-watch-config-fixture')
+    const dependencies: string[] = []
+    const configService = {
+      cwd: root,
+      inlineConfig: { mode: 'staging', envDir: 'config' },
+      configFileDependencies: dependencies,
+      configFilePath: path.join(root, 'vite.config.ts'),
+    } as any
+    const ignored = createDevWatchIgnored(
+      root,
+      path.join(root, 'dist'),
+      undefined,
+      { include: ['src/**'] },
+      () => createDevConfigWatchFiles(configService),
+    ) as Array<(file: string) => boolean>
+    const isIgnored = (file: string) => ignored.some(match => match(file))
+    const dependency = path.join(root, 'config', 'value.mjs')
+
+    expect(isIgnored(path.join(root, 'src/page.ts'))).toBe(false)
+    expect(isIgnored(dependency)).toBe(true)
+    dependencies.push(dependency)
+    expect(isIgnored(dependency)).toBe(false)
+    expect(isIgnored(path.join(root, 'vite.config.ts'))).toBe(false)
+    expect(isIgnored(path.join(root, 'config/.env'))).toBe(false)
+    expect(isIgnored(path.join(root, 'config/.env.local'))).toBe(false)
+    expect(isIgnored(path.join(root, 'config/.env.staging'))).toBe(false)
+    expect(isIgnored(path.join(root, 'config/.env.staging.local'))).toBe(false)
+    expect(isIgnored(path.join(root, 'config/.env.production'))).toBe(true)
+  })
+
   it('keeps user ignores and excludes generated output across Windows path formats', () => {
     const userMatcher = (id: string) => id.endsWith('.generated.ts')
     const ignored = createViteWatchIgnored(

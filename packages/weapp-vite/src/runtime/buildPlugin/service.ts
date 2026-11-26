@@ -1,3 +1,4 @@
+import type { Stats } from 'node:fs'
 import type PQueue from 'p-queue'
 import type {
   RolldownOutput,
@@ -24,7 +25,6 @@ import process from 'node:process'
 import { removeExtensionDeep } from '@weapp-core/shared'
 import { fs } from '@weapp-core/shared/node'
 import path from 'pathe'
-import picomatch from 'picomatch'
 import { build } from 'vite'
 import { debug, logger } from '../../context/shared'
 import { createDevModuleGraphProvider } from '../../moduleGraph/devProvider'
@@ -74,7 +74,14 @@ import { buildStatefulHmrSnapshot, prepareStatefulHmrSnapshot } from '../statefu
 import { clearStatefulHmrSnapshot, takeStatefulHmrSnapshot } from '../statefulHmr/snapshotHandoff'
 import { syncProjectSupportFiles } from '../supportFiles'
 import { watchAssetSources } from '../watch/assets'
+import { createBuildWatchFilter } from '../watch/buildWatch'
 import { createFileWatcher } from '../watch/fileWatcher'
+import {
+  createDevConfigDependencyFiles,
+  createDevConfigWatchFiles,
+  createDevEnvWatchFiles,
+  isDevConfigWatchFile,
+} from '../watch/options'
 import { claimSidecarDelivery } from '../watch/sidecarDelivery'
 import { deduplicateCleanupErrors } from '../watcher/cleanupErrors'
 import { bindWatcherServiceController, closeWatcherControllerResources, registerWatcherServiceController } from '../watcher/controllerClose'
@@ -345,58 +352,24 @@ function shouldHandleSnapshotSidecarFile(filePath: string, ctx: MutableCompilerC
   return path.extname(filePath) !== ''
 }
 
-function isGeneratedMiniprogramWatchInclude(pattern: string, configService: ActiveConfigService) {
-  if (pattern === '**') {
-    return true
-  }
-  const normalizedPattern = normalizeFsResolvedId(
-    path.isAbsolute(pattern) ? pattern : path.resolve(configService.cwd, pattern),
-  )
-  const normalizedSrcRoot = normalizeFsResolvedId(configService.absoluteSrcRoot)
-  if (normalizedPattern === normalizedSrcRoot || normalizedPattern.startsWith(`${normalizedSrcRoot}/`)) {
-    return true
-  }
-  if (configService.absolutePluginRoot) {
-    const normalizedPluginRoot = normalizeFsResolvedId(configService.absolutePluginRoot)
-    if (normalizedPattern === normalizedPluginRoot || normalizedPattern.startsWith(`${normalizedPluginRoot}/`)) {
-      return true
-    }
-  }
-  return (configService.configFileDependencies ?? []).some((dependency) => {
-    const normalizedDependency = normalizeFsResolvedId(dependency)
-    return normalizedPattern === normalizedDependency
-  })
-}
-
-function resolveUserBuildWatchInclude(configService: ActiveConfigService, inlineConfig?: InlineConfig) {
-  const buildWatch = inlineConfig?.build?.watch ?? configService?.inlineConfig?.build?.watch
-  if (!buildWatch || typeof buildWatch !== 'object') {
-    return []
-  }
-  const include = buildWatch.include
-  const includeList = Array.isArray(include)
-    ? include
-    : include ? [include] : []
-  return includeList
-    .filter((pattern): pattern is string => typeof pattern === 'string')
-    .filter(pattern => !isGeneratedMiniprogramWatchInclude(pattern, configService))
-    .map(pattern => path.normalize(path.isAbsolute(pattern) ? pattern : path.resolve(configService.cwd, pattern)))
-}
-
-function createSnapshotSidecarWatchPatterns(configService: ActiveConfigService, inlineConfig?: InlineConfig, includeConfigDependencies = true) {
-  const patterns: string[] = [
+function createSnapshotSidecarWatchPatterns(
+  configService: ActiveConfigService,
+  buildWatchFilter: ReturnType<typeof createBuildWatchFilter>,
+  includeConfigDependencies = true,
+) {
+  return [...new Set([
     // Chokidar 4+ 不再展开 glob；目录监听才能覆盖尚未进入主依赖图的独立包 sidecar。
     configService.absoluteSrcRoot,
-    ...(includeConfigDependencies ? configService.configFileDependencies ?? [] : []).map(dependency => path.normalize(dependency)),
-  ]
-  for (const include of resolveUserBuildWatchInclude(configService, inlineConfig)) {
-    const scanned = picomatch.scan(include)
-    patterns.push(scanned.isGlob ? scanned.base || path.parse(include).root : include)
-  }
-  return patterns
+    ...(includeConfigDependencies ? createDevConfigDependencyFiles(configService) : []),
+    ...createDevEnvWatchFiles(configService).filter(file => !isPathInside(configService.absoluteSrcRoot, file)),
+    ...buildWatchFilter.targets,
+  ].map(pattern => path.normalize(pattern)))]
 }
 
-function createSnapshotSidecarIgnoredMatcher(ctx: MutableCompilerContext) {
+function createSnapshotSidecarIgnoredMatcher(
+  ctx: MutableCompilerContext,
+  buildWatchFilter: ReturnType<typeof createBuildWatchFilter>,
+) {
   const configService = ctx.configService
   if (!configService) {
     return undefined
@@ -410,8 +383,11 @@ function createSnapshotSidecarIgnoredMatcher(ctx: MutableCompilerContext) {
   if (configService.mpDistRoot) {
     ignoredRoots.add(normalizeFsResolvedId(path.resolve(configService.cwd, configService.mpDistRoot)))
   }
-  return (candidate: string) => {
+  return (candidate: string, stats?: Stats) => {
     const normalized = normalizeFsResolvedId(candidate)
+    if (buildWatchFilter.ignored(normalized, stats)) {
+      return true
+    }
     if (normalized === watchRoot) {
       return false
     }
@@ -1663,6 +1639,10 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       },
     }
     delete snapshotBuildOptions.build?.watch
+    const buildWatchFilter = createBuildWatchFilter({
+      ...configService.inlineConfig.build?.watch,
+      preserveSymlinks: configService.inlineConfig.resolve?.preserveSymlinks,
+    }, configService.cwd, () => createDevConfigWatchFiles(configService))
     let configWatcher: ClassicConfigWatcher | undefined
     if (target === 'app' && !hasDevModuleGraphHost(ctx)
       && (classicConfigWatchers.has(classicOwner) || configService.configFileDependencies?.length)) {
@@ -2226,7 +2206,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
     }
 
     function scheduleSnapshotBuild(reason: SnapshotBuildReason, startedAt: number) {
-      if (devWatcherClosed || snapshotConfigRestartRequested) {
+      if (devWatcherClosed || snapshotConfigRestartRequested || (reason.file && !buildWatchFilter.accepts(reason.file))) {
         return
       }
       reason.sourceEvent ??= { eventId: createHmrProfileEventId(), event: reason.event, file: reason.file, receivedAtMs: startedAt }
@@ -2294,8 +2274,8 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
     let moduleGraphProvider: DevModuleGraphProvider | undefined
     let releaseAutoRoutesTopology: (() => void) | undefined
     let assetWatcher: ReturnType<typeof watchAssetSources> | undefined
-    const snapshotWatchPatterns = createSnapshotSidecarWatchPatterns(configService, buildOptions, !configWatcher)
-    const snapshotSidecarIgnored = createSnapshotSidecarIgnoredMatcher(ctx)
+    const snapshotWatchPatterns = createSnapshotSidecarWatchPatterns(configService, buildWatchFilter, !configWatcher)
+    const snapshotSidecarIgnored = createSnapshotSidecarIgnoredMatcher(ctx, buildWatchFilter)
     let snapshotSidecarReady = false
 
     function clearPendingSnapshotBuilds() {
@@ -2450,8 +2430,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
         if (!independentSource && !shouldHandleSnapshotSidecarFile(id, ctx)) {
           return
         }
-        const isConfigDependency = (configService.configFileDependencies ?? [])
-          .some(dependency => normalizeFsResolvedId(dependency) === normalizedId)
+        const isConfigDependency = isDevConfigWatchFile(configService, normalizedId)
         if (event === 'update' && !isConfigDependency && !independentSource) {
           if (isSidecarFile(id, configService.platform) && ownsSnapshotSidecarUpdate(id)) {
             onModuleGraphChange({ event: 'update', file: id })
@@ -2606,7 +2585,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
 
       if (snapshotSidecarReady && !devWatcherClosed) {
         claimSidecarDelivery(ctx as CompilerContext, (file, event) => {
-          if (!isSidecarFile(file, configService.platform) || isDevOutputFile(file)) {
+          if (!isSidecarFile(file, configService.platform) || isDevOutputFile(file) || !buildWatchFilter.accepts(file)) {
             return false
           }
           return ownsSnapshotSidecarUpdate(file)

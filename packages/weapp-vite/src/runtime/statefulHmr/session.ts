@@ -43,7 +43,8 @@ import { resolveIdePrivateConfigPath } from '../classicIdeConfig'
 import { getHmrRuntimeCapabilityFallback, HmrRuntimeCapabilityError, resolveStatefulHmrInputFallback } from '../hmrRuntimeCapabilities'
 import { getHmrRuntimeSession } from '../hmrRuntimeSession'
 import { watchAssetSources } from '../watch/assets'
-import { createViteWatchIgnored, resolvePollingWatchOptions } from '../watch/options'
+import { createBuildWatchFilter } from '../watch/buildWatch'
+import { createDevConfigWatchFiles, createDevWatchIgnored, resolvePollingWatchOptions } from '../watch/options'
 import { installIdeAssetWatch } from './assetWatch'
 import { observeChildSources } from './childSources'
 import { compileHmrBatch } from './compileBatch'
@@ -148,9 +149,16 @@ export async function runStatefulHmrDev(
   const controller = host?.controller ?? createStatefulHmrHostPlugins(compilerContext)
   controller.setInputs(entryIds, delegatedComponentEntryIds)
   const statefulBuildOptions = withStatefulHmrOutputFormat(buildOptions)
+  const root = buildOptions.root ?? configService.cwd
+  const buildWatch = {
+    ...configService.inlineConfig?.build?.watch,
+    preserveSymlinks: configService.inlineConfig?.resolve?.preserveSymlinks,
+  }
+  const alwaysWatch = () => createDevConfigWatchFiles(configService, root)
+  const buildWatchFilter = createBuildWatchFilter(buildWatch, root, alwaysWatch)
   const server = host?.server ?? await createDevViteServer({
     ...statefulBuildOptions,
-    root: buildOptions.root ?? configService.cwd,
+    root,
     appType: 'custom',
     configFile: false,
     define: {
@@ -171,10 +179,12 @@ export async function runStatefulHmrDev(
       watch: {
         ...(buildOptions.server?.watch ?? {}),
         ...Object.fromEntries(Object.entries(pollingWatchOptions).filter(([, value]) => value !== undefined)),
-        ignored: createViteWatchIgnored(
-          buildOptions.root ?? configService.cwd,
+        ignored: createDevWatchIgnored(
+          root,
           configService.outDir,
           buildOptions.server?.watch?.ignored,
+          buildWatch,
+          alwaysWatch,
         ),
       },
     },
@@ -185,6 +195,9 @@ export async function runStatefulHmrDev(
     },
   })
   try {
+    if (!host && buildWatchFilter.targets.length) {
+      server.watcher.add(buildWatchFilter.targets)
+    }
     session = new StatefulHmrSession(compilerContext, server, host ? () => host.server.restart() : restart, entryIds, snapshots, {
       compareContentsForPolling: pollingWatchOptions.usePolling === true ? true : undefined,
       pollInterval: pollingWatchOptions.interval,
