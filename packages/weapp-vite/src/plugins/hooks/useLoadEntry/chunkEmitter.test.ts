@@ -179,10 +179,11 @@ describe('createChunkEmitter', () => {
     expect(shouldEmitEntryChunk).toHaveBeenCalledTimes(1)
   })
 
-  it('defers engine loading during production build watch', async () => {
+  it.each([false, true])('preloads metadata and defers engine loading during build watch (isDev=%s)', async (isDev) => {
+    const preloadAssetOnlyEntry = vi.fn(async () => {})
     const emitEntriesChunks = createChunkEmitter(
       {
-        inlineConfig: { build: { watch: {} } },
+        isDev,
         relativeOutputPath(input: string) {
           return input.replace('/project/src/', '')
         },
@@ -192,7 +193,7 @@ describe('createChunkEmitter', () => {
       undefined,
       undefined,
       undefined,
-      vi.fn(async () => {}),
+      preloadAssetOnlyEntry,
     )
     const pluginCtx = {
       meta: { watchMode: true },
@@ -203,8 +204,11 @@ describe('createChunkEmitter', () => {
       }),
     }
 
-    await Promise.all(emitEntriesChunks.call(pluginCtx as any, [{ id: '/project/src/pages/index.ts' } as any]))
+    const entry = { id: '/project/src/pages/index.ts' } as any
+    await Promise.all(emitEntriesChunks.call(pluginCtx as any, [entry]))
 
+    expect(preloadAssetOnlyEntry).toHaveBeenCalledWith(entry, entry.id)
+    expect(pluginCtx.addWatchFile).toHaveBeenCalledWith(entry.id)
     expect(pluginCtx.load).not.toHaveBeenCalled()
     expect(pluginCtx.emitFile).toHaveBeenCalledWith(expect.objectContaining({
       id: '/project/src/pages/index.ts',

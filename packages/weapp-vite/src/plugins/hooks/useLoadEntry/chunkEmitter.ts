@@ -42,7 +42,8 @@ export function createChunkEmitter(
       }
 
       const normalizedId = normalizeSourceId(resolvedId.id)
-      if (this.meta?.watchMode) {
+      const isWatching = this.meta?.watchMode === true
+      if (isWatching) {
         // 首轮转换失败时也保留输入依赖，修复源码后可由原生 watcher 恢复。
         this.addWatchFile(resolvedId.id)
       }
@@ -62,14 +63,11 @@ export function createChunkEmitter(
         const start = shouldPreload ? performance.now() : 0
         if (shouldPreload) {
           const loadStartedAt = performance.now()
-          const refreshWatchMetadata = Boolean(configService.inlineConfig?.build?.watch && !configService.isDev)
-          if ((!shouldEmitChunk || refreshWatchMetadata) && preloadAssetOnlyEntry) {
+          if ((!shouldEmitChunk || isWatching) && preloadAssetOnlyEntry) {
             await preloadAssetOnlyEntry.call(this, resolvedId, normalizedId)
           }
-          // Rolldown does not expose `this.load` from the production watch
-          // `buildStart` hook. The preload above has already prepared the
-          // entry, and the emitted chunk will be loaded by the engine later.
-          if ((shouldEmitChunk || !preloadAssetOnlyEntry) && !refreshWatchMetadata) {
+          // Rolldown watch 重建的 buildStart 不支持 load；入口预加载元数据后，由引擎加载已登记的脚本。
+          if ((shouldEmitChunk || !preloadAssetOnlyEntry) && !isWatching) {
             await this.load({ id: entryChunkId })
           }
           stats.loadCount += 1

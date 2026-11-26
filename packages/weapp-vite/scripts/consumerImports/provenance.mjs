@@ -5,28 +5,34 @@ import { readFile } from 'node:fs/promises'
 import { createRequire } from 'node:module'
 import path from 'node:path'
 import { gunzipSync } from 'node:zlib'
+// eslint-disable-next-line e18e/ban-dependencies -- 使用 npm 的 semver 语义核对发布包声明的依赖范围。
+import { satisfies } from 'semver'
+import { consumerToolchainVersions } from '../consumerToolchains.mjs'
 
 /** 将实际加载的 JS 与锁文件指向的官方 npm 档案逐字节比较，避免仅凭版本号判断未打补丁。 */
 export async function inspectOriginalDependencies(root, toolchain) {
   const require = createRequire(path.join(root, 'package.json'))
-  const compilerRequire = createRequire(require.resolve('weapp-vite/package.json'))
+  const compilerManifest = require.resolve('weapp-vite/package.json')
+  const compilerRequire = createRequire(compilerManifest)
+  const { dependencies } = JSON.parse(await readFile(compilerManifest, 'utf8'))
   const lock = JSON.parse(await readFile(path.join(root, 'package-lock.json'), 'utf8'))
   const results = []
-  for (const [name, version] of [['vite', '8.3.5'], ['rolldown', '1.2.16']]) {
+  for (const name of ['vite', 'rolldown']) {
     const manifest = compilerRequire.resolve(`${name}/package.json`)
     const directory = path.dirname(manifest)
     const metadata = JSON.parse(await readFile(manifest, 'utf8'))
     if (toolchain === 'vite-plus' && name === 'vite') {
-      // Vite+ 有自己批准的官方宿主，不能把其 alias 宣称为普通 Vite。
       assert.equal(metadata.name, '@voidzero-dev/vite-plus-core')
+      assert.equal(metadata.version, consumerToolchainVersions['vite-plus'].core)
     }
     else {
       assert.equal(metadata.name, name)
-      assert.equal(metadata.version, version)
+      assert(satisfies(metadata.version, dependencies[name]), `${name}@${metadata.version} does not satisfy the published range ${dependencies[name]}`)
     }
     const key = path.relative(root, directory).replaceAll('\\', '/')
     const entry = lock.packages[key]
     assert(entry?.resolved?.startsWith('https://registry.npmjs.org/'), `${name} must come from the npm registry`)
+    assert.equal(entry.version, metadata.version, `${name} must match the consumer lockfile`)
     const response = await fetch(entry.resolved, { signal: AbortSignal.timeout(30_000) })
     assert(response.ok, `Registry archive failed: ${response.status}`)
     const archive = Buffer.from(await response.arrayBuffer())
