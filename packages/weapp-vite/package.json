@@ -274,6 +274,7 @@
     "@devframes/hub-ui": "catalog:",
     "@modelcontextprotocol/client": "catalog:",
     "@parcel/watcher": "2.6.0",
+    "@swc/types": "catalog:",
     "@vitejs/devtools": "catalog:",
     "@vitejs/devtools-kit": "catalog:",
     "htmlparser2": "catalog:",

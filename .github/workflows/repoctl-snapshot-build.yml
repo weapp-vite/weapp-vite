@@ -19,8 +19,12 @@ env:
   SNAPSHOT_BUILDER_WORKFLOW: ".github/workflows/repoctl-snapshot-build.yml"
 
 jobs:
+  toolchain:
+    uses: ./.github/workflows/reusable-repoctl-toolchain.yml
+
   freeze:
     name: Freeze snapshot plan
+    needs: toolchain
     if: ${{ github.ref == format('refs/heads/{0}', github.event.repository.default_branch) }}
     environment: "pr-ci-approval"
     runs-on: ubuntu-latest
@@ -32,6 +36,9 @@ jobs:
     outputs:
       merge_sha: ${{ steps.source.outputs.merge_sha }}
       plan_artifact: ${{ steps.artifact.outputs.artifact-id }}
+    env:
+      REPOCTL_VERSION: ${{ needs.toolchain.outputs.repoctl_version }}
+      PNPM_VERSION: ${{ needs.toolchain.outputs.pnpm_version }}
     steps:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
@@ -39,7 +46,7 @@ jobs:
       - name: Install the pinned trusted tool outside candidate code
         working-directory: ${{ runner.temp }}
         run: |
-          npm install --prefix "$RUNNER_TEMP/repoctl-tools" --ignore-scripts --no-audit --no-fund --package-lock=false repoctl@6.6.3 pnpm@12.23.0
+          npm install --prefix "$RUNNER_TEMP/repoctl-tools" --ignore-scripts --no-audit --no-fund --package-lock=false "repoctl@$REPOCTL_VERSION" "pnpm@$PNPM_VERSION"
           echo "$RUNNER_TEMP/repoctl-tools/node_modules/.bin" >> "$GITHUB_PATH"
       - name: Freeze the approved PR revision
         id: source
@@ -83,11 +90,14 @@ jobs:
 
   build:
     name: Build snapshot packages
-    needs: freeze
+    needs: [freeze, toolchain]
     runs-on: ubuntu-latest
     timeout-minutes: 60
     permissions:
       contents: read
+    env:
+      REPOCTL_VERSION: ${{ needs.toolchain.outputs.repoctl_version }}
+      PNPM_VERSION: ${{ needs.toolchain.outputs.pnpm_version }}
     steps:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
@@ -95,7 +105,7 @@ jobs:
       - name: Install the pinned preparation tool
         working-directory: ${{ runner.temp }}
         run: |
-          npm install --prefix "$RUNNER_TEMP/repoctl-tools" --ignore-scripts --no-audit --no-fund --package-lock=false repoctl@6.6.3 pnpm@12.23.0
+          npm install --prefix "$RUNNER_TEMP/repoctl-tools" --ignore-scripts --no-audit --no-fund --package-lock=false "repoctl@$REPOCTL_VERSION" "pnpm@$PNPM_VERSION"
           echo "$RUNNER_TEMP/repoctl-tools/node_modules/.bin" >> "$GITHUB_PATH"
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:

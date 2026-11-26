@@ -1,0 +1,46 @@
+name: Resolve repoctl Toolchain
+
+on:
+  workflow_call:
+    outputs:
+      repoctl_version:
+        description: Exact repoctl version from the root package manifest
+        value: ${{ jobs.resolve.outputs.repoctl_version }}
+      pnpm_version:
+        description: Exact pnpm version from the root package manager field
+        value: ${{ jobs.resolve.outputs.pnpm_version }}
+
+permissions:
+  contents: read
+
+jobs:
+  resolve:
+    name: Resolve root toolchain versions
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      repoctl_version: ${{ steps.versions.outputs.repoctl_version }}
+      pnpm_version: ${{ steps.versions.outputs.pnpm_version }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          sparse-checkout: package.json
+          sparse-checkout-cone-mode: false
+          persist-credentials: false
+      - id: versions
+        name: Read exact versions from package.json
+        shell: bash
+        run: |
+          node --input-type=module <<'NODE'
+          import { appendFileSync, readFileSync } from 'node:fs'
+
+          const manifest = JSON.parse(readFileSync('package.json', 'utf8'))
+          const pnpmVersion = /^pnpm@(\d+\.\d+\.\d+)(?:\+.*)?$/u.exec(manifest.packageManager ?? '')?.[1]
+          const repoctlVersion = manifest.devDependencies?.repoctl
+          if (!pnpmVersion || !/^\d+\.\d+\.\d+$/u.test(repoctlVersion ?? '')) {
+            throw new Error('package.json must declare exact pnpm and repoctl versions')
+          }
+
+          appendFileSync(process.env.GITHUB_OUTPUT, `repoctl_version=${repoctlVersion}\npnpm_version=${pnpmVersion}\n`)
+          NODE
