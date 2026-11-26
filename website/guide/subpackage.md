@@ -185,6 +185,49 @@ const moduleExport = await import('../../packages/order/modules/price.ts')
 - 动态表达式、裸模块、同包导入、独立分包目标和非微信平台不会转换。
 - 发布前检查目标模块仍位于对应分包，并通过真机或 DevTools runtime 验证首次下载，不要只依赖本地文件已齐全的开发预览。
 
+## 将现有原生小程序接入为宿主分包
+
+已有原生小程序可以作为宿主应用中的一个普通分包逐步接入。保留宿主作为唯一应用入口，把需要复用的页面、组件和资源放进宿主的 `srcRoot`，再由宿主的 `app.json` 注册分包。原生 `.wxml`、`.wxss`、`.js`、`.json` 和 `.wxs` 文件可以继续使用，不必先改写为 Vue SFC。
+
+```text
+src/
+├─ app.json
+├─ app.ts
+├─ pages/
+│  └─ home/index.ts
+└─ packages/
+   └─ legacy/
+      ├─ pages/
+      │  ├─ index/index.wxml
+      │  └─ detail/index.wxml
+      └─ components/
+```
+
+在宿主的 `app.json` 中保留主包页面，并声明旧项目页面所属的分包。`pages` 中的路径相对于 `root`：
+
+```json
+{
+  "pages": ["pages/home/index"],
+  "subPackages": [
+    {
+      "root": "packages/legacy",
+      "name": "legacy",
+      "pages": ["pages/index/index", "pages/detail/index"]
+    }
+  ]
+}
+```
+
+应用级的 `App()`、`app.json`、全局样式、`window`、`tabBar`、插件和云开发配置仍由宿主统一承载，需要合并或适配。不能将另一套完整小程序直接作为第二个应用嵌入；页面跳转路径也要包含分包根目录，例如 `/packages/legacy/pages/detail/index`。
+
+开发时可以只构建宿主主包和这个分包：
+
+```bash
+wv dev --scope main,packages/legacy
+```
+
+`--scope` 只筛选同一个应用本轮参与构建的主包和分包，不会合并另一个独立项目的构建产物。发布前使用宿主配置执行完整的 `wv build`，再检查完整路由、依赖落位和包体积。只有分包需要在主包尚未下载时独立启动，才设置 `independent: true`，并按独立分包规则处理对主包资源的依赖。
+
 ## 独立分包
 
 独立分包和整个 `app` 是隔离的：它们会在**不同的 Rolldown 上下文**里构建，因此不会和主包/其他分包共享复用的 JS 代码。
