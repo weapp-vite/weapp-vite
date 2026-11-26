@@ -138,7 +138,7 @@ describe('offline PR admission contract', () => {
         delete jobs.plan.needs
       }
       if (field === 'version') {
-        jobs.apply.env.REPOCTL_VERSION = '6.6.7'
+        jobs.apply.env.REPOCTL_VERSION = '6.6.9'
       }
     })
     expect(checks.some(row => row.name.startsWith('自动 changeset'))).toBe(true)

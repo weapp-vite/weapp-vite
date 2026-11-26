@@ -66,7 +66,10 @@ export function createChunkEmitter(
           if ((!shouldEmitChunk || refreshWatchMetadata) && preloadAssetOnlyEntry) {
             await preloadAssetOnlyEntry.call(this, resolvedId, normalizedId)
           }
-          if (shouldEmitChunk || !preloadAssetOnlyEntry) {
+          // Rolldown does not expose `this.load` from the production watch
+          // `buildStart` hook. The preload above has already prepared the
+          // entry, and the emitted chunk will be loaded by the engine later.
+          if ((shouldEmitChunk || !preloadAssetOnlyEntry) && !refreshWatchMetadata) {
             await this.load({ id: entryChunkId })
           }
           stats.loadCount += 1

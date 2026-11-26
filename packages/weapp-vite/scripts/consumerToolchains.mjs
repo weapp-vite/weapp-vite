@@ -5,7 +5,7 @@ import vitePlusVersions from '../../create-weapp-vite/src/vitePlusVersions.json'
 
 // Vite 使用候选发布包声明的引擎；Vite+ 的 launcher/core 必须使用同一批准版本。
 export const consumerToolchainVersions = {
-  'vite': { vitest: '5.0.2' },
+  'vite': { vitest: vitePlusVersions.vitest },
   'vite-plus': vitePlusVersions,
 }
 

@@ -711,10 +711,10 @@ importers:
         version: 7.2.1
       '@vitest/browser-playwright':
         specifier: 5.1.2
-        version: 5.1.2(@types/node@26.6.11)(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(bufferutil@4.1.0)(playwright@1.65.1)(vite@8.3.5)(vitest@5.1.2)
+        version: 5.1.2(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(bufferutil@4.1.0)(playwright@1.65.1)(vite@8.3.5)(vitest@5.1.2)
       '@vitest/coverage-v8':
         specifier: ~5.1.2
-        version: 5.1.2(@types/node@26.6.11)(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/ui@5.1.2)(vite@8.3.5)(vitest@5.1.2)
+        version: 5.1.2(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/ui@5.1.2)(vite@8.3.5)(vitest@5.1.2)
       '@vue/language-core':
         specifier: 'catalog:'
         version: 3.3.14
@@ -878,8 +878,8 @@ importers:
         specifier: ^3.10.1
         version: 3.10.1
       repoctl:
-        specifier: 6.6.7
-        version: 6.6.7(@commitlint/cli@21.2.4(conventional-commits-parser@7.1.3)(typescript@6.0.3))(@pnpm/logger@1001.0.1)(@types/node@26.6.11)(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(conventional-changelog-conventionalcommits@10.4.1)(eslint-plugin-pnpm@1.9.1(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2)))(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2))(happy-dom@21.0.4(bufferutil@4.1.0))(magicast@0.5.5)(oxlint@1.94.0)(postcss@8.5.33)(stylelint@18.1.0)(supports-color@10.2.2)(tailwindcss@4.3.5)(typescript@6.0.3)(vite@8.3.5)(vitest@5.1.2)
+        specifier: 6.6.9
+        version: 6.6.9(@commitlint/cli@21.2.4(conventional-commits-parser@7.1.3)(typescript@6.0.3))(@pnpm/logger@1001.0.1)(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(conventional-changelog-conventionalcommits@10.4.1)(eslint-plugin-pnpm@1.9.1(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2)))(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2))(magicast@0.5.5)(oxlint@1.94.0)(postcss@8.5.33)(stylelint@18.1.0)(supports-color@10.2.2)(tailwindcss@4.3.5)(typescript@6.0.3)(vite@8.3.5)(vitest@5.1.2)
       rolldown:
         specifier: 1.2.16
         version: 1.2.16
@@ -2446,7 +2446,7 @@ importers:
     devDependencies:
       '@icebreakers/eslint-config':
         specifier: 'catalog:'
-        version: 8.0.22(@types/node@26.6.11)(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(eslint-plugin-pnpm@1.9.1(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2)))(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2))(oxlint@1.94.0)(postcss@8.5.33)(stylelint@18.1.0)(supports-color@10.2.2)(tailwindcss@4.3.5)(vite@8.3.8)(vitest@5.1.2)
+        version: 8.0.22(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(eslint-plugin-pnpm@1.9.1(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2)))(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2))(oxlint@1.94.0)(postcss@8.5.33)(stylelint@18.1.0)(supports-color@10.2.2)(tailwindcss@4.3.5)(vite@8.3.8)(vitest@5.1.2)
       '@icebreakers/stylelint-config':
         specifier: 'catalog:'
         version: 6.0.7(postcss@8.5.33)(stylelint@18.1.0)(tailwindcss@4.3.5)
@@ -2489,7 +2489,7 @@ importers:
         version: 1.9.2(tailwindcss@4.3.5)
       '@icebreakers/eslint-config':
         specifier: 'catalog:'
-        version: 8.0.22(@types/node@26.6.11)(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(eslint-plugin-pnpm@1.9.1(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2)))(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2))(oxlint@1.94.0)(postcss@8.5.33)(stylelint@18.1.0)(supports-color@10.2.2)(tailwindcss@4.3.5)(vite@8.3.8)(vitest@5.1.2)
+        version: 8.0.22(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(eslint-plugin-pnpm@1.9.1(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2)))(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2))(oxlint@1.94.0)(postcss@8.5.33)(stylelint@18.1.0)(supports-color@10.2.2)(tailwindcss@4.3.5)(vite@8.3.8)(vitest@5.1.2)
       '@icebreakers/stylelint-config':
         specifier: 'catalog:'
         version: 6.0.7(postcss@8.5.33)(stylelint@18.1.0)(tailwindcss@4.3.5)
@@ -2550,7 +2550,7 @@ importers:
         version: 8.1.3
       '@icebreakers/eslint-config':
         specifier: 'catalog:'
-        version: 8.0.22(@types/node@26.6.11)(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(eslint-plugin-pnpm@1.9.1(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2)))(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2))(oxlint@1.94.0)(postcss@8.5.33)(stylelint@18.1.0)(supports-color@10.2.2)(tailwindcss@4.3.5)(vite@8.3.8)(vitest@5.1.2)
+        version: 8.0.22(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(eslint-plugin-pnpm@1.9.1(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2)))(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2))(oxlint@1.94.0)(postcss@8.5.33)(stylelint@18.1.0)(supports-color@10.2.2)(tailwindcss@4.3.5)(vite@8.3.8)(vitest@5.1.2)
       '@icebreakers/stylelint-config':
         specifier: 'catalog:'
         version: 6.0.7(postcss@8.5.33)(stylelint@18.1.0)(tailwindcss@4.3.5)
@@ -2650,7 +2650,7 @@ importers:
     devDependencies:
       '@icebreakers/eslint-config':
         specifier: 'catalog:'
-        version: 8.0.22(@types/node@26.6.11)(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(eslint-plugin-pnpm@1.9.1(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2)))(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2))(oxlint@1.94.0)(postcss@8.5.33)(stylelint@18.1.0)(supports-color@10.2.2)(tailwindcss@4.3.5)(vite@8.3.8)(vitest@5.1.2)
+        version: 8.0.22(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(eslint-plugin-pnpm@1.9.1(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2)))(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2))(oxlint@1.94.0)(postcss@8.5.33)(stylelint@18.1.0)(supports-color@10.2.2)(tailwindcss@4.3.5)(vite@8.3.8)(vitest@5.1.2)
       '@icebreakers/stylelint-config':
         specifier: 'catalog:'
         version: 6.0.7(postcss@8.5.33)(stylelint@18.1.0)(tailwindcss@4.3.5)
@@ -2823,7 +2823,7 @@ importers:
     devDependencies:
       '@vitest/browser':
         specifier: 5.1.2
-        version: 5.1.2(@types/node@26.6.11)(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(bufferutil@4.1.0)(vite@8.3.8)(vitest@5.1.2)
+        version: 5.1.2(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(bufferutil@4.1.0)(vite@8.3.8)(vitest@5.1.2)
       vitest:
         specifier: catalog:tilde
         version: 5.1.2(@types/node@26.6.11)(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(happy-dom@21.0.4(bufferutil@4.1.0))(vite@8.3.8)
@@ -4223,7 +4223,7 @@ importers:
     devDependencies:
       '@icebreakers/eslint-config':
         specifier: 'catalog:'
-        version: 8.0.22(@types/node@26.6.11)(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(eslint-plugin-pnpm@1.9.1(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2)))(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2))(oxlint@1.94.0)(postcss@8.5.33)(stylelint@18.1.0)(supports-color@10.2.2)(tailwindcss@4.3.5)(vite@8.3.8)(vitest@5.1.2)
+        version: 8.0.22(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(eslint-plugin-pnpm@1.9.1(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2)))(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2))(oxlint@1.94.0)(postcss@8.5.33)(stylelint@18.1.0)(supports-color@10.2.2)(tailwindcss@4.3.5)(vite@8.3.8)(vitest@5.1.2)
       '@icebreakers/stylelint-config':
         specifier: 'catalog:'
         version: 6.0.7(postcss@8.5.33)(stylelint@18.1.0)(tailwindcss@4.3.5)
@@ -4265,7 +4265,7 @@ importers:
         version: 1.3.1
       '@icebreakers/eslint-config':
         specifier: 'catalog:'
-        version: 8.0.22(@types/node@26.6.11)(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(eslint-plugin-pnpm@1.9.1(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2)))(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2))(oxlint@1.94.0)(postcss@8.5.33)(stylelint@18.1.0)(supports-color@10.2.2)(tailwindcss@4.3.5)(vite@8.3.8)(vitest@5.1.2)
+        version: 8.0.22(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(eslint-plugin-pnpm@1.9.1(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2)))(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2))(oxlint@1.94.0)(postcss@8.5.33)(stylelint@18.1.0)(supports-color@10.2.2)(tailwindcss@4.3.5)(vite@8.3.8)(vitest@5.1.2)
       '@icebreakers/stylelint-config':
         specifier: 'catalog:'
         version: 6.0.7(postcss@8.5.33)(stylelint@18.1.0)(tailwindcss@4.3.5)
@@ -4310,7 +4310,7 @@ importers:
         version: 1.3.1
       '@icebreakers/eslint-config':
         specifier: 'catalog:'
-        version: 8.0.22(@types/node@26.6.11)(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(eslint-plugin-pnpm@1.9.1(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2)))(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2))(oxlint@1.94.0)(postcss@8.5.33)(stylelint@18.1.0)(supports-color@10.2.2)(tailwindcss@4.3.5)(vite@8.3.8)(vitest@5.1.2)
+        version: 8.0.22(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(eslint-plugin-pnpm@1.9.1(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2)))(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2))(oxlint@1.94.0)(postcss@8.5.33)(stylelint@18.1.0)(supports-color@10.2.2)(tailwindcss@4.3.5)(vite@8.3.8)(vitest@5.1.2)
       '@icebreakers/stylelint-config':
         specifier: 'catalog:'
         version: 6.0.7(postcss@8.5.33)(stylelint@18.1.0)(tailwindcss@4.3.5)
@@ -4353,7 +4353,7 @@ importers:
     devDependencies:
       '@icebreakers/eslint-config':
         specifier: 'catalog:'
-        version: 8.0.22(@types/node@26.6.11)(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(eslint-plugin-pnpm@1.9.1(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2)))(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2))(oxlint@1.94.0)(postcss@8.5.33)(stylelint@18.1.0)(supports-color@10.2.2)(tailwindcss@4.3.5)(vite@8.3.8)(vitest@5.1.2)
+        version: 8.0.22(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(eslint-plugin-pnpm@1.9.1(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2)))(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2))(oxlint@1.94.0)(postcss@8.5.33)(stylelint@18.1.0)(supports-color@10.2.2)(tailwindcss@4.3.5)(vite@8.3.8)(vitest@5.1.2)
       '@icebreakers/stylelint-config':
         specifier: 'catalog:'
         version: 6.0.7(postcss@8.5.33)(stylelint@18.1.0)(tailwindcss@4.3.5)
@@ -4402,7 +4402,7 @@ importers:
     devDependencies:
       '@icebreakers/eslint-config':
         specifier: 'catalog:'
-        version: 8.0.22(@types/node@26.6.11)(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(eslint-plugin-pnpm@1.9.1(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2)))(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2))(oxlint@1.94.0)(postcss@8.5.33)(stylelint@18.1.0)(supports-color@10.2.2)(tailwindcss@4.3.5)(vite@8.3.5)(vitest@5.1.2)
+        version: 8.0.22(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(eslint-plugin-pnpm@1.9.1(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2)))(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2))(oxlint@1.94.0)(postcss@8.5.33)(stylelint@18.1.0)(supports-color@10.2.2)(tailwindcss@4.3.5)(vite@8.3.5)(vitest@5.1.2)
       '@icebreakers/stylelint-config':
         specifier: 'catalog:'
         version: 6.0.7(postcss@8.5.33)(stylelint@18.1.0)(tailwindcss@4.3.5)
@@ -4451,7 +4451,7 @@ importers:
     devDependencies:
       '@icebreakers/eslint-config':
         specifier: 'catalog:'
-        version: 8.0.22(@types/node@26.6.11)(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(eslint-plugin-pnpm@1.9.1(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2)))(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2))(oxlint@1.94.0)(postcss@8.5.33)(stylelint@18.1.0)(supports-color@10.2.2)(tailwindcss@4.3.5)(vite@8.3.8)(vitest@5.1.2)
+        version: 8.0.22(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(eslint-plugin-pnpm@1.9.1(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2)))(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2))(oxlint@1.94.0)(postcss@8.5.33)(stylelint@18.1.0)(supports-color@10.2.2)(tailwindcss@4.3.5)(vite@8.3.8)(vitest@5.1.2)
       '@icebreakers/stylelint-config':
         specifier: 'catalog:'
         version: 6.0.7(postcss@8.5.33)(stylelint@18.1.0)(tailwindcss@4.3.5)
@@ -4502,7 +4502,7 @@ importers:
     devDependencies:
       '@icebreakers/eslint-config':
         specifier: 'catalog:'
-        version: 8.0.22(@types/node@26.6.11)(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(eslint-plugin-pnpm@1.9.1(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2)))(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2))(oxlint@1.94.0)(postcss@8.5.33)(stylelint@18.1.0)(supports-color@10.2.2)(tailwindcss@4.3.5)(vite@8.3.8)(vitest@5.1.2)
+        version: 8.0.22(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(eslint-plugin-pnpm@1.9.1(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2)))(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2))(oxlint@1.94.0)(postcss@8.5.33)(stylelint@18.1.0)(supports-color@10.2.2)(tailwindcss@4.3.5)(vite@8.3.8)(vitest@5.1.2)
       '@icebreakers/stylelint-config':
         specifier: 'catalog:'
         version: 6.0.7(postcss@8.5.33)(stylelint@18.1.0)(tailwindcss@4.3.5)
@@ -4557,7 +4557,7 @@ importers:
     devDependencies:
       '@icebreakers/eslint-config':
         specifier: 'catalog:'
-        version: 8.0.22(@types/node@26.6.11)(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(eslint-plugin-pnpm@1.9.1(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2)))(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2))(oxlint@1.94.0)(postcss@8.5.33)(stylelint@18.1.0)(supports-color@10.2.2)(tailwindcss@4.3.5)(vite@8.3.8)(vitest@5.1.2)
+        version: 8.0.22(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(eslint-plugin-pnpm@1.9.1(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2)))(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2))(oxlint@1.94.0)(postcss@8.5.33)(stylelint@18.1.0)(supports-color@10.2.2)(tailwindcss@4.3.5)(vite@8.3.8)(vitest@5.1.2)
       '@icebreakers/stylelint-config':
         specifier: 'catalog:'
         version: 6.0.7(postcss@8.5.33)(stylelint@18.1.0)(tailwindcss@4.3.5)
@@ -4608,7 +4608,7 @@ importers:
     devDependencies:
       '@icebreakers/eslint-config':
         specifier: 'catalog:'
-        version: 8.0.22(@types/node@26.6.11)(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(eslint-plugin-pnpm@1.9.1(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2)))(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2))(oxlint@1.94.0)(postcss@8.5.33)(stylelint@18.1.0)(supports-color@10.2.2)(tailwindcss@4.3.5)(vite@8.3.8)(vitest@5.1.2)
+        version: 8.0.22(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(eslint-plugin-pnpm@1.9.1(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2)))(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2))(oxlint@1.94.0)(postcss@8.5.33)(stylelint@18.1.0)(supports-color@10.2.2)(tailwindcss@4.3.5)(vite@8.3.8)(vitest@5.1.2)
       '@icebreakers/stylelint-config':
         specifier: 'catalog:'
         version: 6.0.7(postcss@8.5.33)(stylelint@18.1.0)(tailwindcss@4.3.5)
@@ -4660,7 +4660,7 @@ importers:
     devDependencies:
       '@icebreakers/eslint-config':
         specifier: 'catalog:'
-        version: 8.0.22(@types/node@26.6.11)(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(eslint-plugin-pnpm@1.9.1(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2)))(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2))(oxlint@1.94.0)(postcss@8.5.33)(stylelint@18.1.0)(supports-color@10.2.2)(tailwindcss@4.3.5)(vite@8.3.8)(vitest@5.1.2)
+        version: 8.0.22(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(eslint-plugin-pnpm@1.9.1(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2)))(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2))(oxlint@1.94.0)(postcss@8.5.33)(stylelint@18.1.0)(supports-color@10.2.2)(tailwindcss@4.3.5)(vite@8.3.8)(vitest@5.1.2)
       '@icebreakers/stylelint-config':
         specifier: 'catalog:'
         version: 6.0.7(postcss@8.5.33)(stylelint@18.1.0)(tailwindcss@4.3.5)
@@ -4703,7 +4703,7 @@ importers:
     devDependencies:
       '@icebreakers/eslint-config':
         specifier: 'catalog:'
-        version: 8.0.22(@types/node@26.6.11)(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(eslint-plugin-pnpm@1.9.1(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2)))(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2))(oxlint@1.94.0)(postcss@8.5.33)(stylelint@18.1.0)(supports-color@10.2.2)(tailwindcss@4.3.5)(vite@8.3.8)(vitest@5.1.2)
+        version: 8.0.22(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(eslint-plugin-pnpm@1.9.1(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2)))(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2))(oxlint@1.94.0)(postcss@8.5.33)(stylelint@18.1.0)(supports-color@10.2.2)(tailwindcss@4.3.5)(vite@8.3.8)(vitest@5.1.2)
       '@icebreakers/stylelint-config':
         specifier: 'catalog:'
         version: 6.0.7(postcss@8.5.33)(stylelint@18.1.0)(tailwindcss@4.3.5)
@@ -4757,7 +4757,7 @@ importers:
     devDependencies:
       '@icebreakers/eslint-config':
         specifier: 'catalog:'
-        version: 8.0.22(@types/node@26.6.11)(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(eslint-plugin-pnpm@1.9.1(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2)))(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2))(oxlint@1.94.0)(postcss@8.5.33)(stylelint@18.1.0)(supports-color@10.2.2)(tailwindcss@4.3.5)(vite@8.3.8)(vitest@5.1.2)
+        version: 8.0.22(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(eslint-plugin-pnpm@1.9.1(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2)))(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2))(oxlint@1.94.0)(postcss@8.5.33)(stylelint@18.1.0)(supports-color@10.2.2)(tailwindcss@4.3.5)(vite@8.3.8)(vitest@5.1.2)
       '@icebreakers/stylelint-config':
         specifier: 'catalog:'
         version: 6.0.7(postcss@8.5.33)(stylelint@18.1.0)(tailwindcss@4.3.5)
@@ -4809,7 +4809,7 @@ importers:
     devDependencies:
       '@icebreakers/eslint-config':
         specifier: 'catalog:'
-        version: 8.0.22(@types/node@26.6.11)(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(eslint-plugin-pnpm@1.9.1(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2)))(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2))(oxlint@1.94.0)(postcss@8.5.33)(stylelint@18.1.0)(supports-color@10.2.2)(tailwindcss@4.3.5)(vite@8.3.5)(vitest@5.1.2)
+        version: 8.0.22(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(eslint-plugin-pnpm@1.9.1(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2)))(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2))(oxlint@1.94.0)(postcss@8.5.33)(stylelint@18.1.0)(supports-color@10.2.2)(tailwindcss@4.3.5)(vite@8.3.5)(vitest@5.1.2)
       '@icebreakers/stylelint-config':
         specifier: 'catalog:'
         version: 6.0.7(postcss@8.5.33)(stylelint@18.1.0)(tailwindcss@4.3.5)
@@ -7357,11 +7357,11 @@ packages:
     resolution: {integrity: sha512-bV0Tgo9K4hfPCek+aMAn81RppFKv2ySDQeMoSZuvTASywNTnVJCArCZE2FWqpvIatKu7VMRLWlR1EazvVhDyhQ==}
     engines: {node: '>=18.18'}
 
-  '@icebreakers/commitlint-config@4.1.6':
-    resolution: {integrity: sha512-SQ9lYWufwvkliWkOW+t7fYLCStJiSLCtunPIllYSWkbkqyDaigiBytwh5ZPdiWr8Ih/eUUnAhRZ/G9JPEC/Dfw==}
+  '@icebreakers/commitlint-config@4.1.7':
+    resolution: {integrity: sha512-QOrm+Tel/ZWesOUTYT5ygMPqSNT8o9Tt1+5tVQsl3eiVfUYbCYHKa+uC68UOWblfYdjKG2eCEysogYsRKOSmlg==}
     engines: {node: ^22.23.4 || ^24.22.1 || >=26.12.1}
     peerDependencies:
-      conventional-changelog-conventionalcommits: '>=10.4.1'
+      conventional-changelog-conventionalcommits: '*'
 
   '@icebreakers/eslint-config@8.0.22':
     resolution: {integrity: sha512-XhvOyfgTZRsBQYvFy/sBOCjmlNdmtu5sgRK5lXq8Npbkg36kT1Nooj+w+scv19sLVUQwt3k3vRKmOMpCLcxgTA==}
@@ -7376,19 +7376,33 @@ packages:
       tailwindcss:
         optional: true
 
-  '@icebreakers/monorepo-templates@3.2.9':
-    resolution: {integrity: sha512-zKFZQpCzELs6R3hg6VTUnRaa10DYK5laSgFfDT8QVClYyj0n9wu/ekeobOaDyGxaDB97byXT+iJSPxcExbC8Rg==}
+  '@icebreakers/eslint-config@8.0.23':
+    resolution: {integrity: sha512-kSf4f0QtoXqPHFI1hmiBVZVrYc3GU8o34+wZrGV63H003lnOkhfbMx40jTsWSHQf6KXO15SuNx/DENaxvg4wlw==}
+    engines: {node: ^22.23.4 || ^24.22.1 || >=26.12.1}
+    peerDependencies:
+      eslint: '*'
+      eslint-plugin-pnpm: '*'
+      tailwindcss: '*'
+    peerDependenciesMeta:
+      eslint-plugin-pnpm:
+        optional: true
+      tailwindcss:
+        optional: true
+
+  '@icebreakers/monorepo-templates@3.2.10':
+    resolution: {integrity: sha512-lUxW+wWXa7huikpmrBpU9ygOOZASOQODRgdnKa6V/oKL+qqZF6yexcvzEGEHQd1YNAPW2BK0kqru5l6oJFR0jw==}
     engines: {node: ^22.23.4 || ^24.22.1 || >=26.12.1}
 
-  '@icebreakers/monorepo@6.6.7':
-    resolution: {integrity: sha512-3CaveA5cdk5/ULie5Hesho/8BeXLNQsgf6IjUKEFoLd8l55M0NNNkRARYdyvcfDU7+Azu90MV4FGO5SKSSb8Rw==}
+  '@icebreakers/monorepo@6.6.9':
+    resolution: {integrity: sha512-F3V+I7bxJGfQelWPn2/8skjjAvkR2mA97TmEZN9xqe3dXK2lQXZU8q1OPj6PfRvoaJovikF6N18pS3nhlSOZsw==}
     engines: {node: ^22.23.4 || ^24.22.1 || >=26.12.1}
     hasBin: true
     peerDependencies:
-      '@commitlint/cli': ^21.2.4
-      eslint: ^9.0.0 || ^10.0.0
-      stylelint: ^17.16.0 || ^18.0.0
-      typescript: ^5.0.0 || ^6.0.0 || ^7.0.0
+      '@commitlint/cli': '*'
+      eslint: '*'
+      stylelint: '*'
+      typescript: '*'
+      vitest: '*'
     peerDependenciesMeta:
       '@commitlint/cli':
         optional: true
@@ -7398,6 +7412,8 @@ packages:
         optional: true
       typescript:
         optional: true
+      vitest:
+        optional: true
 
   '@icebreakers/stylelint-config@6.0.7':
     resolution: {integrity: sha512-jNQWMkQnyMtS6zUJqWn1QaoQ03byHtYYE8ZUDBINbMjCGFv4bJI8X2L6GI8mwUqUX/xi3ekbvUYk5OvOuFZs8Q==}
@@ -7405,6 +7421,13 @@ packages:
     hasBin: true
     peerDependencies:
       stylelint: ^18.0.0
+
+  '@icebreakers/stylelint-config@6.0.8':
+    resolution: {integrity: sha512-IKsmVIo1n+VY1LmOuMfdPicJw80erQSwNTH5tyweuOQGU4aWaIZKPe5pWza7pFsA7+Ne1n2IpeXKH46bDl0I+w==}
+    engines: {node: ^22.23.4 || ^24.22.1 || >=26.12.1}
+    hasBin: true
+    peerDependencies:
+      stylelint: '*'
 
   '@iconify-json/bi@1.2.7':
     resolution: {integrity: sha512-IPz8WNxmLkH1I9msl+0Q4OnmjjvP4uU0Z61a4i4sqonB6vKSbMGUWuGn8/YuuszlReVj8rf+3gNv5JU8Xoljyg==}
@@ -12133,10 +12156,6 @@ packages:
     resolution: {integrity: sha512-8zc+h51HxpodKsA7L4PpBNd+9qlrfuUcyUDE5a793BJfN4NZgwk7v9NmrY3ptZ+Sk0+ToigxSzkb47AsEgyizw==}
     engines: {node: '>=20.19.0'}
 
-  cacache@21.0.1:
-    resolution: {integrity: sha512-pTwz/uj3Jyp6WXdJ6fWhR+7LVxVs6RyroQSn7KJwHsSxXuyGSp0pcMVcwSwTpCFq1X2YG8QBe0W+vN+cr0SwzA==}
-    engines: {node: ^22.22.2 || ^24.15.0 || >=26.0.0}
-
   cacache@21.0.2:
     resolution: {integrity: sha512-P1W9H2p3vBmvDhk5g/82aKTOxB3RpHK55IdiH2cAjX7Ts0bE/3OJI9F8HHoNTrCqsZq9XM3XB+ZblaDL8Ycd/g==}
     engines: {node: ^22.22.2 || ^24.15.0 || >=26.0.0}
@@ -16577,16 +16596,16 @@ packages:
   remove-accents@0.5.0:
     resolution: {integrity: sha512-8g3/Otx1eJaVD12e31UbJj1YzdtVvzH85HV7t+9MJYk/u3XmkOUJ5Ys9wQrf9PCPK8+xn4ymzqYCiZl6QWKn+A==}
 
-  repoctl@6.6.7:
-    resolution: {integrity: sha512-1dZ8D+yaz5xv6FstcwpL3XfGjVTUpwT0amfj4MjOAOHPix4s03mUnBs65ni0SKdo0yYxNUopWf+RTs+OzTjINQ==}
+  repoctl@6.6.9:
+    resolution: {integrity: sha512-PYznFki0CpKIURsMCbZKWb1LatBs61gf45UPiLsALgKfZmNKVXQME0SGnc7CGF5ksPA+vLwBBIyQkT6pUV+FeQ==}
     engines: {node: ^22.23.4 || ^24.22.1 || >=26.12.1}
     hasBin: true
     peerDependencies:
-      '@commitlint/cli': ^21.2.4
-      eslint: ^9.0.0 || ^10.0.0
-      stylelint: ^17.16.0 || ^18.0.0
-      typescript: ^5.0.0 || ^6.0.0 || ^7.0.0
-      vitest: ^5.1.1
+      '@commitlint/cli': '*'
+      eslint: '*'
+      stylelint: '*'
+      typescript: '*'
+      vitest: '*'
     peerDependenciesMeta:
       '@commitlint/cli':
         optional: true
@@ -17296,6 +17315,16 @@ packages:
     peerDependencies:
       stylelint: ^17.16.0 || ^18.0.0
       tailwindcss: ^3.4.0 || ^4.0.0
+    peerDependenciesMeta:
+      tailwindcss:
+        optional: true
+
+  stylelint-plugin-tailwindcss@3.2.6:
+    resolution: {integrity: sha512-1diW30bUrCHrJLo5o5rwHSeE29fYdkY7nGAC7IfifnwkhsN2GfKZkH2VidP9Ex4vDkQDN7UEQJJx4eh1+oOttA==}
+    engines: {node: ^22.23.4 || ^24.22.1 || >=26.12.1}
+    peerDependencies:
+      stylelint: '*'
+      tailwindcss: '*'
     peerDependenciesMeta:
       tailwindcss:
         optional: true
@@ -18755,7 +18784,7 @@ snapshots:
 
   '@andrewbranch/untar.js@1.0.4': {}
 
-  '@antfu/eslint-config@10.0.0(@eslint-react/eslint-plugin@5.30.6(@typescript/typescript6@6.0.2)(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2))(@types/node@26.6.11)(@typescript-eslint/typescript-estree@8.74.0(@typescript/typescript6@6.0.2)(supports-color@10.2.2))(@typescript-eslint/utils@8.74.0(@typescript/typescript6@6.0.2)(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2))(@typescript/typescript6@6.0.2)(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(@vue/compiler-sfc@3.5.46)(eslint-plugin-format@2.0.1(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2)))(eslint-plugin-react-refresh@0.5.8(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2)))(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2))(oxlint@1.94.0)(supports-color@10.2.2)(vite@8.3.5)(vitest@5.1.2)':
+  '@antfu/eslint-config@10.0.0(@eslint-react/eslint-plugin@5.30.6(@typescript/typescript6@6.0.2)(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2))(@typescript-eslint/typescript-estree@8.74.0(@typescript/typescript6@6.0.2)(supports-color@10.2.2))(@typescript-eslint/utils@8.74.0(@typescript/typescript6@6.0.2)(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2))(@typescript/typescript6@6.0.2)(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(@vue/compiler-sfc@3.5.46)(eslint-plugin-format@2.0.1(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2)))(eslint-plugin-react-refresh@0.5.8(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2)))(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2))(oxlint@1.94.0)(supports-color@10.2.2)(vite@8.3.5)(vitest@5.1.2)':
     dependencies:
       '@antfu/install-pkg': 2.1.0
       '@clack/prompts': 1.8.1
@@ -18765,7 +18794,7 @@ snapshots:
       '@stylistic/eslint-plugin': 5.10.0(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2))
       '@typescript-eslint/eslint-plugin': 8.72.1(@typescript-eslint/parser@8.74.0(@typescript/typescript6@6.0.2)(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2))(@typescript/typescript6@6.0.2)(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)
       '@typescript-eslint/parser': 8.74.0(@typescript/typescript6@6.0.2)(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)
-      '@vitest/eslint-plugin': 1.6.28(@types/node@26.6.11)(@typescript-eslint/eslint-plugin@8.72.1(@typescript-eslint/parser@8.74.0(@typescript/typescript6@6.0.2)(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2))(@typescript/typescript6@6.0.2)(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2))(@typescript/typescript6@6.0.2)(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(vite@8.3.5)(vitest@5.1.2)
+      '@vitest/eslint-plugin': 1.6.28(@typescript-eslint/eslint-plugin@8.72.1(@typescript-eslint/parser@8.74.0(@typescript/typescript6@6.0.2)(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2))(@typescript/typescript6@6.0.2)(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2))(@typescript/typescript6@6.0.2)(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(vite@8.3.5)(vitest@5.1.2)
       ansis: 4.4.0
       cac: 7.1.1
       eslint: 10.15.0(jiti@2.7.0)(supports-color@10.2.2)
@@ -18800,7 +18829,6 @@ snapshots:
       eslint-plugin-react-refresh: 0.5.8(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2))
     transitivePeerDependencies:
       - '@eslint/json'
-      - '@types/node'
       - '@typescript-eslint/typescript-estree'
       - '@typescript-eslint/utils'
       - '@typescript/native'
@@ -18817,7 +18845,7 @@ snapshots:
       - vite
       - vitest
 
-  '@antfu/eslint-config@10.0.0(@eslint-react/eslint-plugin@5.30.6(@typescript/typescript6@6.0.2)(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2))(@types/node@26.6.11)(@typescript-eslint/typescript-estree@8.74.0(@typescript/typescript6@6.0.2)(supports-color@10.2.2))(@typescript-eslint/utils@8.74.0(@typescript/typescript6@6.0.2)(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2))(@typescript/typescript6@6.0.2)(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(@vue/compiler-sfc@3.5.46)(eslint-plugin-format@2.0.1(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2)))(eslint-plugin-react-refresh@0.5.8(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2)))(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2))(oxlint@1.94.0)(supports-color@10.2.2)(vite@8.3.8)(vitest@5.1.2)':
+  '@antfu/eslint-config@10.0.0(@eslint-react/eslint-plugin@5.30.6(@typescript/typescript6@6.0.2)(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2))(@typescript-eslint/typescript-estree@8.74.0(@typescript/typescript6@6.0.2)(supports-color@10.2.2))(@typescript-eslint/utils@8.74.0(@typescript/typescript6@6.0.2)(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2))(@typescript/typescript6@6.0.2)(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(@vue/compiler-sfc@3.5.46)(eslint-plugin-format@2.0.1(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2)))(eslint-plugin-react-refresh@0.5.8(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2)))(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2))(oxlint@1.94.0)(supports-color@10.2.2)(vite@8.3.8)(vitest@5.1.2)':
     dependencies:
       '@antfu/install-pkg': 2.1.0
       '@clack/prompts': 1.8.1
@@ -18827,7 +18855,7 @@ snapshots:
       '@stylistic/eslint-plugin': 5.10.0(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2))
       '@typescript-eslint/eslint-plugin': 8.72.1(@typescript-eslint/parser@8.74.0(@typescript/typescript6@6.0.2)(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2))(@typescript/typescript6@6.0.2)(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)
       '@typescript-eslint/parser': 8.74.0(@typescript/typescript6@6.0.2)(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)
-      '@vitest/eslint-plugin': 1.6.28(@types/node@26.6.11)(@typescript-eslint/eslint-plugin@8.72.1(@typescript-eslint/parser@8.74.0(@typescript/typescript6@6.0.2)(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2))(@typescript/typescript6@6.0.2)(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2))(@typescript/typescript6@6.0.2)(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(vite@8.3.8)(vitest@5.1.2)
+      '@vitest/eslint-plugin': 1.6.28(@typescript-eslint/eslint-plugin@8.72.1(@typescript-eslint/parser@8.74.0(@typescript/typescript6@6.0.2)(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2))(@typescript/typescript6@6.0.2)(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2))(@typescript/typescript6@6.0.2)(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(vite@8.3.8)(vitest@5.1.2)
       ansis: 4.4.0
       cac: 7.1.1
       eslint: 10.15.0(jiti@2.7.0)(supports-color@10.2.2)
@@ -18862,7 +18890,6 @@ snapshots:
       eslint-plugin-react-refresh: 0.5.8(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2))
     transitivePeerDependencies:
       - '@eslint/json'
-      - '@types/node'
       - '@typescript-eslint/typescript-estree'
       - '@typescript-eslint/utils'
       - '@typescript/native'
@@ -19667,7 +19694,7 @@ snapshots:
   '@cloudflare/workerd-windows-64@1.20261123.1':
     optional: true
 
-  '@cloudflare/workers-utils@0.57.0(@types/node@26.6.11)(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(vite@8.3.8)(vitest@5.1.2)':
+  '@cloudflare/workers-utils@0.57.0(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(vite@8.3.8)(vitest@5.1.2)':
     dependencies:
       '@cspotcode/source-map-support': 0.8.1
       chalk: 5.3.0
@@ -19676,7 +19703,6 @@ snapshots:
     optionalDependencies:
       vitest: 5.1.2(@types/node@26.6.11)(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(happy-dom@21.0.4(bufferutil@4.1.0))(vite@8.3.8)
     transitivePeerDependencies:
-      - '@types/node'
       - '@vitest/browser'
       - '@vitest/browser-playwright'
       - '@vitest/browser-preview'
@@ -20884,15 +20910,15 @@ snapshots:
 
   '@humanwhocodes/retry@0.4.3': {}
 
-  '@icebreakers/commitlint-config@4.1.6(conventional-changelog-conventionalcommits@10.4.1)':
+  '@icebreakers/commitlint-config@4.1.7(conventional-changelog-conventionalcommits@10.4.1)':
     dependencies:
       '@commitlint/config-conventional': 21.2.4
       '@commitlint/types': 21.2.3
       conventional-changelog-conventionalcommits: 10.4.1
 
-  '@icebreakers/eslint-config@8.0.22(@types/node@26.6.11)(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(eslint-plugin-pnpm@1.9.1(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2)))(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2))(oxlint@1.94.0)(postcss@8.5.33)(stylelint@18.1.0)(supports-color@10.2.2)(tailwindcss@4.3.5)(vite@8.3.5)(vitest@5.1.2)':
+  '@icebreakers/eslint-config@8.0.22(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(eslint-plugin-pnpm@1.9.1(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2)))(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2))(oxlint@1.94.0)(postcss@8.5.33)(stylelint@18.1.0)(supports-color@10.2.2)(tailwindcss@4.3.5)(vite@8.3.5)(vitest@5.1.2)':
     dependencies:
-      '@antfu/eslint-config': 10.0.0(@eslint-react/eslint-plugin@5.30.6(@typescript/typescript6@6.0.2)(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2))(@types/node@26.6.11)(@typescript-eslint/typescript-estree@8.74.0(@typescript/typescript6@6.0.2)(supports-color@10.2.2))(@typescript-eslint/utils@8.74.0(@typescript/typescript6@6.0.2)(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2))(@typescript/typescript6@6.0.2)(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(@vue/compiler-sfc@3.5.46)(eslint-plugin-format@2.0.1(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2)))(eslint-plugin-react-refresh@0.5.8(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2)))(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2))(oxlint@1.94.0)(supports-color@10.2.2)(vite@8.3.5)(vitest@5.1.2)
+      '@antfu/eslint-config': 10.0.0(@eslint-react/eslint-plugin@5.30.6(@typescript/typescript6@6.0.2)(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2))(@typescript-eslint/typescript-estree@8.74.0(@typescript/typescript6@6.0.2)(supports-color@10.2.2))(@typescript-eslint/utils@8.74.0(@typescript/typescript6@6.0.2)(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2))(@typescript/typescript6@6.0.2)(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(@vue/compiler-sfc@3.5.46)(eslint-plugin-format@2.0.1(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2)))(eslint-plugin-react-refresh@0.5.8(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2)))(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2))(oxlint@1.94.0)(supports-color@10.2.2)(vite@8.3.5)(vitest@5.1.2)
       '@eslint-react/eslint-plugin': 5.30.6(@typescript/typescript6@6.0.2)(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)
       '@icebreakers/stylelint-config': 6.0.7(postcss@8.5.33)(stylelint@18.1.0)(tailwindcss@4.3.5)
       '@stylistic/eslint-plugin': 6.0.1(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2))(oxlint@1.94.0)
@@ -20925,7 +20951,6 @@ snapshots:
       - '@eslint/json'
       - '@next/eslint-plugin-next'
       - '@prettier/plugin-xml'
-      - '@types/node'
       - '@typescript/native'
       - '@unocss/eslint-plugin'
       - '@vitest/browser'
@@ -20953,9 +20978,9 @@ snapshots:
       - vite
       - vitest
 
-  '@icebreakers/eslint-config@8.0.22(@types/node@26.6.11)(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(eslint-plugin-pnpm@1.9.1(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2)))(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2))(oxlint@1.94.0)(postcss@8.5.33)(stylelint@18.1.0)(supports-color@10.2.2)(tailwindcss@4.3.5)(vite@8.3.8)(vitest@5.1.2)':
+  '@icebreakers/eslint-config@8.0.22(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(eslint-plugin-pnpm@1.9.1(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2)))(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2))(oxlint@1.94.0)(postcss@8.5.33)(stylelint@18.1.0)(supports-color@10.2.2)(tailwindcss@4.3.5)(vite@8.3.8)(vitest@5.1.2)':
     dependencies:
-      '@antfu/eslint-config': 10.0.0(@eslint-react/eslint-plugin@5.30.6(@typescript/typescript6@6.0.2)(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2))(@types/node@26.6.11)(@typescript-eslint/typescript-estree@8.74.0(@typescript/typescript6@6.0.2)(supports-color@10.2.2))(@typescript-eslint/utils@8.74.0(@typescript/typescript6@6.0.2)(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2))(@typescript/typescript6@6.0.2)(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(@vue/compiler-sfc@3.5.46)(eslint-plugin-format@2.0.1(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2)))(eslint-plugin-react-refresh@0.5.8(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2)))(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2))(oxlint@1.94.0)(supports-color@10.2.2)(vite@8.3.8)(vitest@5.1.2)
+      '@antfu/eslint-config': 10.0.0(@eslint-react/eslint-plugin@5.30.6(@typescript/typescript6@6.0.2)(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2))(@typescript-eslint/typescript-estree@8.74.0(@typescript/typescript6@6.0.2)(supports-color@10.2.2))(@typescript-eslint/utils@8.74.0(@typescript/typescript6@6.0.2)(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2))(@typescript/typescript6@6.0.2)(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(@vue/compiler-sfc@3.5.46)(eslint-plugin-format@2.0.1(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2)))(eslint-plugin-react-refresh@0.5.8(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2)))(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2))(oxlint@1.94.0)(supports-color@10.2.2)(vite@8.3.8)(vitest@5.1.2)
       '@eslint-react/eslint-plugin': 5.30.6(@typescript/typescript6@6.0.2)(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)
       '@icebreakers/stylelint-config': 6.0.7(postcss@8.5.33)(stylelint@18.1.0)(tailwindcss@4.3.5)
       '@stylistic/eslint-plugin': 6.0.1(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2))(oxlint@1.94.0)
@@ -20988,7 +21013,6 @@ snapshots:
       - '@eslint/json'
       - '@next/eslint-plugin-next'
       - '@prettier/plugin-xml'
-      - '@types/node'
       - '@typescript/native'
       - '@unocss/eslint-plugin'
       - '@vitest/browser'
@@ -21016,7 +21040,69 @@ snapshots:
       - vite
       - vitest
 
-  '@icebreakers/monorepo-templates@3.2.9(@types/node@26.6.6)':
+  '@icebreakers/eslint-config@8.0.23(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(eslint-plugin-pnpm@1.9.1(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2)))(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2))(oxlint@1.94.0)(postcss@8.5.33)(stylelint@18.1.0)(supports-color@10.2.2)(tailwindcss@4.3.5)(vite@8.3.5)(vitest@5.1.2)':
+    dependencies:
+      '@antfu/eslint-config': 10.0.0(@eslint-react/eslint-plugin@5.30.6(@typescript/typescript6@6.0.2)(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2))(@typescript-eslint/typescript-estree@8.74.0(@typescript/typescript6@6.0.2)(supports-color@10.2.2))(@typescript-eslint/utils@8.74.0(@typescript/typescript6@6.0.2)(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2))(@typescript/typescript6@6.0.2)(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(@vue/compiler-sfc@3.5.46)(eslint-plugin-format@2.0.1(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2)))(eslint-plugin-react-refresh@0.5.8(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2)))(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2))(oxlint@1.94.0)(supports-color@10.2.2)(vite@8.3.5)(vitest@5.1.2)
+      '@eslint-react/eslint-plugin': 5.30.6(@typescript/typescript6@6.0.2)(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)
+      '@icebreakers/stylelint-config': 6.0.8(postcss@8.5.33)(stylelint@18.1.0)(tailwindcss@4.3.5)
+      '@stylistic/eslint-plugin': 6.0.1(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2))(oxlint@1.94.0)
+      '@typescript-eslint/parser': 8.74.0(@typescript/typescript6@6.0.2)(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)
+      '@typescript-eslint/rule-tester': 8.74.0(@typescript/typescript6@6.0.2)(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)
+      '@typescript-eslint/typescript-estree': 8.74.0(@typescript/typescript6@6.0.2)(supports-color@10.2.2)
+      '@typescript-eslint/utils': 8.74.0(@typescript/typescript6@6.0.2)(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)
+      '@typescript/typescript6': 6.0.2
+      '@vue/compiler-sfc': 3.5.46
+      '@weapp-vite/eslint': 0.3.7(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2))
+      defu: 6.1.7
+      eslint: 10.15.0(jiti@2.7.0)(supports-color@10.2.2)
+      eslint-config-flat-gitignore: 2.4.0(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2))
+      eslint-flat-config-utils: 3.2.0
+      eslint-plugin-better-tailwindcss: 4.11.0(@typescript/typescript6@6.0.2)(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2))(oxlint@1.94.0)(tailwindcss@4.3.5)
+      eslint-plugin-format: 2.0.1(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2))
+      eslint-plugin-react-hooks: 7.1.1(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)
+      eslint-plugin-react-refresh: 0.5.8(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2))
+      eslint-plugin-tailwindcss: 4.4.0(@typescript/typescript6@6.0.2)(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(tailwindcss@4.3.5)
+      eslint-processor-vue-blocks: 2.0.0(@vue/compiler-sfc@3.5.46)(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2))
+      typescript: '@typescript/typescript6@6.0.2'
+    optionalDependencies:
+      eslint-plugin-pnpm: 1.9.1(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2))
+      tailwindcss: 4.3.5
+    transitivePeerDependencies:
+      - '@angular-eslint/eslint-plugin'
+      - '@angular-eslint/eslint-plugin-template'
+      - '@angular-eslint/template-parser'
+      - '@eslint/css'
+      - '@eslint/json'
+      - '@next/eslint-plugin-next'
+      - '@prettier/plugin-xml'
+      - '@typescript/native'
+      - '@unocss/eslint-plugin'
+      - '@vitest/browser'
+      - '@vitest/browser-playwright'
+      - '@vitest/browser-preview'
+      - '@vitest/coverage-v8'
+      - '@vitest/ui'
+      - astro-eslint-parser
+      - eslint-plugin-astro
+      - eslint-plugin-erasable-syntax-only
+      - eslint-plugin-jsx-a11y
+      - eslint-plugin-slop
+      - eslint-plugin-solid
+      - eslint-plugin-sonarjs
+      - eslint-plugin-svelte
+      - eslint-plugin-vuejs-accessibility
+      - oxlint
+      - postcss
+      - prettier-plugin-astro
+      - prettier-plugin-slidev
+      - stylelint
+      - supports-color
+      - svelte-eslint-parser
+      - ts-declaration-location
+      - vite
+      - vitest
+
+  '@icebreakers/monorepo-templates@3.2.10(@types/node@26.6.6)':
     dependencies:
       '@inquirer/checkbox': 5.3.1(@types/node@26.6.6)
       '@inquirer/input': 5.2.1(@types/node@26.6.6)
@@ -21028,14 +21114,14 @@ snapshots:
     transitivePeerDependencies:
       - '@types/node'
 
-  '@icebreakers/monorepo@6.6.7(@commitlint/cli@21.2.4(conventional-commits-parser@7.1.3)(typescript@6.0.3))(@pnpm/logger@1001.0.1)(@types/node@26.6.11)(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(conventional-changelog-conventionalcommits@10.4.1)(eslint-plugin-pnpm@1.9.1(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2)))(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2))(happy-dom@21.0.4(bufferutil@4.1.0))(magicast@0.5.5)(oxlint@1.94.0)(postcss@8.5.33)(stylelint@18.1.0)(supports-color@10.2.2)(tailwindcss@4.3.5)(typescript@6.0.3)(vite@8.3.5)(vitest@5.1.2)':
+  '@icebreakers/monorepo@6.6.9(@commitlint/cli@21.2.4(conventional-commits-parser@7.1.3)(typescript@6.0.3))(@pnpm/logger@1001.0.1)(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(conventional-changelog-conventionalcommits@10.4.1)(eslint-plugin-pnpm@1.9.1(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2)))(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2))(magicast@0.5.5)(oxlint@1.94.0)(postcss@8.5.33)(stylelint@18.1.0)(supports-color@10.2.2)(tailwindcss@4.3.5)(typescript@6.0.3)(vite@8.3.5)(vitest@5.1.2)':
     dependencies:
       '@arethetypeswrong/core': 0.18.5
       '@babel/parser': 8.1.3
-      '@icebreakers/commitlint-config': 4.1.6(conventional-changelog-conventionalcommits@10.4.1)
-      '@icebreakers/eslint-config': 8.0.22(@types/node@26.6.11)(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(eslint-plugin-pnpm@1.9.1(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2)))(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2))(oxlint@1.94.0)(postcss@8.5.33)(stylelint@18.1.0)(supports-color@10.2.2)(tailwindcss@4.3.5)(vite@8.3.5)(vitest@5.1.2)
-      '@icebreakers/monorepo-templates': 3.2.9(@types/node@26.6.6)
-      '@icebreakers/stylelint-config': 6.0.7(postcss@8.5.33)(stylelint@18.1.0)(tailwindcss@4.3.5)
+      '@icebreakers/commitlint-config': 4.1.7(conventional-changelog-conventionalcommits@10.4.1)
+      '@icebreakers/eslint-config': 8.0.23(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(eslint-plugin-pnpm@1.9.1(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2)))(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2))(oxlint@1.94.0)(postcss@8.5.33)(stylelint@18.1.0)(supports-color@10.2.2)(tailwindcss@4.3.5)(vite@8.3.5)(vitest@5.1.2)
+      '@icebreakers/monorepo-templates': 3.2.10(@types/node@26.6.6)
+      '@icebreakers/stylelint-config': 6.0.8(postcss@8.5.33)(stylelint@18.1.0)(tailwindcss@4.3.5)
       '@npmcli/config': 11.2.1
       '@pnpm/find-workspace-dir': 1000.1.5
       '@pnpm/fs.find-packages': 1000.0.24(@pnpm/logger@1001.0.1)
@@ -21066,7 +21152,6 @@ snapshots:
       tar: 7.5.23
       tinyglobby: 0.2.17
       validate-npm-package-name: 8.0.0
-      vitest: 5.1.2(@types/node@26.6.6)(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(happy-dom@21.0.4(bufferutil@4.1.0))(vite@8.3.5)
       yaml: 2.9.1
       yauzl: 3.4.0
     optionalDependencies:
@@ -21074,25 +21159,21 @@ snapshots:
       eslint: 10.15.0(jiti@2.7.0)(supports-color@10.2.2)
       stylelint: 18.1.0
       typescript: 6.0.3
+      vitest: 5.1.2(@types/node@26.6.11)(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(happy-dom@21.0.4(bufferutil@4.1.0))(vite@8.3.5)
     transitivePeerDependencies:
       - '@angular-eslint/eslint-plugin'
       - '@angular-eslint/eslint-plugin-template'
       - '@angular-eslint/template-parser'
-      - '@edge-runtime/vm'
       - '@eslint/css'
       - '@eslint/json'
       - '@next/eslint-plugin-next'
-      - '@opentelemetry/api'
       - '@pnpm/logger'
       - '@prettier/plugin-xml'
-      - '@types/node'
       - '@typescript/native'
       - '@unocss/eslint-plugin'
       - '@vitest/browser'
       - '@vitest/browser-playwright'
       - '@vitest/browser-preview'
-      - '@vitest/browser-webdriverio'
-      - '@vitest/coverage-istanbul'
       - '@vitest/coverage-v8'
       - '@vitest/ui'
       - astro-eslint-parser
@@ -21106,11 +21187,8 @@ snapshots:
       - eslint-plugin-sonarjs
       - eslint-plugin-svelte
       - eslint-plugin-vuejs-accessibility
-      - happy-dom
-      - jsdom
       - kerberos
       - magicast
-      - msw
       - oxlint
       - postcss
       - prettier-plugin-astro
@@ -21120,7 +21198,6 @@ snapshots:
       - tailwindcss
       - ts-declaration-location
       - vite
-      - vitest
 
   '@icebreakers/stylelint-config@6.0.7(postcss@8.5.33)(stylelint@18.1.0)(tailwindcss@4.3.5)':
     dependencies:
@@ -21134,6 +21211,22 @@ snapshots:
       stylelint-config-standard: 41.1.0(stylelint@18.1.0)
       stylelint-order: 8.1.3(stylelint@18.1.0)
       stylelint-plugin-tailwindcss: 3.2.5(stylelint@18.1.0)(tailwindcss@4.3.5)
+    transitivePeerDependencies:
+      - postcss
+      - tailwindcss
+
+  '@icebreakers/stylelint-config@6.0.8(postcss@8.5.33)(stylelint@18.1.0)(tailwindcss@4.3.5)':
+    dependencies:
+      comment-json: 5.0.0
+      css-tree: 3.2.1
+      postcss-html: 2.0.1(postcss@8.5.33)
+      postcss-scss: 4.0.9(postcss@8.5.33)
+      stylelint: 18.1.0
+      stylelint-config-html: 2.0.0(postcss-html@2.0.1(postcss@8.5.33))(stylelint@18.1.0)
+      stylelint-config-recommended: 19.1.0(stylelint@18.1.0)
+      stylelint-config-standard: 41.1.0(stylelint@18.1.0)
+      stylelint-order: 8.1.3(stylelint@18.1.0)
+      stylelint-plugin-tailwindcss: 3.2.6(stylelint@18.1.0)(tailwindcss@4.3.5)
     transitivePeerDependencies:
       - postcss
       - tailwindcss
@@ -24429,15 +24522,14 @@ snapshots:
       vite: 8.3.8(@types/node@26.6.11)(@vitejs/devtools@0.8.3)(esbuild@0.28.2)(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(sass-embedded@1.108.2)(sass@1.108.2)(terser@5.51.4)(tsx@4.23.15)(yaml@2.9.1)
       vue: 3.5.46(typescript@6.0.3)
 
-  '@vitest/browser-playwright@5.1.2(@types/node@26.6.11)(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(bufferutil@4.1.0)(playwright@1.65.1)(vite@8.3.5)(vitest@5.1.2)':
+  '@vitest/browser-playwright@5.1.2(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(bufferutil@4.1.0)(playwright@1.65.1)(vite@8.3.5)(vitest@5.1.2)':
     dependencies:
-      '@vitest/browser': 5.1.2(@types/node@26.6.11)(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(bufferutil@4.1.0)(vite@8.3.5)(vitest@5.1.2)
+      '@vitest/browser': 5.1.2(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(bufferutil@4.1.0)(vite@8.3.5)(vitest@5.1.2)
       '@vitest/mocker': 5.1.2(vite@8.3.5)
       playwright: 1.65.1
       tinyrainbow: 3.2.0
       vitest: 5.1.2(@types/node@26.6.11)(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(happy-dom@21.0.4(bufferutil@4.1.0))(vite@8.3.5)
     transitivePeerDependencies:
-      - '@types/node'
       - '@vitest/browser'
       - '@vitest/browser-preview'
       - '@vitest/coverage-v8'
@@ -24447,15 +24539,14 @@ snapshots:
       - utf-8-validate
       - vite
 
-  '@vitest/browser-playwright@5.1.2(@types/node@26.6.11)(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(bufferutil@4.1.0)(playwright@1.65.1)(vite@8.3.8)(vitest@5.1.2)':
+  '@vitest/browser-playwright@5.1.2(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(bufferutil@4.1.0)(playwright@1.65.1)(vite@8.3.8)(vitest@5.1.2)':
     dependencies:
-      '@vitest/browser': 5.1.2(@types/node@26.6.11)(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(bufferutil@4.1.0)(vite@8.3.8)(vitest@5.1.2)
+      '@vitest/browser': 5.1.2(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(bufferutil@4.1.0)(vite@8.3.8)(vitest@5.1.2)
       '@vitest/mocker': 5.1.2(vite@8.3.8)
       playwright: 1.65.1
       tinyrainbow: 3.2.0
       vitest: 5.1.2(@types/node@26.6.11)(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(happy-dom@21.0.4(bufferutil@4.1.0))(vite@8.3.8)
     transitivePeerDependencies:
-      - '@types/node'
       - '@vitest/browser'
       - '@vitest/browser-preview'
       - '@vitest/coverage-v8'
@@ -24466,14 +24557,13 @@ snapshots:
       - vite
     optional: true
 
-  '@vitest/browser-preview@5.1.2(@types/node@26.6.11)(@vitejs/devtools@0.8.3)(@vitest/browser-playwright@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(@voidzero-dev/vite-plus-core@8.3.8001)(@volar/typescript@2.4.30(typescript@6.0.3))(bufferutil@4.1.0)(vitest@5.1.2)':
+  '@vitest/browser-preview@5.1.2(@vitejs/devtools@0.8.3)(@vitest/browser-playwright@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(@voidzero-dev/vite-plus-core@8.3.8001)(@volar/typescript@2.4.30(typescript@6.0.3))(bufferutil@4.1.0)(vitest@5.1.2)':
     dependencies:
       '@testing-library/dom': 10.4.2
       '@testing-library/user-event': 14.6.13(@testing-library/dom@10.4.2)
-      '@vitest/browser': 5.1.2(@types/node@26.6.11)(@vitejs/devtools@0.8.3)(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(@voidzero-dev/vite-plus-core@8.3.8001)(@volar/typescript@2.4.30(typescript@6.0.3))(bufferutil@4.1.0)(vitest@5.1.2)
+      '@vitest/browser': 5.1.2(@vitejs/devtools@0.8.3)(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(@voidzero-dev/vite-plus-core@8.3.8001)(@volar/typescript@2.4.30(typescript@6.0.3))(bufferutil@4.1.0)(vitest@5.1.2)
       vitest: 5.1.2(@types/node@26.6.11)(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(happy-dom@21.0.4(bufferutil@4.1.0))(vite@8.3.8)
     transitivePeerDependencies:
-      - '@types/node'
       - '@vitejs/devtools'
       - '@vitest/browser'
       - '@vitest/browser-playwright'
@@ -24485,14 +24575,13 @@ snapshots:
       - utf-8-validate
       - vite
 
-  '@vitest/browser-preview@5.1.2(@types/node@26.6.11)(@vitejs/devtools@0.8.3)(@vitest/browser-playwright@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(@voidzero-dev/vite-plus-core@8.3.8001)(@volar/typescript@2.4.31(typescript@6.0.3))(bufferutil@4.1.0)(vitest@5.1.2)':
+  '@vitest/browser-preview@5.1.2(@vitejs/devtools@0.8.3)(@vitest/browser-playwright@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(@voidzero-dev/vite-plus-core@8.3.8001)(@volar/typescript@2.4.31(typescript@6.0.3))(bufferutil@4.1.0)(vitest@5.1.2)':
     dependencies:
       '@testing-library/dom': 10.4.2
       '@testing-library/user-event': 14.6.13(@testing-library/dom@10.4.2)
-      '@vitest/browser': 5.1.2(@types/node@26.6.11)(@vitejs/devtools@0.8.3)(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(@voidzero-dev/vite-plus-core@8.3.8001)(@volar/typescript@2.4.31(typescript@6.0.3))(bufferutil@4.1.0)(vitest@5.1.2)
+      '@vitest/browser': 5.1.2(@vitejs/devtools@0.8.3)(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(@voidzero-dev/vite-plus-core@8.3.8001)(@volar/typescript@2.4.31(typescript@6.0.3))(bufferutil@4.1.0)(vitest@5.1.2)
       vitest: 5.1.2(@types/node@26.6.11)(@vitejs/devtools@0.8.3)(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(@voidzero-dev/vite-plus-core@8.3.8001)(@volar/typescript@2.4.31(typescript@6.0.3))(happy-dom@21.0.4(bufferutil@4.1.0))
     transitivePeerDependencies:
-      - '@types/node'
       - '@vitejs/devtools'
       - '@vitest/browser'
       - '@vitest/browser-playwright'
@@ -24504,14 +24593,13 @@ snapshots:
       - utf-8-validate
       - vite
 
-  '@vitest/browser-preview@5.1.2(@types/node@26.6.11)(@vitest/browser-playwright@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(bufferutil@4.1.0)(vite@8.3.5)(vitest@5.1.2)':
+  '@vitest/browser-preview@5.1.2(@vitest/browser-playwright@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(bufferutil@4.1.0)(vite@8.3.5)(vitest@5.1.2)':
     dependencies:
       '@testing-library/dom': 10.4.2
       '@testing-library/user-event': 14.6.13(@testing-library/dom@10.4.2)
-      '@vitest/browser': 5.1.2(@types/node@26.6.11)(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(bufferutil@4.1.0)(vite@8.3.5)(vitest@5.1.2)
+      '@vitest/browser': 5.1.2(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(bufferutil@4.1.0)(vite@8.3.5)(vitest@5.1.2)
       vitest: 5.1.2(@types/node@26.6.11)(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(happy-dom@21.0.4(bufferutil@4.1.0))(vite@8.3.5)
     transitivePeerDependencies:
-      - '@types/node'
       - '@vitest/browser'
       - '@vitest/browser-playwright'
       - '@vitest/coverage-v8'
@@ -24522,14 +24610,13 @@ snapshots:
       - vite
     optional: true
 
-  '@vitest/browser-preview@5.1.2(@types/node@26.6.11)(@vitest/browser-playwright@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(bufferutil@4.1.0)(vite@8.3.8)(vitest@5.1.2)':
+  '@vitest/browser-preview@5.1.2(@vitest/browser-playwright@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(bufferutil@4.1.0)(vite@8.3.8)(vitest@5.1.2)':
     dependencies:
       '@testing-library/dom': 10.4.2
       '@testing-library/user-event': 14.6.13(@testing-library/dom@10.4.2)
-      '@vitest/browser': 5.1.2(@types/node@26.6.11)(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(bufferutil@4.1.0)(vite@8.3.8)(vitest@5.1.2)
+      '@vitest/browser': 5.1.2(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(bufferutil@4.1.0)(vite@8.3.8)(vitest@5.1.2)
       vitest: 5.1.2(@types/node@26.6.11)(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(happy-dom@21.0.4(bufferutil@4.1.0))(vite@8.3.8)
     transitivePeerDependencies:
-      - '@types/node'
       - '@vitest/browser'
       - '@vitest/browser-playwright'
       - '@vitest/coverage-v8'
@@ -24540,11 +24627,11 @@ snapshots:
       - vite
     optional: true
 
-  '@vitest/browser@5.1.2(@types/node@26.6.11)(@vitejs/devtools@0.8.3)(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(@voidzero-dev/vite-plus-core@8.3.8001)(@volar/typescript@2.4.30(typescript@6.0.3))(bufferutil@4.1.0)(vitest@5.1.2)':
+  '@vitest/browser@5.1.2(@vitejs/devtools@0.8.3)(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(@voidzero-dev/vite-plus-core@8.3.8001)(@volar/typescript@2.4.30(typescript@6.0.3))(bufferutil@4.1.0)(vitest@5.1.2)':
     dependencies:
       '@blazediff/core': 1.10.0
       '@vitest/mocker': 5.1.2(@vitejs/devtools@0.8.3)(@voidzero-dev/vite-plus-core@8.3.8001)(@volar/typescript@2.4.30(typescript@6.0.3))
-      '@vitest/ui': 5.1.2(@types/node@26.6.11)(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(vite@8.3.8)(vitest@5.1.2)
+      '@vitest/ui': 5.1.2(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(vite@8.3.8)(vitest@5.1.2)
       '@vitest/utils': 5.1.2
       magic-string: 1.4.5
       pngjs: 7.0.0
@@ -24553,7 +24640,6 @@ snapshots:
       vitest: 5.1.2(@types/node@26.6.11)(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(happy-dom@21.0.4(bufferutil@4.1.0))(vite@8.3.8)
       ws: 8.23.0(bufferutil@4.1.0)
     transitivePeerDependencies:
-      - '@types/node'
       - '@vitejs/devtools'
       - '@vitest/browser-playwright'
       - '@vitest/browser-preview'
@@ -24565,11 +24651,11 @@ snapshots:
       - utf-8-validate
       - vite
 
-  '@vitest/browser@5.1.2(@types/node@26.6.11)(@vitejs/devtools@0.8.3)(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(@voidzero-dev/vite-plus-core@8.3.8001)(@volar/typescript@2.4.31(typescript@6.0.3))(bufferutil@4.1.0)(vitest@5.1.2)':
+  '@vitest/browser@5.1.2(@vitejs/devtools@0.8.3)(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(@voidzero-dev/vite-plus-core@8.3.8001)(@volar/typescript@2.4.31(typescript@6.0.3))(bufferutil@4.1.0)(vitest@5.1.2)':
     dependencies:
       '@blazediff/core': 1.10.0
       '@vitest/mocker': 5.1.2(@vitejs/devtools@0.8.3)(@voidzero-dev/vite-plus-core@8.3.8001)(@volar/typescript@2.4.31(typescript@6.0.3))
-      '@vitest/ui': 5.1.2(@types/node@26.6.11)(@vitejs/devtools@0.8.3)(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(@voidzero-dev/vite-plus-core@8.3.8001)(@volar/typescript@2.4.31(typescript@6.0.3))(vitest@5.1.2)
+      '@vitest/ui': 5.1.2(@vitejs/devtools@0.8.3)(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(@voidzero-dev/vite-plus-core@8.3.8001)(@volar/typescript@2.4.31(typescript@6.0.3))(vitest@5.1.2)
       '@vitest/utils': 5.1.2
       magic-string: 1.4.5
       pngjs: 7.0.0
@@ -24578,7 +24664,6 @@ snapshots:
       vitest: 5.1.2(@types/node@26.6.11)(@vitejs/devtools@0.8.3)(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(@voidzero-dev/vite-plus-core@8.3.8001)(@volar/typescript@2.4.31(typescript@6.0.3))(happy-dom@21.0.4(bufferutil@4.1.0))
       ws: 8.23.0(bufferutil@4.1.0)
     transitivePeerDependencies:
-      - '@types/node'
       - '@vitejs/devtools'
       - '@vitest/browser-playwright'
       - '@vitest/browser-preview'
@@ -24590,11 +24675,11 @@ snapshots:
       - utf-8-validate
       - vite
 
-  '@vitest/browser@5.1.2(@types/node@26.6.11)(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(bufferutil@4.1.0)(vite@8.3.5)(vitest@5.1.2)':
+  '@vitest/browser@5.1.2(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(bufferutil@4.1.0)(vite@8.3.5)(vitest@5.1.2)':
     dependencies:
       '@blazediff/core': 1.10.0
       '@vitest/mocker': 5.1.2(vite@8.3.5)
-      '@vitest/ui': 5.1.2(@types/node@26.6.11)(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(vite@8.3.5)(vitest@5.1.2)
+      '@vitest/ui': 5.1.2(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(vite@8.3.5)(vitest@5.1.2)
       '@vitest/utils': 5.1.2
       magic-string: 1.4.5
       pngjs: 7.0.0
@@ -24603,7 +24688,6 @@ snapshots:
       vitest: 5.1.2(@types/node@26.6.11)(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(happy-dom@21.0.4(bufferutil@4.1.0))(vite@8.3.5)
       ws: 8.23.0(bufferutil@4.1.0)
     transitivePeerDependencies:
-      - '@types/node'
       - '@vitest/browser-playwright'
       - '@vitest/browser-preview'
       - '@vitest/coverage-v8'
@@ -24613,11 +24697,11 @@ snapshots:
       - utf-8-validate
       - vite
 
-  '@vitest/browser@5.1.2(@types/node@26.6.11)(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(bufferutil@4.1.0)(vite@8.3.8)(vitest@5.1.2)':
+  '@vitest/browser@5.1.2(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(bufferutil@4.1.0)(vite@8.3.8)(vitest@5.1.2)':
     dependencies:
       '@blazediff/core': 1.10.0
       '@vitest/mocker': 5.1.2(vite@8.3.8)
-      '@vitest/ui': 5.1.2(@types/node@26.6.11)(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(vite@8.3.8)(vitest@5.1.2)
+      '@vitest/ui': 5.1.2(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(vite@8.3.8)(vitest@5.1.2)
       '@vitest/utils': 5.1.2
       magic-string: 1.4.5
       pngjs: 7.0.0
@@ -24626,7 +24710,6 @@ snapshots:
       vitest: 5.1.2(@types/node@26.6.11)(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(happy-dom@21.0.4(bufferutil@4.1.0))(vite@8.3.8)
       ws: 8.23.0(bufferutil@4.1.0)
     transitivePeerDependencies:
-      - '@types/node'
       - '@vitest/browser-playwright'
       - '@vitest/browser-preview'
       - '@vitest/coverage-v8'
@@ -24636,7 +24719,7 @@ snapshots:
       - utf-8-validate
       - vite
 
-  '@vitest/coverage-v8@5.1.2(@types/node@26.6.11)(@vitejs/devtools@0.8.3)(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/ui@5.1.2)(@voidzero-dev/vite-plus-core@8.3.8001)(@volar/typescript@2.4.31(typescript@6.0.3))(vitest@5.1.2)':
+  '@vitest/coverage-v8@5.1.2(@vitejs/devtools@0.8.3)(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/ui@5.1.2)(@voidzero-dev/vite-plus-core@8.3.8001)(@volar/typescript@2.4.31(typescript@6.0.3))(vitest@5.1.2)':
     dependencies:
       '@bcoe/v8-coverage': 1.0.2
       '@vitest/istanbul-lib-coverage': 2.1.1
@@ -24648,9 +24731,8 @@ snapshots:
       tinyrainbow: 3.2.0
       vitest: 5.1.2(@types/node@26.6.11)(@vitejs/devtools@0.8.3)(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(@voidzero-dev/vite-plus-core@8.3.8001)(@volar/typescript@2.4.31(typescript@6.0.3))(happy-dom@21.0.4(bufferutil@4.1.0))
     optionalDependencies:
-      '@vitest/browser': 5.1.2(@types/node@26.6.11)(@vitejs/devtools@0.8.3)(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(@voidzero-dev/vite-plus-core@8.3.8001)(@volar/typescript@2.4.31(typescript@6.0.3))(bufferutil@4.1.0)(vitest@5.1.2)
+      '@vitest/browser': 5.1.2(@vitejs/devtools@0.8.3)(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(@voidzero-dev/vite-plus-core@8.3.8001)(@volar/typescript@2.4.31(typescript@6.0.3))(bufferutil@4.1.0)(vitest@5.1.2)
     transitivePeerDependencies:
-      - '@types/node'
       - '@vitejs/devtools'
       - '@vitest/browser-playwright'
       - '@vitest/browser-preview'
@@ -24659,7 +24741,7 @@ snapshots:
       - vite
     optional: true
 
-  '@vitest/coverage-v8@5.1.2(@types/node@26.6.11)(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/ui@5.1.2)(vite@8.3.5)(vitest@5.1.2)':
+  '@vitest/coverage-v8@5.1.2(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/ui@5.1.2)(vite@8.3.5)(vitest@5.1.2)':
     dependencies:
       '@bcoe/v8-coverage': 1.0.2
       '@vitest/istanbul-lib-coverage': 2.1.1
@@ -24671,15 +24753,14 @@ snapshots:
       tinyrainbow: 3.2.0
       vitest: 5.1.2(@types/node@26.6.11)(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(happy-dom@21.0.4(bufferutil@4.1.0))(vite@8.3.5)
     optionalDependencies:
-      '@vitest/browser': 5.1.2(@types/node@26.6.11)(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(bufferutil@4.1.0)(vite@8.3.5)(vitest@5.1.2)
+      '@vitest/browser': 5.1.2(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(bufferutil@4.1.0)(vite@8.3.5)(vitest@5.1.2)
     transitivePeerDependencies:
-      - '@types/node'
       - '@vitest/browser-playwright'
       - '@vitest/browser-preview'
       - '@vitest/ui'
       - vite
 
-  '@vitest/coverage-v8@5.1.2(@types/node@26.6.11)(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/ui@5.1.2)(vite@8.3.8)(vitest@5.1.2)':
+  '@vitest/coverage-v8@5.1.2(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/ui@5.1.2)(vite@8.3.8)(vitest@5.1.2)':
     dependencies:
       '@bcoe/v8-coverage': 1.0.2
       '@vitest/istanbul-lib-coverage': 2.1.1
@@ -24691,16 +24772,15 @@ snapshots:
       tinyrainbow: 3.2.0
       vitest: 5.1.2(@types/node@26.6.11)(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(happy-dom@21.0.4(bufferutil@4.1.0))(vite@8.3.8)
     optionalDependencies:
-      '@vitest/browser': 5.1.2(@types/node@26.6.11)(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(bufferutil@4.1.0)(vite@8.3.8)(vitest@5.1.2)
+      '@vitest/browser': 5.1.2(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(bufferutil@4.1.0)(vite@8.3.8)(vitest@5.1.2)
     transitivePeerDependencies:
-      - '@types/node'
       - '@vitest/browser-playwright'
       - '@vitest/browser-preview'
       - '@vitest/ui'
       - vite
     optional: true
 
-  '@vitest/eslint-plugin@1.6.28(@types/node@26.6.11)(@typescript-eslint/eslint-plugin@8.72.1(@typescript-eslint/parser@8.74.0(@typescript/typescript6@6.0.2)(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2))(@typescript/typescript6@6.0.2)(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2))(@typescript/typescript6@6.0.2)(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(vite@8.3.5)(vitest@5.1.2)':
+  '@vitest/eslint-plugin@1.6.28(@typescript-eslint/eslint-plugin@8.72.1(@typescript-eslint/parser@8.74.0(@typescript/typescript6@6.0.2)(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2))(@typescript/typescript6@6.0.2)(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2))(@typescript/typescript6@6.0.2)(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(vite@8.3.5)(vitest@5.1.2)':
     dependencies:
       '@typescript-eslint/scope-manager': 8.73.0
       '@typescript-eslint/utils': 8.72.2(@typescript/typescript6@6.0.2)(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)
@@ -24710,7 +24790,6 @@ snapshots:
       typescript: '@typescript/typescript6@6.0.2'
       vitest: 5.1.2(@types/node@26.6.11)(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(happy-dom@21.0.4(bufferutil@4.1.0))(vite@8.3.5)
     transitivePeerDependencies:
-      - '@types/node'
       - '@vitest/browser'
       - '@vitest/browser-playwright'
       - '@vitest/browser-preview'
@@ -24719,7 +24798,7 @@ snapshots:
       - supports-color
       - vite
 
-  '@vitest/eslint-plugin@1.6.28(@types/node@26.6.11)(@typescript-eslint/eslint-plugin@8.72.1(@typescript-eslint/parser@8.74.0(@typescript/typescript6@6.0.2)(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2))(@typescript/typescript6@6.0.2)(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2))(@typescript/typescript6@6.0.2)(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(vite@8.3.8)(vitest@5.1.2)':
+  '@vitest/eslint-plugin@1.6.28(@typescript-eslint/eslint-plugin@8.72.1(@typescript-eslint/parser@8.74.0(@typescript/typescript6@6.0.2)(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2))(@typescript/typescript6@6.0.2)(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2))(@typescript/typescript6@6.0.2)(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(vite@8.3.8)(vitest@5.1.2)':
     dependencies:
       '@typescript-eslint/scope-manager': 8.73.0
       '@typescript-eslint/utils': 8.72.2(@typescript/typescript6@6.0.2)(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)
@@ -24729,7 +24808,6 @@ snapshots:
       typescript: '@typescript/typescript6@6.0.2'
       vitest: 5.1.2(@types/node@26.6.11)(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(happy-dom@21.0.4(bufferutil@4.1.0))(vite@8.3.8)
     transitivePeerDependencies:
-      - '@types/node'
       - '@vitest/browser'
       - '@vitest/browser-playwright'
       - '@vitest/browser-preview'
@@ -24799,7 +24877,7 @@ snapshots:
 
   '@vitest/spy@5.1.2': {}
 
-  '@vitest/ui@5.1.2(@types/node@26.6.11)(@vitejs/devtools@0.8.3)(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(@voidzero-dev/vite-plus-core@8.3.8001)(@volar/typescript@2.4.31(typescript@6.0.3))(vitest@5.1.2)':
+  '@vitest/ui@5.1.2(@vitejs/devtools@0.8.3)(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(@voidzero-dev/vite-plus-core@8.3.8001)(@volar/typescript@2.4.31(typescript@6.0.3))(vitest@5.1.2)':
     dependencies:
       '@vitest/utils': 5.1.2
       fflate: 0.8.3
@@ -24809,7 +24887,6 @@ snapshots:
       tinyrainbow: 3.2.0
       vitest: 5.1.2(@types/node@26.6.11)(@vitejs/devtools@0.8.3)(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(@voidzero-dev/vite-plus-core@8.3.8001)(@volar/typescript@2.4.31(typescript@6.0.3))(happy-dom@21.0.4(bufferutil@4.1.0))
     transitivePeerDependencies:
-      - '@types/node'
       - '@vitejs/devtools'
       - '@vitest/browser'
       - '@vitest/browser-playwright'
@@ -24818,7 +24895,7 @@ snapshots:
       - '@volar/typescript'
       - vite
 
-  '@vitest/ui@5.1.2(@types/node@26.6.11)(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(vite@8.3.5)(vitest@5.1.2)':
+  '@vitest/ui@5.1.2(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(vite@8.3.5)(vitest@5.1.2)':
     dependencies:
       '@vitest/utils': 5.1.2
       fflate: 0.8.3
@@ -24828,14 +24905,13 @@ snapshots:
       tinyrainbow: 3.2.0
       vitest: 5.1.2(@types/node@26.6.11)(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(happy-dom@21.0.4(bufferutil@4.1.0))(vite@8.3.5)
     transitivePeerDependencies:
-      - '@types/node'
       - '@vitest/browser'
       - '@vitest/browser-playwright'
       - '@vitest/browser-preview'
       - '@vitest/coverage-v8'
       - vite
 
-  '@vitest/ui@5.1.2(@types/node@26.6.11)(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(vite@8.3.8)(vitest@5.1.2)':
+  '@vitest/ui@5.1.2(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(vite@8.3.8)(vitest@5.1.2)':
     dependencies:
       '@vitest/utils': 5.1.2
       fflate: 0.8.3
@@ -24845,7 +24921,6 @@ snapshots:
       tinyrainbow: 3.2.0
       vitest: 5.1.2(@types/node@26.6.11)(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(happy-dom@21.0.4(bufferutil@4.1.0))(vite@8.3.8)
     transitivePeerDependencies:
-      - '@types/node'
       - '@vitest/browser'
       - '@vitest/browser-playwright'
       - '@vitest/browser-preview'
@@ -25990,19 +26065,6 @@ snapshots:
       magicast: 0.5.5
 
   cac@7.1.1: {}
-
-  cacache@21.0.1:
-    dependencies:
-      '@npmcli/fs': 6.0.0
-      fs-minipass: 3.0.3
-      glob: 13.0.6
-      lru-cache: 11.5.3
-      minipass: 7.1.3
-      minipass-collect: 2.0.1
-      minipass-flush: 1.0.7
-      minipass-pipeline: 1.2.4
-      p-map: 7.1.1
-      ssri: 14.0.0
 
   cacache@21.0.2:
     dependencies:
@@ -30421,7 +30483,7 @@ snapshots:
       '@npmcli/package-json': 8.0.1
       '@npmcli/promise-spawn': 10.0.1
       '@npmcli/run-script': 11.0.0
-      cacache: 21.0.1
+      cacache: 21.0.2
       fs-minipass: 3.0.3
       minipass: 7.1.3
       npm-package-arg: 14.0.0
@@ -31243,9 +31305,9 @@ snapshots:
 
   remove-accents@0.5.0: {}
 
-  repoctl@6.6.7(@commitlint/cli@21.2.4(conventional-commits-parser@7.1.3)(typescript@6.0.3))(@pnpm/logger@1001.0.1)(@types/node@26.6.11)(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(conventional-changelog-conventionalcommits@10.4.1)(eslint-plugin-pnpm@1.9.1(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2)))(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2))(happy-dom@21.0.4(bufferutil@4.1.0))(magicast@0.5.5)(oxlint@1.94.0)(postcss@8.5.33)(stylelint@18.1.0)(supports-color@10.2.2)(tailwindcss@4.3.5)(typescript@6.0.3)(vite@8.3.5)(vitest@5.1.2):
+  repoctl@6.6.9(@commitlint/cli@21.2.4(conventional-commits-parser@7.1.3)(typescript@6.0.3))(@pnpm/logger@1001.0.1)(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(conventional-changelog-conventionalcommits@10.4.1)(eslint-plugin-pnpm@1.9.1(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2)))(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2))(magicast@0.5.5)(oxlint@1.94.0)(postcss@8.5.33)(stylelint@18.1.0)(supports-color@10.2.2)(tailwindcss@4.3.5)(typescript@6.0.3)(vite@8.3.5)(vitest@5.1.2):
     dependencies:
-      '@icebreakers/monorepo': 6.6.7(@commitlint/cli@21.2.4(conventional-commits-parser@7.1.3)(typescript@6.0.3))(@pnpm/logger@1001.0.1)(@types/node@26.6.11)(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(conventional-changelog-conventionalcommits@10.4.1)(eslint-plugin-pnpm@1.9.1(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2)))(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2))(happy-dom@21.0.4(bufferutil@4.1.0))(magicast@0.5.5)(oxlint@1.94.0)(postcss@8.5.33)(stylelint@18.1.0)(supports-color@10.2.2)(tailwindcss@4.3.5)(typescript@6.0.3)(vite@8.3.5)(vitest@5.1.2)
+      '@icebreakers/monorepo': 6.6.9(@commitlint/cli@21.2.4(conventional-commits-parser@7.1.3)(typescript@6.0.3))(@pnpm/logger@1001.0.1)(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(conventional-changelog-conventionalcommits@10.4.1)(eslint-plugin-pnpm@1.9.1(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2)))(eslint@10.15.0(jiti@2.7.0)(supports-color@10.2.2))(magicast@0.5.5)(oxlint@1.94.0)(postcss@8.5.33)(stylelint@18.1.0)(supports-color@10.2.2)(tailwindcss@4.3.5)(typescript@6.0.3)(vite@8.3.5)(vitest@5.1.2)
     optionalDependencies:
       '@commitlint/cli': 21.2.4(conventional-commits-parser@7.1.3)(typescript@6.0.3)
       eslint: 10.15.0(jiti@2.7.0)(supports-color@10.2.2)
@@ -31256,21 +31318,16 @@ snapshots:
       - '@angular-eslint/eslint-plugin'
       - '@angular-eslint/eslint-plugin-template'
       - '@angular-eslint/template-parser'
-      - '@edge-runtime/vm'
       - '@eslint/css'
       - '@eslint/json'
       - '@next/eslint-plugin-next'
-      - '@opentelemetry/api'
       - '@pnpm/logger'
       - '@prettier/plugin-xml'
-      - '@types/node'
       - '@typescript/native'
       - '@unocss/eslint-plugin'
       - '@vitest/browser'
       - '@vitest/browser-playwright'
       - '@vitest/browser-preview'
-      - '@vitest/browser-webdriverio'
-      - '@vitest/coverage-istanbul'
       - '@vitest/coverage-v8'
       - '@vitest/ui'
       - astro-eslint-parser
@@ -31284,11 +31341,8 @@ snapshots:
       - eslint-plugin-sonarjs
       - eslint-plugin-svelte
       - eslint-plugin-vuejs-accessibility
-      - happy-dom
-      - jsdom
       - kerberos
       - magicast
-      - msw
       - oxlint
       - postcss
       - prettier-plugin-astro
@@ -32112,6 +32166,16 @@ snapshots:
       stylelint: 18.1.0
 
   stylelint-plugin-tailwindcss@3.2.5(stylelint@18.1.0)(tailwindcss@4.3.5):
+    dependencies:
+      '@unocss/config': 66.13.0
+      '@unocss/core': 66.13.0
+      postcss: 8.5.33
+      postcss-tailwindcss: 3.1.11
+      stylelint: 18.1.0
+    optionalDependencies:
+      tailwindcss: 4.3.5
+
+  stylelint-plugin-tailwindcss@3.2.6(stylelint@18.1.0)(tailwindcss@4.3.5):
     dependencies:
       '@unocss/config': 66.13.0
       '@unocss/core': 66.13.0
@@ -33036,8 +33100,8 @@ snapshots:
       '@oxc-project/runtime': 0.159.0
       '@oxc-project/types': 0.159.0
       '@oxlint/plugins': 1.94.0
-      '@vitest/browser': 5.1.2(@types/node@26.6.11)(@vitejs/devtools@0.8.3)(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(@voidzero-dev/vite-plus-core@8.3.8001)(@volar/typescript@2.4.31(typescript@6.0.3))(bufferutil@4.1.0)(vitest@5.1.2)
-      '@vitest/browser-preview': 5.1.2(@types/node@26.6.11)(@vitejs/devtools@0.8.3)(@vitest/browser-playwright@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(@voidzero-dev/vite-plus-core@8.3.8001)(@volar/typescript@2.4.31(typescript@6.0.3))(bufferutil@4.1.0)(vitest@5.1.2)
+      '@vitest/browser': 5.1.2(@vitejs/devtools@0.8.3)(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(@voidzero-dev/vite-plus-core@8.3.8001)(@volar/typescript@2.4.31(typescript@6.0.3))(bufferutil@4.1.0)(vitest@5.1.2)
+      '@vitest/browser-preview': 5.1.2(@vitejs/devtools@0.8.3)(@vitest/browser-playwright@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(@voidzero-dev/vite-plus-core@8.3.8001)(@volar/typescript@2.4.31(typescript@6.0.3))(bufferutil@4.1.0)(vitest@5.1.2)
       '@vitest/mocker': 5.1.2(@vitejs/devtools@0.8.3)(@voidzero-dev/vite-plus-core@8.3.8001)(@volar/typescript@2.4.31(typescript@6.0.3))
       '@vitest/pretty-format': 5.1.2
       '@vitest/snapshot': 5.1.2
@@ -33049,7 +33113,7 @@ snapshots:
       vite: '@voidzero-dev/vite-plus-core@8.3.8001(@arethetypeswrong/core@0.18.5)(@types/node@26.6.11)(@vitejs/devtools@0.8.3)(@volar/typescript@2.4.31(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.2)(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(publint@0.3.25)(sass-embedded@1.108.2)(sass@1.108.2)(terser@5.51.4)(tsx@4.23.15)(typescript@6.0.3)(unrun@0.3.1(synckit@0.11.13))(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)'
       vitest: 5.1.2(@types/node@26.6.11)(@vitejs/devtools@0.8.3)(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(@voidzero-dev/vite-plus-core@8.3.8001)(@volar/typescript@2.4.31(typescript@6.0.3))(happy-dom@21.0.4(bufferutil@4.1.0))
     optionalDependencies:
-      '@vitest/browser-playwright': 5.1.2(@types/node@26.6.11)(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(bufferutil@4.1.0)(playwright@1.65.1)(vite@8.3.5)(vitest@5.1.2)
+      '@vitest/browser-playwright': 5.1.2(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(bufferutil@4.1.0)(playwright@1.65.1)(vite@8.3.5)(vitest@5.1.2)
       '@voidzero-dev/vite-plus-darwin-arm64': 1.8.0
       '@voidzero-dev/vite-plus-darwin-x64': 1.8.0
       '@voidzero-dev/vite-plus-linux-arm64-gnu': 1.8.0
@@ -33104,8 +33168,8 @@ snapshots:
       '@oxc-project/runtime': 0.159.0
       '@oxc-project/types': 0.159.0
       '@oxlint/plugins': 1.94.0
-      '@vitest/browser': 5.1.2(@types/node@26.6.11)(@vitejs/devtools@0.8.3)(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(@voidzero-dev/vite-plus-core@8.3.8001)(@volar/typescript@2.4.30(typescript@6.0.3))(bufferutil@4.1.0)(vitest@5.1.2)
-      '@vitest/browser-preview': 5.1.2(@types/node@26.6.11)(@vitejs/devtools@0.8.3)(@vitest/browser-playwright@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(@voidzero-dev/vite-plus-core@8.3.8001)(@volar/typescript@2.4.30(typescript@6.0.3))(bufferutil@4.1.0)(vitest@5.1.2)
+      '@vitest/browser': 5.1.2(@vitejs/devtools@0.8.3)(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(@voidzero-dev/vite-plus-core@8.3.8001)(@volar/typescript@2.4.30(typescript@6.0.3))(bufferutil@4.1.0)(vitest@5.1.2)
+      '@vitest/browser-preview': 5.1.2(@vitejs/devtools@0.8.3)(@vitest/browser-playwright@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(@voidzero-dev/vite-plus-core@8.3.8001)(@volar/typescript@2.4.30(typescript@6.0.3))(bufferutil@4.1.0)(vitest@5.1.2)
       '@vitest/mocker': 5.1.2(@vitejs/devtools@0.8.3)(@voidzero-dev/vite-plus-core@8.3.8001)(@volar/typescript@2.4.30(typescript@6.0.3))
       '@vitest/pretty-format': 5.1.2
       '@vitest/snapshot': 5.1.2
@@ -33117,7 +33181,7 @@ snapshots:
       vite: '@voidzero-dev/vite-plus-core@8.3.8001(@arethetypeswrong/core@0.18.5)(@types/node@26.6.11)(@vitejs/devtools@0.8.3)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.2)(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(publint@0.3.25)(sass-embedded@1.108.2)(sass@1.108.2)(terser@5.51.4)(tsx@4.23.15)(typescript@6.0.3)(unrun@0.3.1(synckit@0.11.13))(vite@8.3.8)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)'
       vitest: 5.1.2(@types/node@26.6.11)(@vitejs/devtools@0.8.3)(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(@voidzero-dev/vite-plus-core@8.3.8001)(@volar/typescript@2.4.30(typescript@6.0.3))(happy-dom@21.0.4(bufferutil@4.1.0))
     optionalDependencies:
-      '@vitest/browser-playwright': 5.1.2(@types/node@26.6.11)(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(bufferutil@4.1.0)(playwright@1.65.1)(vite@8.3.5)(vitest@5.1.2)
+      '@vitest/browser-playwright': 5.1.2(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(bufferutil@4.1.0)(playwright@1.65.1)(vite@8.3.5)(vitest@5.1.2)
       '@voidzero-dev/vite-plus-darwin-arm64': 1.8.0
       '@voidzero-dev/vite-plus-darwin-x64': 1.8.0
       '@voidzero-dev/vite-plus-linux-arm64-gnu': 1.8.0
@@ -33172,8 +33236,8 @@ snapshots:
       '@oxc-project/runtime': 0.159.0
       '@oxc-project/types': 0.159.0
       '@oxlint/plugins': 1.94.0
-      '@vitest/browser': 5.1.2(@types/node@26.6.11)(@vitejs/devtools@0.8.3)(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(@voidzero-dev/vite-plus-core@8.3.8001)(@volar/typescript@2.4.31(typescript@6.0.3))(bufferutil@4.1.0)(vitest@5.1.2)
-      '@vitest/browser-preview': 5.1.2(@types/node@26.6.11)(@vitejs/devtools@0.8.3)(@vitest/browser-playwright@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(@voidzero-dev/vite-plus-core@8.3.8001)(@volar/typescript@2.4.31(typescript@6.0.3))(bufferutil@4.1.0)(vitest@5.1.2)
+      '@vitest/browser': 5.1.2(@vitejs/devtools@0.8.3)(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(@voidzero-dev/vite-plus-core@8.3.8001)(@volar/typescript@2.4.31(typescript@6.0.3))(bufferutil@4.1.0)(vitest@5.1.2)
+      '@vitest/browser-preview': 5.1.2(@vitejs/devtools@0.8.3)(@vitest/browser-playwright@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(@voidzero-dev/vite-plus-core@8.3.8001)(@volar/typescript@2.4.31(typescript@6.0.3))(bufferutil@4.1.0)(vitest@5.1.2)
       '@vitest/mocker': 5.1.2(@vitejs/devtools@0.8.3)(@voidzero-dev/vite-plus-core@8.3.8001)(@volar/typescript@2.4.31(typescript@6.0.3))
       '@vitest/pretty-format': 5.1.2
       '@vitest/snapshot': 5.1.2
@@ -33185,7 +33249,7 @@ snapshots:
       vite: '@voidzero-dev/vite-plus-core@8.3.8001(@arethetypeswrong/core@0.18.5)(@types/node@26.6.11)(@vitejs/devtools@0.8.3)(@volar/typescript@2.4.31(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.2)(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(publint@0.3.25)(sass-embedded@1.108.2)(sass@1.108.2)(terser@5.51.4)(tsx@4.23.15)(typescript@6.0.3)(unrun@0.3.1(synckit@0.11.13))(vite@8.3.8)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)'
       vitest: 5.1.2(@types/node@26.6.11)(@vitejs/devtools@0.8.3)(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(@voidzero-dev/vite-plus-core@8.3.8001)(@volar/typescript@2.4.31(typescript@6.0.3))(happy-dom@21.0.4(bufferutil@4.1.0))
     optionalDependencies:
-      '@vitest/browser-playwright': 5.1.2(@types/node@26.6.11)(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(bufferutil@4.1.0)(playwright@1.65.1)(vite@8.3.5)(vitest@5.1.2)
+      '@vitest/browser-playwright': 5.1.2(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(bufferutil@4.1.0)(playwright@1.65.1)(vite@8.3.5)(vitest@5.1.2)
       '@voidzero-dev/vite-plus-darwin-arm64': 1.8.0
       '@voidzero-dev/vite-plus-darwin-x64': 1.8.0
       '@voidzero-dev/vite-plus-linux-arm64-gnu': 1.8.0
@@ -33384,10 +33448,10 @@ snapshots:
       why-is-node-running: 3.2.1
     optionalDependencies:
       '@types/node': 26.6.11
-      '@vitest/browser-playwright': 5.1.2(@types/node@26.6.11)(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(bufferutil@4.1.0)(playwright@1.65.1)(vite@8.3.5)(vitest@5.1.2)
-      '@vitest/browser-preview': 5.1.2(@types/node@26.6.11)(@vitest/browser-playwright@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(bufferutil@4.1.0)(vite@8.3.8)(vitest@5.1.2)
-      '@vitest/coverage-v8': 5.1.2(@types/node@26.6.11)(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/ui@5.1.2)(vite@8.3.8)(vitest@5.1.2)
-      '@vitest/ui': 5.1.2(@types/node@26.6.11)(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(vite@8.3.8)(vitest@5.1.2)
+      '@vitest/browser-playwright': 5.1.2(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(bufferutil@4.1.0)(playwright@1.65.1)(vite@8.3.5)(vitest@5.1.2)
+      '@vitest/browser-preview': 5.1.2(@vitest/browser-playwright@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(bufferutil@4.1.0)(vite@8.3.8)(vitest@5.1.2)
+      '@vitest/coverage-v8': 5.1.2(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/ui@5.1.2)(vite@8.3.8)(vitest@5.1.2)
+      '@vitest/ui': 5.1.2(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(vite@8.3.8)(vitest@5.1.2)
       happy-dom: 21.0.4(bufferutil@4.1.0)
     transitivePeerDependencies:
       - '@vitejs/devtools'
@@ -33413,10 +33477,10 @@ snapshots:
       why-is-node-running: 3.2.1
     optionalDependencies:
       '@types/node': 26.6.11
-      '@vitest/browser-playwright': 5.1.2(@types/node@26.6.11)(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(bufferutil@4.1.0)(playwright@1.65.1)(vite@8.3.5)(vitest@5.1.2)
-      '@vitest/browser-preview': 5.1.2(@types/node@26.6.11)(@vitejs/devtools@0.8.3)(@vitest/browser-playwright@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(@voidzero-dev/vite-plus-core@8.3.8001)(@volar/typescript@2.4.31(typescript@6.0.3))(bufferutil@4.1.0)(vitest@5.1.2)
-      '@vitest/coverage-v8': 5.1.2(@types/node@26.6.11)(@vitejs/devtools@0.8.3)(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/ui@5.1.2)(@voidzero-dev/vite-plus-core@8.3.8001)(@volar/typescript@2.4.31(typescript@6.0.3))(vitest@5.1.2)
-      '@vitest/ui': 5.1.2(@types/node@26.6.11)(@vitejs/devtools@0.8.3)(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(@voidzero-dev/vite-plus-core@8.3.8001)(@volar/typescript@2.4.31(typescript@6.0.3))(vitest@5.1.2)
+      '@vitest/browser-playwright': 5.1.2(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(bufferutil@4.1.0)(playwright@1.65.1)(vite@8.3.5)(vitest@5.1.2)
+      '@vitest/browser-preview': 5.1.2(@vitejs/devtools@0.8.3)(@vitest/browser-playwright@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(@voidzero-dev/vite-plus-core@8.3.8001)(@volar/typescript@2.4.31(typescript@6.0.3))(bufferutil@4.1.0)(vitest@5.1.2)
+      '@vitest/coverage-v8': 5.1.2(@vitejs/devtools@0.8.3)(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/ui@5.1.2)(@voidzero-dev/vite-plus-core@8.3.8001)(@volar/typescript@2.4.31(typescript@6.0.3))(vitest@5.1.2)
+      '@vitest/ui': 5.1.2(@vitejs/devtools@0.8.3)(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(@voidzero-dev/vite-plus-core@8.3.8001)(@volar/typescript@2.4.31(typescript@6.0.3))(vitest@5.1.2)
       happy-dom: 21.0.4(bufferutil@4.1.0)
     transitivePeerDependencies:
       - '@vitejs/devtools'
@@ -33442,10 +33506,10 @@ snapshots:
       why-is-node-running: 3.2.1
     optionalDependencies:
       '@types/node': 26.6.11
-      '@vitest/browser-playwright': 5.1.2(@types/node@26.6.11)(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(bufferutil@4.1.0)(playwright@1.65.1)(vite@8.3.5)(vitest@5.1.2)
-      '@vitest/browser-preview': 5.1.2(@types/node@26.6.11)(@vitest/browser-playwright@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(bufferutil@4.1.0)(vite@8.3.5)(vitest@5.1.2)
-      '@vitest/coverage-v8': 5.1.2(@types/node@26.6.11)(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/ui@5.1.2)(vite@8.3.5)(vitest@5.1.2)
-      '@vitest/ui': 5.1.2(@types/node@26.6.11)(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(vite@8.3.5)(vitest@5.1.2)
+      '@vitest/browser-playwright': 5.1.2(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(bufferutil@4.1.0)(playwright@1.65.1)(vite@8.3.5)(vitest@5.1.2)
+      '@vitest/browser-preview': 5.1.2(@vitest/browser-playwright@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(bufferutil@4.1.0)(vite@8.3.5)(vitest@5.1.2)
+      '@vitest/coverage-v8': 5.1.2(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/ui@5.1.2)(vite@8.3.5)(vitest@5.1.2)
+      '@vitest/ui': 5.1.2(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(vite@8.3.5)(vitest@5.1.2)
       happy-dom: 21.0.4(bufferutil@4.1.0)
     transitivePeerDependencies:
       - '@vitest/browser'
@@ -33469,37 +33533,10 @@ snapshots:
       why-is-node-running: 3.2.1
     optionalDependencies:
       '@types/node': 26.6.11
-      '@vitest/browser-playwright': 5.1.2(@types/node@26.6.11)(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(bufferutil@4.1.0)(playwright@1.65.1)(vite@8.3.8)(vitest@5.1.2)
-      '@vitest/browser-preview': 5.1.2(@types/node@26.6.11)(@vitest/browser-playwright@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(bufferutil@4.1.0)(vite@8.3.8)(vitest@5.1.2)
-      '@vitest/coverage-v8': 5.1.2(@types/node@26.6.11)(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/ui@5.1.2)(vite@8.3.8)(vitest@5.1.2)
-      '@vitest/ui': 5.1.2(@types/node@26.6.11)(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(vite@8.3.8)(vitest@5.1.2)
-      happy-dom: 21.0.4(bufferutil@4.1.0)
-    transitivePeerDependencies:
-      - '@vitest/browser'
-      - msw
-
-  vitest@5.1.2(@types/node@26.6.6)(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(happy-dom@21.0.4(bufferutil@4.1.0))(vite@8.3.5):
-    dependencies:
-      '@types/chai': 5.2.3
-      '@vitest/mocker': 5.1.2(vite@8.3.5)
-      chai: 6.3.0
-      es-module-lexer: 2.3.2
-      expect-type: 1.4.0
-      magic-string: 1.4.5
-      obug: 3.0.0
-      picomatch: 4.0.7
-      std-env: 4.3.0
-      tinybench: 6.2.3
-      tinyexec: 1.4.0
-      tinyglobby: 0.2.17
-      vite: 8.3.5(patch_hash=3ea1ae95e31fec5d421eba7c46d438dfdc467746e0ee2af786a879e935591554)(@types/node@26.6.11)(@vitejs/devtools@0.8.3)(esbuild@0.28.2)(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(sass-embedded@1.108.2)(sass@1.108.2)(terser@5.51.4)(tsx@4.23.15)(yaml@2.9.1)
-      why-is-node-running: 3.2.1
-    optionalDependencies:
-      '@types/node': 26.6.6
-      '@vitest/browser-playwright': 5.1.2(@types/node@26.6.11)(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(bufferutil@4.1.0)(playwright@1.65.1)(vite@8.3.5)(vitest@5.1.2)
-      '@vitest/browser-preview': 5.1.2(@types/node@26.6.11)(@vitest/browser-playwright@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(bufferutil@4.1.0)(vite@8.3.5)(vitest@5.1.2)
-      '@vitest/coverage-v8': 5.1.2(@types/node@26.6.11)(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/ui@5.1.2)(vite@8.3.5)(vitest@5.1.2)
-      '@vitest/ui': 5.1.2(@types/node@26.6.11)(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(vite@8.3.5)(vitest@5.1.2)
+      '@vitest/browser-playwright': 5.1.2(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(bufferutil@4.1.0)(playwright@1.65.1)(vite@8.3.8)(vitest@5.1.2)
+      '@vitest/browser-preview': 5.1.2(@vitest/browser-playwright@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(bufferutil@4.1.0)(vite@8.3.8)(vitest@5.1.2)
+      '@vitest/coverage-v8': 5.1.2(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/ui@5.1.2)(vite@8.3.8)(vitest@5.1.2)
+      '@vitest/ui': 5.1.2(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(vite@8.3.8)(vitest@5.1.2)
       happy-dom: 21.0.4(bufferutil@4.1.0)
     transitivePeerDependencies:
       - '@vitest/browser'
@@ -33848,7 +33885,7 @@ snapshots:
     dependencies:
       '@cloudflare/kv-asset-handler': 0.5.1
       '@cloudflare/unenv-preset': 2.16.2(unenv@2.0.0-rc.24)(workerd@1.20261123.1)
-      '@cloudflare/workers-utils': 0.57.0(@types/node@26.6.11)(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(vite@8.3.8)(vitest@5.1.2)
+      '@cloudflare/workers-utils': 0.57.0(@vitest/browser-playwright@5.1.2)(@vitest/browser-preview@5.1.2)(@vitest/browser@5.1.2)(@vitest/coverage-v8@5.1.2)(@vitest/ui@5.1.2)(vite@8.3.8)(vitest@5.1.2)
       '@cspotcode/source-map-support': 0.8.1
       '@types/yargs': 17.0.24
       cloudflare: 5.2.0
