@@ -1,6 +1,7 @@
-import type { ComponentApi, FunctionImplementation } from '@a2ui/web_core'
+import type { ComponentApi, FunctionImplementation } from '@a2ui/web_core/catalog'
 import type { A2uiFunctionHandler } from './types'
-import { A2uiExpressionError, Catalog, createFunctionImplementation } from '@a2ui/web_core'
+import { Catalog, createFunctionImplementation } from '@a2ui/web_core/catalog'
+import { A2uiExpressionError } from '@a2ui/web_core/errors'
 import { installA2uiRuntimeCompat } from './compat'
 
 /** 当前实现只接受 v1.0 消息与目录。 */

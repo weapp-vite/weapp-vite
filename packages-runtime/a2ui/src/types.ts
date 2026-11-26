@@ -1,4 +1,4 @@
-import type { ActionPayload } from '@a2ui/web_core'
+import type { ActionPayload } from '@a2ui/web_core/state'
 
 /** 可安全交给小程序视图层的 JSON 值。 */
 export type A2uiJsonValue = string | number | boolean | null | A2uiJsonValue[] | { [key: string]: A2uiJsonValue }

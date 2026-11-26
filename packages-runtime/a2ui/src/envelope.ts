@@ -1,16 +1,21 @@
-import type { ProcessableMessage } from '@a2ui/web_core'
-import { A2uiValidationError } from '@a2ui/web_core'
+import { A2uiValidationError } from '@a2ui/web_core/errors'
 
 export const A2UI_STATE_MESSAGES = ['createSurface', 'updateComponents', 'updateDataModel', 'deleteSurface'] as const
 
 export type A2uiStateMessageType = typeof A2UI_STATE_MESSAGES[number]
+
+type A2uiEnvelopeMessage
+  = | { readonly version: '1.0', readonly createSurface: unknown }
+    | { readonly version: '1.0', readonly updateComponents: unknown }
+    | { readonly version: '1.0', readonly updateDataModel: unknown }
+    | { readonly version: '1.0', readonly deleteSurface: unknown }
 
 export interface A2uiEnvelope {
   readonly type: A2uiStateMessageType
   readonly surfaceId: string | undefined
   /** 组件或数据被整体替换，需要重建绑定。 */
   readonly replacesBindings: boolean
-  readonly message: ProcessableMessage
+  readonly message: A2uiEnvelopeMessage
 }
 
 /**
@@ -45,6 +50,6 @@ export function readA2uiEnvelope(message: unknown): A2uiEnvelope {
       && typeof payload === 'object' && payload !== null && 'value' in payload
       && (payload as Record<string, unknown>).value !== null
       && typeof (payload as Record<string, unknown>).value === 'object'),
-    message: { version: '1.0', [type]: payload } as ProcessableMessage,
+    message: { version: '1.0', [type]: payload } as A2uiEnvelopeMessage,
   }
 }
