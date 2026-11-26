@@ -43,7 +43,7 @@ weapp-vite is built for teams maintaining mini-programs. It keeps the native min
 
 ## Highlights
 
-- New projects: use [`create-weapp-vite`](packages/create-weapp-vite) to choose native, Wevu, Tailwind CSS, TDesign, Vant, plugin, or library templates with aligned dependencies.
+- New projects: use [`create-weapp-vite`](packages/create-weapp-vite) to choose native, Wevu, Varo retail, Tailwind CSS, TDesign, Vant, plugin, or library templates with aligned dependencies.
 - Existing projects: adopt Weapp-vite manually or through `wv init` while preserving the current page structure and platform APIs.
 - Vue SFC: write `.vue`, `<script setup>`, JSON macros, class/style bindings, and Wevu-powered reactive runtime code for mini-programs.
 - Engineering workflow: build, watch, HMR, auto imports, auto routes, subpackage strategies, npm builds, and output analysis.

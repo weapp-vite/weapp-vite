@@ -121,7 +121,15 @@ bun create weapp-vite
 
 :::
 
-脚手架当前会根据你选择的模板，生成原生小程序、Wevu、TailwindCSS、TDesign 等不同组合。新项目建议优先用脚手架，而不是手动拷模板。
+脚手架提供原生小程序、Wevu、Varo、TailwindCSS、TDesign 等模板。
+
+要创建带 Varo 的微信小程序，可以在「选择模板」中选择 **Wevu + Varo 电商模板**，也可以直接指定模板名：
+
+```sh
+pnpm create weapp-vite@latest my-app wevu-varo
+```
+
+示例包含商品浏览与筛选、详情、购物车和模拟下单。「我的」提供订单记录与示例收货地址。Varo 组件源码可直接修改。已有项目可参考 [Varo Registry 指南](https://varo.weapp.dev/guide/shadcn-mode) 按需接入。
 
 脚手架可选安装当前模板的 AI skills，默认跳过。也可在项目中手动安装，例如原生模板：
 

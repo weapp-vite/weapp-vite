@@ -215,18 +215,21 @@ pnpm --config.registry=https://registry.npmmirror.com/ dlx create-weapp-vite@<ve
 
 ## 模板选择
 
-默认列表与网站推荐展示六个模板：
+默认模板列表：
 
 | 模板名 | 说明 |
 | --- | --- |
 | `default` | 默认原生小程序模板 |
 | `wevu` | Wevu + Vue SFC 模板 |
+| `wevu-varo` | Wevu + [Varo](https://varo.weapp.dev/) 微信电商示例 |
 | `wevu-tdesign` | Wevu + TDesign + TailwindCSS |
 | `tailwindcss` | 原生小程序 + TailwindCSS |
 | `tdesign` | TDesign + TailwindCSS |
 | `vant` | Vant + TailwindCSS |
 
 “更多模板”保留 `react`、`multi-platform`、`multi-platform-sfc`、`plugin`、`lib`。这些模板仍随脚手架发布，也能通过原模板名与 `TemplateName` API 显式创建，已有脚本无需改名。
+
+`wevu-varo` 通过 `pnpm create weapp-vite@latest my-app wevu-varo` 创建。模板随包提供 Varo 微信 Registry 组件源码、商品图和本地示例数据，可以浏览商品、选择规格、加购和提交模拟订单。打开「我的」可查看订单、选择示例收货地址。可按 [Varo Registry 指南](https://varo.weapp.dev/guide/shadcn-mode) 添加更多组件。
 
 `multi-platform` 不引入 Wevu 或额外 UI 依赖，使用同一份原生 Page/Component 源码覆盖微信、支付宝、抖音、百度、京东、小红书与 Web。每条 `dev:<platform>` / `build:<platform>` 命令只处理一个目标，详细目录、命令和验收边界见[多平台构建指南](/guide/multi-platform)。
 

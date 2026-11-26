@@ -1,0 +1,258 @@
+.varo-button {
+  font: inherit;
+}
+
+.varo-button {
+  --varo-button-fill: var(--varo-ui-primary);
+  --varo-button-hover-fill: var(--varo-ui-primary-hover);
+  --varo-button-foreground: var(--varo-ui-primary-foreground);
+  --varo-button-hover-foreground: var(--varo-ui-primary-hover-foreground);
+
+  position: relative;
+  box-sizing: border-box;
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--varo-ui-button-height-md);
+  padding: 0 16px;
+  margin: 0;
+  overflow: hidden;
+  font-weight: 600;
+  line-height: 1;
+  vertical-align: middle;
+  color: var(--varo-button-foreground);
+  text-align: center;
+  touch-action: manipulation;
+  cursor: pointer;
+  user-select: none;
+  background: var(--varo-button-fill);
+  border: 1px solid transparent;
+  border-radius: var(--varo-ui-button-radius);
+  box-shadow: var(--varo-ui-shadow-sm);
+  transform-origin: center;
+  transition:
+    background var(--varo-ui-motion-state) var(--varo-ui-motion-ease),
+    border-color var(--varo-ui-motion-state) var(--varo-ui-motion-ease),
+    color var(--varo-ui-motion-state) var(--varo-ui-motion-ease),
+    opacity var(--varo-ui-motion-state) var(--varo-ui-motion-ease),
+    box-shadow var(--varo-ui-motion-feedback) var(--varo-ui-motion-ease),
+    transform var(--varo-ui-motion-feedback) var(--varo-ui-motion-ease);
+}
+
+.varo-button::after {
+  border: 0;
+}
+
+.varo-button__label {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  min-height: 1em;
+  line-height: 1;
+}
+
+.varo-button__icon {
+  position: absolute;
+  top: 50%;
+  left: 16px;
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  transform: translateY(-50%);
+}
+
+.varo-button__icon[data-position='right'] {
+  right: 16px;
+  left: auto;
+}
+
+.varo-button:focus-visible {
+  outline: 2px solid var(--varo-ui-focus);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 3px var(--varo-ui-ring);
+}
+
+.varo-button[data-variant='solid'] {
+  border: 0;
+  transition:
+    opacity var(--varo-ui-motion-state) var(--varo-ui-motion-ease),
+    box-shadow var(--varo-ui-motion-feedback) var(--varo-ui-motion-ease),
+    transform var(--varo-ui-motion-feedback) var(--varo-ui-motion-ease);
+}
+
+.varo-button[data-pressed='true'],
+.varo-button--pressed {
+  box-shadow: inset 0 1px 2px rgb(0 0 0 / 10%);
+  transform: scale(0.98);
+}
+
+.varo-button[data-variant='solid'][data-pressed='true'],
+.varo-button[data-variant='solid'].varo-button--pressed {
+  color: var(--varo-button-hover-foreground);
+  background: var(--varo-button-hover-fill);
+}
+
+.varo-button[data-size='sm'] {
+  min-height: var(--varo-ui-button-height-sm);
+  padding: 0 12px;
+  font-size: 14px;
+  border-radius: var(--varo-ui-button-radius);
+}
+
+.varo-button[data-size='lg'] {
+  min-height: var(--varo-ui-button-height-lg);
+  padding: 0 20px;
+  font-size: 16px;
+  border-radius: var(--varo-ui-button-radius);
+}
+
+.varo-button[data-variant='outline'] {
+  color: var(--varo-ui-text);
+  background: var(--varo-ui-surface);
+  border-color: var(--varo-ui-border-strong);
+}
+
+.varo-button[data-variant='ghost'] {
+  color: var(--varo-ui-text);
+  background: transparent;
+  box-shadow: none;
+}
+
+.varo-button[data-variant='outline'][data-pressed='true'],
+.varo-button[data-variant='outline'].varo-button--pressed,
+.varo-button[data-variant='ghost'][data-pressed='true'],
+.varo-button[data-variant='ghost'].varo-button--pressed {
+  background: var(--varo-ui-fill-light);
+}
+
+.varo-button[data-variant='text'] {
+  --varo-button-text-fill: var(--varo-ui-primary-soft);
+
+  color: var(--varo-ui-primary-text);
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+}
+
+.varo-button[data-tone='default'][data-variant='text'] {
+  color: var(--varo-ui-text);
+
+  --varo-button-text-fill: var(--varo-ui-fill-light);
+}
+
+.varo-button[data-tone='success'][data-variant='text'] {
+  color: var(--varo-ui-success-text);
+
+  --varo-button-text-fill: var(--varo-ui-success-soft);
+}
+
+.varo-button[data-tone='warning'][data-variant='text'] {
+  color: var(--varo-ui-warning-text);
+
+  --varo-button-text-fill: var(--varo-ui-warning-soft);
+}
+
+.varo-button[data-tone='danger'][data-variant='text'] {
+  color: var(--varo-ui-danger-text);
+
+  --varo-button-text-fill: var(--varo-ui-danger-soft);
+}
+
+.varo-button[data-tone='info'][data-variant='text'] {
+  color: var(--varo-ui-info-text);
+
+  --varo-button-text-fill: var(--varo-ui-info-soft);
+}
+
+.varo-button[data-variant='text'][data-pressed='true'],
+.varo-button[data-variant='text'].varo-button--pressed {
+  background: var(--varo-button-text-fill);
+}
+
+.varo-button[data-tone='success'][data-variant='solid'] {
+  --varo-button-fill: var(--varo-ui-success);
+  --varo-button-hover-fill: var(--varo-ui-success-hover);
+  --varo-button-foreground: var(--varo-ui-success-foreground);
+  --varo-button-hover-foreground: var(--varo-ui-success-hover-foreground);
+}
+
+.varo-button[data-tone='warning'][data-variant='solid'] {
+  --varo-button-fill: var(--varo-ui-warning);
+  --varo-button-hover-fill: var(--varo-ui-warning-hover);
+  --varo-button-foreground: var(--varo-ui-warning-foreground);
+  --varo-button-hover-foreground: var(--varo-ui-warning-hover-foreground);
+}
+
+.varo-button[data-tone='danger'][data-variant='solid'] {
+  --varo-button-fill: var(--varo-ui-danger);
+  --varo-button-hover-fill: var(--varo-ui-danger-hover);
+  --varo-button-foreground: var(--varo-ui-danger-foreground);
+  --varo-button-hover-foreground: var(--varo-ui-danger-hover-foreground);
+}
+
+.varo-button[data-tone='info'][data-variant='solid'] {
+  --varo-button-fill: var(--varo-ui-info);
+  --varo-button-hover-fill: var(--varo-ui-info-hover);
+  --varo-button-foreground: var(--varo-ui-info-foreground);
+  --varo-button-hover-foreground: var(--varo-ui-info-hover-foreground);
+}
+
+.varo-button[data-shape='square'] {
+  border-radius: 4px;
+}
+
+.varo-button[data-shape='round'] {
+  border-radius: 999px;
+}
+
+.varo-button[data-block] {
+  box-sizing: border-box;
+}
+
+.varo-button[data-block='false'] {
+  width: auto;
+}
+
+.varo-button[data-block='true'] {
+  width: 100%;
+}
+
+.varo-button[data-loading='true'] {
+  cursor: progress;
+}
+
+.varo-button[data-loading='true'] .varo-button__label {
+  flex: 0 1 auto;
+}
+
+.varo-button[data-disabled='true'] {
+  cursor: not-allowed;
+  opacity: 0.62;
+}
+
+.varo-button__loading-icon {
+  box-sizing: border-box;
+  flex: none;
+  width: 1em;
+  height: 1em;
+  border: 2px solid currentcolor;
+  border-right-color: transparent;
+  border-radius: 999px;
+  animation: varo-spin 0.75s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .varo-button,
+  .varo-button[data-variant='solid'] {
+    transition-duration: 1ms;
+  }
+
+  .varo-button[data-pressed='true'],
+  .varo-button--pressed {
+    transform: none;
+  }
+}

@@ -1,0 +1,15 @@
+<svg width="128" height="128" viewBox="0 0 128 128" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <title>Varo</title>
+  <defs>
+    <mask id="varo-grid-cut">
+      <rect width="128" height="128" fill="white"/>
+      <rect x="48" y="48" width="32" height="32" transform="rotate(45 64 64)" fill="black"/>
+    </mask>
+  </defs>
+  <g mask="url(#varo-grid-cut)">
+    <path d="M16 32L32 16L72 56L56 72L16 32Z" fill="#3B82F6"/>
+    <path d="M72 16L112 56L96 72L56 32L72 16Z" fill="#059B4D"/>
+    <path d="M16 96L56 56L72 72L32 112L16 96Z" fill="#73A7FF"/>
+    <path d="M56 96L96 56L112 72L72 112L56 96Z" fill="#07C160"/>
+  </g>
+</svg>

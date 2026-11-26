@@ -28,7 +28,7 @@ describe('template definitions', () => {
       .filter(template => template.visibility === visibility)
       .map(template => template.id)
 
-    expect(names('default')).toEqual(['default', 'wevu', 'wevu-tdesign', 'tailwindcss', 'tdesign', 'vant'])
+    expect(names('default')).toEqual(['default', 'wevu', 'wevu-varo', 'wevu-tdesign', 'tailwindcss', 'tdesign', 'vant'])
     expect(names('advanced')).toEqual(['plugin', 'lib'])
     expect(names('experimental')).toEqual(['multi-platform', 'multi-platform-sfc', 'react'])
   })
@@ -36,6 +36,7 @@ describe('template definitions', () => {
   it('identifies the framework profile independently of menu visibility', () => {
     expect(TEMPLATE_DEFINITIONS.filter(template => template.framework === 'wevu').map(template => template.id)).toEqual([
       'wevu',
+      'wevu-varo',
       'wevu-tdesign',
       'plugin',
       'lib',

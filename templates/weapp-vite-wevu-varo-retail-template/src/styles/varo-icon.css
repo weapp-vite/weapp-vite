@@ -1,0 +1,35 @@
+.varo-icon {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  font-style: normal;
+  font-weight: 750;
+  line-height: 1;
+  vertical-align: middle;
+  color: currentcolor;
+}
+
+.varo-icon[data-tone='primary'] {
+  color: var(--varo-ui-primary);
+}
+
+.varo-icon[data-tone='success'] {
+  color: var(--varo-ui-success);
+}
+
+.varo-icon[data-tone='warning'] {
+  color: var(--varo-ui-warning);
+}
+
+.varo-icon[data-tone='danger'] {
+  color: var(--varo-ui-danger);
+}
+
+.varo-icon[data-tone='muted'] {
+  color: var(--varo-ui-text-muted);
+}
+
+.varo-icon[data-spin='true'] {
+  animation: varo-spin 0.75s linear infinite;
+}

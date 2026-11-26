@@ -15,7 +15,7 @@
 | `VITE_PLUS_TEMPLATE_KEEP_WORKSPACE` | 显式设为 `1` 时保留临时消费者目录并打印路径；默认清理 |
 | `CREATE_WEAPP_VITE_PNPM_VERSION` | 沿用 smoke 的 pnpm 版本选择，默认 `12` |
 
-完整矩阵共十项：`pnpm/default`、`pnpm/wevu`、`pnpm/tailwindcss`、`pnpm/tdesign`、`pnpm/wevu-tdesign`、`pnpm/vant`、`pnpm/react`、`npm/default`、`pnpm/platforms`、`pnpm/workspace`。筛选只影响本次执行集合，报告仍保留完整矩阵，`fullMatrix: false` 不能作为十项全部通过的证据。
+完整矩阵包含 `pnpm/default`、`pnpm/wevu`、`pnpm/wevu-varo`、`pnpm/tailwindcss`、`pnpm/tdesign`、`pnpm/wevu-tdesign`、`pnpm/vant`、`pnpm/react`、`npm/default`、`pnpm/platforms` 和 `pnpm/workspace`。筛选只影响本次执行集合，报告仍保留完整矩阵。以 `fullMatrix: true` 和各项通过记录作为完整验收证据。
 
 候选映射须覆盖本轮改动的传递依赖闭包。语言内核依赖 `@weapp-core/shared` 与 `@weapp-vite/ast`；其中有改动的包须先构建并提供 tarball，避免安装已发布旧包来验证新接口。构建验证同样需要本轮 `weapp-vite`、`@wevu/compiler` 等受影响包的候选。未改动的依赖可按清单中的正式发布版本安装；本地 workspace 链接不能代替 tarball。
 

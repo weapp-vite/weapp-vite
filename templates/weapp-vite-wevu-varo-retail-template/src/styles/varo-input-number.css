@@ -1,0 +1,79 @@
+.varo-input-number button {
+  font: inherit;
+}
+
+.varo-input-number {
+  box-sizing: border-box;
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  width: 146px;
+  min-width: 146px;
+  max-width: 100%;
+  overflow: hidden;
+  background: var(--varo-ui-surface);
+  border: 1px solid var(--varo-ui-border);
+  border-radius: var(--varo-ui-radius);
+  box-shadow: var(--varo-ui-shadow-sm);
+}
+
+.varo-input-number .varo-input-number__minus,
+.varo-input-number .varo-input-number__plus {
+  box-sizing: border-box;
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  min-width: 44px;
+  height: 44px;
+  padding: 0;
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--varo-ui-text);
+  cursor: pointer;
+  background: var(--varo-ui-surface-muted);
+  border: 0;
+}
+
+.varo-input-number__minus:disabled,
+.varo-input-number__plus:disabled,
+.varo-input-number__control--disabled {
+  color: var(--varo-ui-text-muted);
+  cursor: not-allowed;
+  opacity: 1;
+}
+
+.varo-input-number .varo-input-number__input {
+  box-sizing: border-box;
+  flex: 1 1 auto;
+  width: 56px;
+  min-width: 0;
+  height: 44px;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  font-weight: 650;
+  color: var(--varo-ui-text);
+  text-align: center;
+  appearance: textfield;
+  outline: 0;
+  background: var(--varo-ui-surface);
+  border: 0;
+  border-right: 1px solid var(--varo-ui-border);
+  border-left: 1px solid var(--varo-ui-border);
+}
+
+.varo-input-number__input::-webkit-inner-spin-button,
+.varo-input-number__input::-webkit-outer-spin-button {
+  display: none;
+  margin: 0;
+  appearance: none;
+}
+
+.varo-input-number__minus .varo-icon,
+.varo-input-number__plus .varo-icon {
+  display: block;
+  pointer-events: none;
+}

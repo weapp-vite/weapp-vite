@@ -378,6 +378,25 @@ describe('template parity', () => {
     expect(actualPackageJson.peerDependencies).toEqual(expectedPackageJson.peerDependencies)
     expect(actualPackageJson.optionalDependencies).toEqual(expectedPackageJson.optionalDependencies)
     expectNoUnresolvedDependencySpec(actualPackageJson)
+
+    if (templateName === TemplateName.wevuVaro) {
+      expect(actualFiles).toEqual(expect.arrayContaining([
+        'public/coffee-products.jpg',
+        'src/components/ui/v-button.vue',
+        'src/pages/address/index.vue',
+        'src/pages/cart/index.vue',
+        'src/pages/checkout/index.vue',
+        'src/pages/detail/index.vue',
+        'src/pages/home/index.vue',
+        'src/pages/orders/index.vue',
+        'src/pages/profile/index.vue',
+        'src/pages/result/index.vue',
+        'src/styles/varo.css',
+      ]))
+      expect(npm.latestVersion).not.toHaveBeenCalled()
+      expect(actualPackageJson.dependencies?.['@varo-ui/headless']).toBeDefined()
+      expect(actualPackageJson.devDependencies?.['@varo-ui/cli']).toBeUndefined()
+    }
   })
 
   it.each(Object.values(TemplateName))('does not keep legacy @wevu/api imports in template sources %s', async (templateName) => {

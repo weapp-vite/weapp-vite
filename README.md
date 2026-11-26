@@ -43,7 +43,7 @@
 
 ## 特性亮点
 
-- 新项目：用 [`create-weapp-vite`](packages/create-weapp-vite) 选择原生、多平台 + Web、Vue SFC 多平台 + Web、Wevu、Tailwind CSS、TDesign、Vant、插件或组件库模板，并自动对齐依赖组合。
+- 新项目：用 [`create-weapp-vite`](packages/create-weapp-vite) 选择原生、多平台 + Web、Vue SFC 多平台 + Web、Wevu、Varo 电商、Tailwind CSS、TDesign、Vant、插件或组件库模板，并自动对齐依赖组合。
 - 存量项目：通过手动集成或 `wv init` 接入现有小程序，保留原有页面结构和平台能力。
 - Vue SFC：在小程序里使用 `.vue`、`<script setup>`、JSON 宏、class/style 绑定和 Wevu 响应式运行时。
 - uni-app 组件库：通过 `WotUiResolver()` 或 `UviewPlusResolver()` 在微信小程序与 Web 中使用经过全组件矩阵验证的 Wot UI、uview-plus Vue SFC。

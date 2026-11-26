@@ -16,6 +16,14 @@
     "skills": ["weapp-vite-best-practices", "weapp-vite-vue-sfc-best-practices", "wevu-best-practices"]
   },
   {
+    "id": "wevu-varo",
+    "directory": "weapp-vite-wevu-varo-retail-template",
+    "label": "Wevu + Varo 电商模板 (wevu-varo)",
+    "visibility": "default",
+    "framework": "wevu",
+    "skills": ["weapp-vite-best-practices", "weapp-vite-vue-sfc-best-practices", "wevu-best-practices"]
+  },
+  {
     "id": "wevu-tdesign",
     "directory": "weapp-vite-wevu-tailwindcss-tdesign-template",
     "label": "Wevu + TDesign 模板 (wevu + tdesign + tailwindcss)",
