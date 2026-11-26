@@ -257,10 +257,10 @@ export async function createDevModuleGraphProvider(
   const root = buildConfig.root ?? configService?.cwd ?? process.cwd()
   const userWatch = buildConfig.server?.watch
   const userBuildWatch = configService
-    ? configService.inlineConfig.build?.watch
+    ? configService.inlineConfig?.build?.watch
     : buildConfig.build?.watch
   const preserveSymlinks = configService
-    ? configService.inlineConfig.resolve?.preserveSymlinks
+    ? configService.inlineConfig?.resolve?.preserveSymlinks
     : buildConfig.resolve?.preserveSymlinks
   const buildWatch = { ...userBuildWatch, preserveSymlinks }
   const alwaysWatch = () => configService ? createDevConfigWatchFiles(configService, root) : []
