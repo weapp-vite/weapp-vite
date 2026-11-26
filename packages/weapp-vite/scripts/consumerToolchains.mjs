@@ -9,6 +9,22 @@ export const consumerToolchainVersions = {
   'vite-plus': vitePlusVersions,
 }
 
+const VITE_PLUS_VITEST_PACKAGES = [
+  'vitest',
+  '@vitest/browser',
+  '@vitest/browser-playwright',
+  '@vitest/browser-preview',
+  '@vitest/coverage-istanbul',
+  '@vitest/coverage-v8',
+  '@vitest/expect',
+  '@vitest/mocker',
+  '@vitest/pretty-format',
+  '@vitest/snapshot',
+  '@vitest/spy',
+  '@vitest/ui',
+  '@vitest/utils',
+]
+
 /** 从实际发布清单和显式配对配置生成消费依赖，避免宿主与编译器的版本来源漂移。 */
 export function resolveConsumerToolchain(toolchain, candidateManifest, versions = consumerToolchainVersions) {
   assert(['wv', 'vite', 'vite-plus'].includes(toolchain), `Unknown consumer toolchain: ${toolchain}`)
@@ -23,10 +39,12 @@ export function resolveConsumerToolchain(toolchain, candidateManifest, versions 
   if (toolchain === 'vite') {
     return { dependencies: { vite: compilerVite, vitest: pairing.vitest }, overrides: {} }
   }
-  assert(typeof pairing.version === 'string' && valid(pairing.version), 'Vite+ launcher and core must use one exact paired version')
-  const vite = `npm:@voidzero-dev/vite-plus-core@${pairing.version}`
+  assert(typeof pairing.version === 'string' && valid(pairing.version), 'Vite+ launcher must use one exact paired version')
+  assert(typeof pairing.core === 'string' && valid(pairing.core), 'Vite+ core must use one exact paired version')
+  const vite = `npm:@voidzero-dev/vite-plus-core@${pairing.core}`
+  const vitestOverrides = Object.fromEntries(VITE_PLUS_VITEST_PACKAGES.map(packageName => [packageName, pairing.vitest]))
   return {
     dependencies: { vite, 'vite-plus': pairing.version, 'vitest': pairing.vitest },
-    overrides: { vite, vitest: pairing.vitest },
+    overrides: { vite, ...vitestOverrides },
   }
 }

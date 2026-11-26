@@ -45,7 +45,7 @@ describe('scaffold toolchain selection', () => {
     expect(pkg.scripts?.build).toBe('vp build')
     const version = pkg.devDependencies?.['vite-plus']
     expect(version).toBeTruthy()
-    expect(pkg.devDependencies?.vite).toBe(`npm:@voidzero-dev/vite-plus-core@${version}`)
+    expect(pkg.devDependencies?.vite).toBe('npm:@voidzero-dev/vite-plus-core@8.3.8001')
     expect(pkg.overrides?.vite).toBe(pkg.devDependencies?.vite)
     expect(workspace.overrides.vite).toBe(pkg.devDependencies?.vite)
     expect(workspace.overrides.vitest).toBe('5.1.2')
@@ -57,7 +57,7 @@ describe('scaffold toolchain selection', () => {
     expect(pkg.overrides?.['@vitest/browser-playwright']).toBe('5.1.2')
     expect(pkg.overrides?.['@vitest/mocker']).toBe('5.1.2')
     expect(workspace.peerDependencyRules.allowedVersions).toEqual({
-      'vite': '1.8.0',
+      'vite': '8.3.8001',
       '@vitest/browser-playwright': '5.1.2',
     })
     expect(workspace.allowBuilds.rolldown).toBe(true)
@@ -103,7 +103,7 @@ describe('scaffold toolchain selection', () => {
     const root = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-toolchain-runner-'))
     roots.push(root)
     const workspaceFile = path.join(root, 'pnpm-workspace.yaml')
-    const workspace = 'packages:\n  - apps/*\noverrides:\n  vite: npm:@voidzero-dev/vite-plus-core@1.8.0\n'
+    const workspace = 'packages:\n  - apps/*\noverrides:\n  vite: npm:@voidzero-dev/vite-plus-core@8.3.8001\n'
     await fs.writeFile(workspaceFile, workspace)
     const target = path.join(root, 'apps/demo')
     await expect(createProject(target, TemplateName.default, { toolchain: 'vite-plus' })).rejects.toThrow('overrides.vitest')
@@ -132,10 +132,10 @@ describe('scaffold toolchain selection', () => {
     await expect(createProject(target, TemplateName.default, { toolchain: 'vite-plus' })).rejects.toThrow('peerDependencyRules.allowedVersions.vite')
     expect(await fs.pathExists(target)).toBe(false)
     const peerPolicy = 'peerDependencyRules:\n  allowedVersions:\n    vite: '
-    await fs.writeFile(workspaceFile, `${vitestPackagesConfigured}${peerPolicy}^8.0.0\n`)
+    await fs.writeFile(workspaceFile, `${vitestPackagesConfigured}${peerPolicy}^7.0.0\n`)
     await expect(createProject(target, TemplateName.default, { toolchain: 'vite-plus' })).rejects.toThrow('peerDependencyRules.allowedVersions.vite')
     expect(await fs.pathExists(target)).toBe(false)
-    const vitePeerConfigured = `${vitestPackagesConfigured}${peerPolicy}1.8.0 || ^8.0.0\n`
+    const vitePeerConfigured = `${vitestPackagesConfigured}${peerPolicy}8.3.8001 || ^8.0.0\n`
     await fs.writeFile(workspaceFile, vitePeerConfigured)
     await expect(createProject(target, TemplateName.default, { toolchain: 'vite-plus' })).rejects.toThrow('peerDependencyRules.allowedVersions.@vitest/browser-playwright')
     expect(await fs.pathExists(target)).toBe(false)

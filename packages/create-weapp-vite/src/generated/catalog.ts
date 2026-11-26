@@ -130,7 +130,7 @@ export const TEMPLATE_CATALOG = {
   tslib: '^2.9.1',
   tsx: '^4.23.15',
   typescript: '^6.0.3',
-  vite: '8.3.5',
+  vite: '^8.3.5',
   vitest: '^5.1.2',
   vue: '^3.5.46',
   yaml: '^2.9.1',

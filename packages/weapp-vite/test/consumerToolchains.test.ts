@@ -4,7 +4,7 @@ import { resolveConsumerToolchain } from '../scripts/consumerToolchains.mjs'
 describe('published consumer toolchain selection', () => {
   const versions = {
     'vite': { vitest: '5.1.0' },
-    'vite-plus': { version: '1.2.3', vitest: '5.0.1' },
+    'vite-plus': { version: '1.2.3', core: '8.3.5', vitest: '5.0.1' },
   }
 
   it.each(['8.3.2', '8.4.0', '^8.4.0'])('uses the candidate Vite declaration %s without a second pinned engine', (vite) => {
@@ -15,10 +15,10 @@ describe('published consumer toolchain selection', () => {
   })
 
   it('keeps the Vite+ launcher, core alias and override on the same paired version', () => {
-    expect(resolveConsumerToolchain('vite-plus', { name: 'weapp-vite', dependencies: { vite: '8.4.0' } }, versions)).toEqual({
-      dependencies: { 'vite': 'npm:@voidzero-dev/vite-plus-core@1.2.3', 'vite-plus': '1.2.3', 'vitest': '5.0.1' },
-      overrides: { vite: 'npm:@voidzero-dev/vite-plus-core@1.2.3', vitest: '5.0.1' },
-    })
+    const resolved = resolveConsumerToolchain('vite-plus', { name: 'weapp-vite', dependencies: { vite: '8.4.0' } }, versions)
+    expect(resolved.dependencies).toEqual({ 'vite': 'npm:@voidzero-dev/vite-plus-core@8.3.5', 'vite-plus': '1.2.3', 'vitest': '5.0.1' })
+    expect(resolved.overrides).toMatchObject({ 'vite': 'npm:@voidzero-dev/vite-plus-core@8.3.5', 'vitest': '5.0.1', '@vitest/browser-preview': '5.0.1' })
+    expect(Object.keys(resolved.overrides)).toHaveLength(14)
   })
 
   it('does not install a separate host for the standalone CLI', () => {
@@ -40,7 +40,9 @@ describe('published consumer toolchain selection', () => {
     const manifest = { name: 'weapp-vite', dependencies: { vite: '8.4.0' } }
     expect(() => resolveConsumerToolchain('vite', manifest, { ...versions, vite: { vitest: '^5.1.0' } }))
       .toThrow('exact paired version')
-    expect(() => resolveConsumerToolchain('vite-plus', manifest, { ...versions, 'vite-plus': { version: '^1.2.3', vitest: '5.0.1' } }))
-      .toThrow('one exact paired version')
+    expect(() => resolveConsumerToolchain('vite-plus', manifest, { ...versions, 'vite-plus': { version: '^1.2.3', core: '8.3.5', vitest: '5.0.1' } }))
+      .toThrow('launcher must use one exact paired version')
+    expect(() => resolveConsumerToolchain('vite-plus', manifest, { ...versions, 'vite-plus': { version: '1.2.3', core: '^8.3.5', vitest: '5.0.1' } }))
+      .toThrow('core must use one exact paired version')
   })
 })
