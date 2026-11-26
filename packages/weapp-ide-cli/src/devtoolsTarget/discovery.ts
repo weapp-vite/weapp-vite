@@ -29,7 +29,8 @@ async function directories(root: string) {
     return await fs.readdir(root, { withFileTypes: true })
   }
   catch (error) {
-    if (['ENOENT', 'EACCES'].includes((error as NodeJS.ErrnoException).code ?? '')) {
+    // Windows 的受保护目录（如 Program Files\WindowsApps）对普通用户返回 EPERM，不能中断安装扫描。
+    if (['ENOENT', 'EACCES', 'EPERM'].includes((error as NodeJS.ErrnoException).code ?? '')) {
       return []
     }
     throw error

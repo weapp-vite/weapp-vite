@@ -67,6 +67,7 @@ const packages: readonly (readonly [directory: string, build: string, check: str
   ['packages/weapp-ide-cli', 'build', standardContracts],
   ['packages/weapp-vite', '', weappViteContracts],
   ['packages/wxml', 'build', standardContracts],
+  ['packages-runtime/a2ui', 'build', standardContracts],
   ['packages-runtime/glass-easel-web-adapter', 'build', 'tsd --typings dist/index.d.mts --files test-d/public-api.test-d.ts'],
   ['packages-runtime/i18n', 'build', standardContracts, false, true, false, true],
   ['packages-runtime/json-render', 'build', jsxContracts],

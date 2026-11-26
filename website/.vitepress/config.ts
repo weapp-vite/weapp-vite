@@ -395,6 +395,7 @@ const packagesSidebarItems: DefaultTheme.SidebarItem[] = [
     collapsed: false,
     items: [
       { text: '@wevu/compiler', link: '/packages/wevu-compiler' },
+      { text: '@wevu/a2ui（实验）', link: '/packages/wevu-a2ui' },
       { text: '@wevu/json-render（实验）', link: '/packages/wevu-json-render' },
       { text: '@wevu/json-render-components', link: '/packages/wevu-json-render-components' },
       { text: '@wevu/query', link: '/packages/wevu-query' },

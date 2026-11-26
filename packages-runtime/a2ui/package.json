@@ -1,0 +1,71 @@
+{
+  "name": "@wevu/a2ui",
+  "type": "module",
+  "version": "0.0.0",
+  "description": "A2UI v1.0 的 Wevu 小程序渲染适配层",
+  "license": "MIT",
+  "homepage": "https://github.com/weapp-vite/weapp-vite#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/weapp-vite/weapp-vite.git",
+    "directory": "packages-runtime/a2ui"
+  },
+  "bugs": {
+    "url": "https://github.com/weapp-vite/weapp-vite/issues"
+  },
+  "keywords": [
+    "wevu",
+    "a2ui",
+    "mini-program",
+    "generative-ui",
+    "agent"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.mts",
+      "import": "./dist/index.mjs"
+    }
+  },
+  "main": "./dist/index.mjs",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.mts",
+  "files": [
+    "README.md",
+    "dist"
+  ],
+  "engines": {
+    "node": "^22.23.4 || ^24.22.1 || >=26.12.1"
+  },
+  "scripts": {
+    "dev": "tsdown -w",
+    "build": "tsdown",
+    "test": "vitest run",
+    "test:types": "pnpm build && pnpm run test:types:check",
+    "test:types:check": "tsd --files \"test-d/**/*.test-d.ts\"",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix"
+  },
+  "peerDependencies": {
+    "wevu": "workspace:*"
+  },
+  "dependencies": {
+    "@a2ui/web_core": "0.16.1",
+    "@wevu/web-apis": "workspace:*"
+  },
+  "devDependencies": {
+    "miniprogram-api-typings": "catalog:",
+    "wevu": "workspace:*"
+  },
+  "tsd": {
+    "compilerOptions": {
+      "module": "NodeNext",
+      "moduleResolution": "NodeNext",
+      "paths": {}
+    }
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org"
+  }
+}

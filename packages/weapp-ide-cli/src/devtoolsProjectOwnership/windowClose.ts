@@ -1,5 +1,6 @@
 import type { ManagedWechatProjectRecord, ManagedWechatWindowCloseEvidence } from './types'
 import fs from 'node:fs/promises'
+import process from 'node:process'
 import { setTimeout } from 'node:timers/promises'
 import { readManagedProcessIdentity, sameManagedProcess } from './host'
 import { captureActiveMainLogCursors } from './windowClose/activeLog'
@@ -17,7 +18,12 @@ export async function captureManagedWindowClose(record: ManagedWechatProjectReco
   const active = await captureActiveMainLogCursors(record, directory)
   const cursors = active
     ? active.cursors
-    : await captureLogCursors(directory, record.target.version)
+    : process.platform !== 'darwin'
+      ? await captureLogCursors(directory, record.target.version, {
+          projectPath: record.projectPath,
+          startedAt: record.createdAt,
+        })
+      : await captureLogCursors(directory, record.target.version)
   return { protocol: 'wechat-devtools-window-close-trace-v1', profileDir, productVersion: record.target.version, capturedAt, ...(active ? { mainHost: active.host } : {}), cursors, calls: [] }
 }
 

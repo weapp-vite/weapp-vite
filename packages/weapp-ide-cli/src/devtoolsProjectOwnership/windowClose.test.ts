@@ -63,6 +63,7 @@ describe('managed native-window destruction evidence', () => {
 
   it('handles quoted project names, CRLF and an incomplete append without interpreting log text', async () => {
     fixture.record.projectPath = path.join(fixture.directory, '项目 \'quoted\' { braces }, "double" `literal` ')
+    await fs.writeFile(fixture.logFile, fixture.boot())
     await fixture.capture()
     const lines = (fixture.call() + fixture.request() + fixture.closed() + fixture.destroyed()).replaceAll('\n', '\r\n')
     const split = lines.indexOf('projectId:') + 10

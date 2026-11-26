@@ -479,6 +479,7 @@ const IDE_DOM_HEADLESS_PATTERNS = [...new Set([
   'ide/tdesign-dialog-import.runtime.test.ts',
   'ide/wevu-vue-demo.script-setup.emit.runtime.test.ts',
   'ide/wevu-comprehensive.runtime.test.ts',
+  'ide/wevu-a2ui.runtime.test.ts',
   'ide/wevu-json-render.runtime.test.ts',
   'ide/wevu-subpackage-placement.runtime.test.ts',
   'ide/worker-host.runtime.test.ts',
