@@ -1,4 +1,4 @@
-import { A2uiIntegrityError, A2uiValidationError } from '@a2ui/web_core'
+import { A2uiIntegrityError, A2uiValidationError } from '@a2ui/web_core/errors'
 import { describe, expect, it } from 'vitest'
 import {
   createSurfaceMessage,

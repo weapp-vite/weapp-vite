@@ -1,7 +1,8 @@
 /* eslint-disable ts/no-use-before-define -- 节点投影与值转换互递归，函数声明由模块初始化提升。 */
-import type { NodeAction } from '@a2ui/web_core'
+import type { NodeAction } from '@a2ui/web_core/resolution'
 import type { A2uiNode, A2uiPropValue } from './types'
-import { getValue, isComponentNode, ResolvedBinding, WritableBinding } from '@a2ui/web_core'
+import { getValue } from '@a2ui/web_core/reactivity'
+import { isComponentNode, ResolvedBinding, WritableBinding } from '@a2ui/web_core/resolution'
 
 /** 节点上可回写的数据绑定与可执行动作；按属性名收集，避免静默选择第一项。 */
 export interface A2uiNodeOperation {

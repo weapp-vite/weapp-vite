@@ -1,17 +1,10 @@
-import type { ComponentApi, SurfaceModel } from '@a2ui/web_core'
+import type { ComponentApi } from '@a2ui/web_core/catalog'
+import type { SurfaceModel } from '@a2ui/web_core/state'
 import type { A2uiNodeOperation, A2uiProjectedSurface } from './projection'
 import type { A2uiActionMessage, A2uiInteraction, A2uiSession, A2uiSessionOptions, A2uiSurfaceView } from './types'
-import {
-  batchWrite,
-  effect,
-  getValue,
-  MessageProcessor,
-  NodeResolver,
-  peekValue,
-  setValue,
-  signal,
-  STRICT_VALIDATION,
-} from '@a2ui/web_core'
+import { MessageProcessor, STRICT_VALIDATION } from '@a2ui/web_core/processing'
+import { batchWrite, effect, getValue, peekValue, setValue, signal } from '@a2ui/web_core/reactivity'
+import { NodeResolver } from '@a2ui/web_core/resolution'
 import { createA2uiCatalog } from './catalog'
 import { A2UI_STATE_MESSAGES, readA2uiEnvelope } from './envelope'
 import { projectA2uiSurface } from './projection'
@@ -144,7 +137,7 @@ export function createA2uiSession(options: A2uiSessionOptions): A2uiSession {
           ? { surface: previous, data: cloneDataModelValue(previous.dataModel.get('/')) }
           : undefined
         try {
-          processor.processMessages(envelope.message)
+          processor.processMessages(envelope.message as Parameters<typeof processor.processMessages>[0])
         }
         catch (error) {
           if (rollback) {

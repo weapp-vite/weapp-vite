@@ -40,8 +40,9 @@
     "dev": "tsdown -w",
     "build": "tsdown",
     "test": "vitest run",
-    "test:types": "pnpm build && pnpm run test:types:check",
+    "test:types": "pnpm build && pnpm run test:types:check && pnpm run test:types:consumer",
     "test:types:check": "tsd --files \"test-d/**/*.test-d.ts\"",
+    "test:types:consumer": "tsc -p test-d/tsconfig.strict.json",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix"
