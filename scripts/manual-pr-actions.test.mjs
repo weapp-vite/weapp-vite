@@ -39,7 +39,11 @@ describe('manual PR workflow entry points', () => {
       else if (name === 'release-intent-auto.yml') {
         expect(workflow.on).not.toHaveProperty('pull_request_target')
         expect(workflow.on.workflow_dispatch.inputs.pullRequest).toMatchObject({ required: true, type: 'number' })
-        for (const job of Object.values(workflow.jobs)) {
+        for (const [jobName, job] of Object.entries(workflow.jobs)) {
+          if (jobName === 'toolchain') {
+            expect(job.uses).toBe('./.github/workflows/reusable-repoctl-toolchain.yml')
+            continue
+          }
           expect(job.environment).toBe('pr-ci-approval')
           expect(job.steps.every(step => !step.uses?.startsWith('actions/checkout@'))).toBe(true)
         }

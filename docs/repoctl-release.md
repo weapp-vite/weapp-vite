@@ -1,6 +1,6 @@
 # repoctl 发布流程
 
-仓库使用正式版 `repoctl@6.6.3`，根 `package.json` 与锁文件保持精确版本。正式版、预发布版、单包 bootstrap、npm nightly 和 OIDC 审计共用 `Release`（`release.yml`），继续使用现有 npm Trusted Publisher 绑定。PR snapshot 使用官方独立构建与发布工作流，只需要内置 GitHub token 和 npm OIDC，无须 GitHub App 或发布 PAT。
+仓库使用正式版 `repoctl@6.6.7`，根 `package.json` 与锁文件保持精确版本。GitHub Actions 通过共享 toolchain workflow 从根 `package.json` 读取 repoctl 与 pnpm 版本。正式版、预发布版、单包 bootstrap、npm nightly 和 OIDC 审计共用 `Release`（`release.yml`），继续使用现有 npm Trusted Publisher 绑定。PR snapshot 使用官方独立构建与发布工作流，只需要内置 GitHub token 和 npm OIDC，无须 GitHub App 或发布 PAT。
 
 ## 正式版与预发布版
 
@@ -161,7 +161,7 @@ pnpm 12.18 安装新发布依赖时会追加精确 `minimumReleaseAgeExclude`，
 
 ## PR snapshot
 
-repoctl 6.2.0 已通过 [#1114](https://github.com/icelib/repoctl/pull/1114) 和 [#1116](https://github.com/icelib/repoctl/pull/1116) 提供 prepared snapshot、自动 changeset、正式 Release PR 校验和 hooks 公共入口。本仓库使用官方成对工作流 `.github/workflows/repoctl-snapshot-build.yml` 与 `.github/workflows/repoctl-snapshot-publish.yml`，固定 `repoctl@6.6.3`、pnpm 12.23.0，并复用 `pr-ci-approval`。
+repoctl 6.2.0 已通过 [#1114](https://github.com/icelib/repoctl/pull/1114) 和 [#1116](https://github.com/icelib/repoctl/pull/1116) 提供 prepared snapshot、自动 changeset、正式 Release PR 校验和 hooks 公共入口。本仓库使用官方成对工作流 `.github/workflows/repoctl-snapshot-build.yml` 与 `.github/workflows/repoctl-snapshot-publish.yml`，从根 `package.json` 读取 repoctl 与 pnpm 版本，并复用 `pr-ci-approval`。
 
 启用前，将工作流合入默认分支，并为所有公开包新增允许仓库 `weapp-vite/weapp-vite`、工作流 `repoctl-snapshot-publish.yml` 的 npm Trusted Publisher，保留 `release.yml` 的现有连接。publisher job 没有 Environment，npm 对应字段应留空；`pr-ci-approval` 保护的是 builder freeze。npm 当前允许每包最多 10 个 trusted publisher；新增配置的首次成功发布时限以 npm 页面为准。当前迁移只准备仓库配置，没有修改远端 npm 设置或执行真实发布。
 
@@ -171,4 +171,4 @@ repoctl 6.2.0 已通过 [#1114](https://github.com/icelib/repoctl/pull/1114) 和
 
 上游 [#1128](https://github.com/icelib/repoctl/pull/1128) 同时更新 snapshot build、snapshot publish 和自动 intent 模板中的 9 处 artifact action pins（分别为 3、4、2 处），使用 `upload-artifact@v7.0.2` 与 `download-artifact@v8.0.2` 的固定 SHA；这些模板由正式发布包提供，无须保留本地 monorepo 补丁。
 
-后续升级工作流时，使用公开 `getSnapshotWorkflows()` 或 `repo release snapshot workflow` 成对生成，并核对审批环境、路径、pnpm 版本与 builder 摘要。生成器根据完整 builder 字节自动计算 SHA256 并填入 publisher。两份官方模板保留原始字节，由限定的 ESLint YAML 规则排除保护配对摘要。不要单独格式化 builder 后沿用旧的 publisher 摘要。自动 intent 继续通过原生入口生成，并保留仓库对 plan 和 apply 的 `pr-ci-approval` 审批覆盖。
+后续升级工作流时，使用公开 `getSnapshotWorkflows()` 或 `repo release snapshot workflow` 成对生成，再保留共享 toolchain workflow 调用，并核对审批环境、路径和工具链输出。publisher 的 builder SHA256 必须根据最终 builder 文件重新计算。不要单独格式化 builder 后沿用旧摘要。自动 intent 继续通过原生入口生成，并保留仓库对 plan 和 apply 的 `pr-ci-approval` 审批覆盖。

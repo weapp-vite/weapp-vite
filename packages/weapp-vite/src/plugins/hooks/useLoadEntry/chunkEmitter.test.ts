@@ -179,6 +179,43 @@ describe('createChunkEmitter', () => {
     expect(shouldEmitEntryChunk).toHaveBeenCalledTimes(1)
   })
 
+  it.each([false, true])('preloads metadata and defers engine loading during build watch (isDev=%s)', async (isDev) => {
+    const preloadAssetOnlyEntry = vi.fn(async () => {})
+    const emitEntriesChunks = createChunkEmitter(
+      {
+        isDev,
+        relativeOutputPath(input: string) {
+          return input.replace('/project/src/', '')
+        },
+      } as any,
+      new Set<string>(),
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      preloadAssetOnlyEntry,
+    )
+    const pluginCtx = {
+      meta: { watchMode: true },
+      addWatchFile: vi.fn(),
+      emitFile: vi.fn(),
+      load: vi.fn(async () => {
+        throw new Error('Rolldown does not support load from buildStart')
+      }),
+    }
+
+    const entry = { id: '/project/src/pages/index.ts' } as any
+    await Promise.all(emitEntriesChunks.call(pluginCtx as any, [entry]))
+
+    expect(preloadAssetOnlyEntry).toHaveBeenCalledWith(entry, entry.id)
+    expect(pluginCtx.addWatchFile).toHaveBeenCalledWith(entry.id)
+    expect(pluginCtx.load).not.toHaveBeenCalled()
+    expect(pluginCtx.emitFile).toHaveBeenCalledWith(expect.objectContaining({
+      id: '/project/src/pages/index.ts',
+      fileName: 'pages/index.js',
+    }))
+  })
+
   it('tracks skipped preloads for entries already loaded', async () => {
     const id = '/project/src/pages/index/index.ts'
     const loadedEntrySet = new Set<string>([id])

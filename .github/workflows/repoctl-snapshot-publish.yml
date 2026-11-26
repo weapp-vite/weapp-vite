@@ -13,14 +13,18 @@ defaults:
     shell: bash
 
 env:
-  SNAPSHOT_BUILDER_SHA256: 4e67881d3b3fec89d6ab59e4ab03405c2c7736a5325ff19e81e2e464b4e2899f
+  SNAPSHOT_BUILDER_SHA256: 4e6b702b6fea81aaefb00cbafa51c208401632b35b6ec419b217c8e579ff2cc7
   SNAPSHOT_BUILDER_WORKFLOW: ".github/workflows/repoctl-snapshot-build.yml"
   SNAPSHOT_PUBLISHER_WORKFLOW: ".github/workflows/repoctl-snapshot-publish.yml"
   SNAPSHOT_BUILD_ENVIRONMENT: "pr-ci-approval"
 
 jobs:
+  toolchain:
+    uses: ./.github/workflows/reusable-repoctl-toolchain.yml
+
   verify:
     name: Verify approved snapshot artifact
+    needs: toolchain
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -31,13 +35,16 @@ jobs:
     outputs:
       pull_request: ${{ steps.verify.outputs.pull_request }}
       artifact_id: ${{ steps.verify.outputs.artifact_id }}
+    env:
+      REPOCTL_VERSION: ${{ needs.toolchain.outputs.repoctl_version }}
+      PNPM_VERSION: ${{ needs.toolchain.outputs.pnpm_version }}
     steps:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 24.22.1
       - name: Install the pinned verifier without candidate code
         working-directory: ${{ runner.temp }}
-        run: npm install --prefix "$RUNNER_TEMP/repoctl-tools" --ignore-scripts --no-audit --no-fund --package-lock=false repoctl@6.6.3 pnpm@12.23.0
+        run: npm install --prefix "$RUNNER_TEMP/repoctl-tools" --ignore-scripts --no-audit --no-fund --package-lock=false "repoctl@$REPOCTL_VERSION" "pnpm@$PNPM_VERSION"
       - name: Verify GitHub approval, frozen plan, current revision and artifact bytes
         id: verify
         env:
@@ -55,7 +62,7 @@ jobs:
 
   publish:
     name: Publish the verified prepared tarballs
-    needs: verify
+    needs: [verify, toolchain]
     runs-on: ubuntu-latest
     timeout-minutes: 30
     concurrency:
@@ -68,6 +75,9 @@ jobs:
       id-token: write
     outputs:
       report_artifact: ${{ steps.report.outputs.artifact-id }}
+    env:
+      REPOCTL_VERSION: ${{ needs.toolchain.outputs.repoctl_version }}
+      PNPM_VERSION: ${{ needs.toolchain.outputs.pnpm_version }}
     steps:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
@@ -75,7 +85,7 @@ jobs:
       - name: Install only the pinned trusted publisher
         working-directory: ${{ runner.temp }}
         run: |
-          npm install --prefix "$RUNNER_TEMP/repoctl-tools" --ignore-scripts --no-audit --no-fund --package-lock=false repoctl@6.6.3 pnpm@12.23.0
+          npm install --prefix "$RUNNER_TEMP/repoctl-tools" --ignore-scripts --no-audit --no-fund --package-lock=false "repoctl@$REPOCTL_VERSION" "pnpm@$PNPM_VERSION"
           echo "$RUNNER_TEMP/repoctl-tools/node_modules/.bin" >> "$GITHUB_PATH"
       - name: Recheck all evidence, audit npm OIDC and publish without package scripts
         env:
@@ -98,13 +108,16 @@ jobs:
 
   consumer:
     name: Verify the exact published packages in isolation
-    needs: publish
+    needs: [publish, toolchain]
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
       contents: read
     outputs:
       report_artifact: ${{ steps.report.outputs.artifact-id }}
+    env:
+      REPOCTL_VERSION: ${{ needs.toolchain.outputs.repoctl_version }}
+      PNPM_VERSION: ${{ needs.toolchain.outputs.pnpm_version }}
     steps:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
@@ -112,7 +125,7 @@ jobs:
       - name: Install the pinned consumer verifier
         working-directory: ${{ runner.temp }}
         run: |
-          npm install --prefix "$RUNNER_TEMP/repoctl-tools" --ignore-scripts --no-audit --no-fund --package-lock=false repoctl@6.6.3 pnpm@12.23.0
+          npm install --prefix "$RUNNER_TEMP/repoctl-tools" --ignore-scripts --no-audit --no-fund --package-lock=false "repoctl@$REPOCTL_VERSION" "pnpm@$PNPM_VERSION"
           echo "$RUNNER_TEMP/repoctl-tools/node_modules/.bin" >> "$GITHUB_PATH"
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:

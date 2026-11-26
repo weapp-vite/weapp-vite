@@ -79,7 +79,7 @@ it.each([
 ])('writes a workspace pnpm can update after resolving fresh versions: %s', async (region) => {
   const content = await workspaceSource(region)
   const exclusions = packages.map(pkg => `${pkg.name}@${pkg.version}`)
-  expect(yaml.parse(content)).toEqual({ packages: [], minimumReleaseAgeExclude: exclusions })
+  expect(yaml.parse(content)).toEqual({ packages: [], overrides: { vitest: '5.1.1' }, minimumReleaseAgeExclude: exclusions })
   const directory = await mkdtemp(path.join(tmpdir(), 'consumer-workspace-'))
   directories.push(directory)
   await writeFile(path.join(directory, 'package.json'), '{"private":true}')
@@ -91,9 +91,9 @@ it.each([
     env: { ...process.env, npm_config_userconfig: path.join(directory, 'user.npmrc') },
     timeout: 10_000,
   })
-  expect(yaml.parse(await readFile(path.join(directory, 'pnpm-workspace.yaml'), 'utf8'))).toEqual({ packages: [], minimumReleaseAgeExclude: updated })
+  expect(yaml.parse(await readFile(path.join(directory, 'pnpm-workspace.yaml'), 'utf8'))).toEqual({ packages: [], overrides: { vitest: '5.1.1' }, minimumReleaseAgeExclude: updated })
 }, 20_000)
 
 it('keeps non-npm consumers isolated without adding npm freshness exceptions', async () => {
-  expect(yaml.parse(await workspaceSource('src/commands/release/nightly/consumer.ts', 'github'))).toEqual({ packages: [] })
+  expect(yaml.parse(await workspaceSource('src/commands/release/nightly/consumer.ts', 'github'))).toEqual({ packages: [], overrides: { vitest: '5.1.1' } })
 })

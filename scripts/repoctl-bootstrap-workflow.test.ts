@@ -115,8 +115,8 @@ describe('repoctl bootstrap workflow', () => {
       'cancel-in-progress': false,
     })
     assert.deepEqual(publish.concurrency, job('release').concurrency)
-    assert.equal(publish.needs, 'bootstrap-prepare')
-    assert.equal(publish.if, expression('!cancelled() && github.event_name == \'workflow_dispatch\' && inputs.mode == \'bootstrap\' && inputs.verify-run-id == \'\' && !inputs.dry-run && needs.bootstrap-prepare.result == \'success\''))
+    assert.deepEqual(publish.needs, ['bootstrap-prepare', 'bootstrap-toolchain'])
+    assert.equal(publish.if, expression('!cancelled() && github.event_name == \'workflow_dispatch\' && inputs.mode == \'bootstrap\' && inputs.verify-run-id == \'\' && !inputs.dry-run && needs.bootstrap-toolchain.result == \'success\' && needs.bootstrap-prepare.result == \'success\''))
     assert.deepEqual(publish.permissions, { 'contents': 'read', 'actions': 'read', 'id-token': 'write' })
     const command = commandStep(publish, 'publish')
     assert.equal(command['working-directory'], expression('runner.temp'))
@@ -126,8 +126,8 @@ describe('repoctl bootstrap workflow', () => {
 
   it('recovers publication evidence through a read-only verifier that cannot publish', () => {
     const verify = job('bootstrap-verify')
-    assert.deepEqual(verify.needs, ['bootstrap-prepare', 'bootstrap-publish'])
-    assert.equal(verify.if, expression('!cancelled() && github.event_name == \'workflow_dispatch\' && inputs.mode == \'bootstrap\' && !inputs.dry-run && (inputs.verify-run-id != \'\' || needs.bootstrap-publish.result == \'success\')'))
+    assert.deepEqual(verify.needs, ['bootstrap-prepare', 'bootstrap-publish', 'bootstrap-toolchain'])
+    assert.equal(verify.if, expression('!cancelled() && github.event_name == \'workflow_dispatch\' && inputs.mode == \'bootstrap\' && !inputs.dry-run && needs.bootstrap-toolchain.result == \'success\' && (inputs.verify-run-id != \'\' || needs.bootstrap-publish.result == \'success\')'))
     assert.deepEqual(verify.permissions, { contents: 'read', actions: 'read' })
     const command = commandStep(verify, 'verify')
     assert.equal(command['working-directory'], expression('runner.temp'))
@@ -141,9 +141,12 @@ describe('repoctl bootstrap workflow', () => {
     const version = rootPackage.devDependencies?.repoctl
     assert.match(version ?? '', /^\d+\.\d+\.\d+$/)
     assert.equal(installed.version, version)
+    const toolchain = job('bootstrap-toolchain')
+    assert.equal(toolchain.uses, './.github/workflows/reusable-repoctl-toolchain.yml')
+    assert.equal(job('bootstrap-prepare').needs, 'bootstrap-toolchain')
     for (const name of ['bootstrap-publish', 'bootstrap-verify']) {
       const selected = job(name)
-      assert.equal(selected.env?.REPOCTL_BOOTSTRAP_TOOL_VERSION, version)
+      assert.equal(selected.env?.REPOCTL_BOOTSTRAP_TOOL_VERSION, expression('needs.bootstrap-toolchain.outputs.repoctl_version'))
       const tool = selected.steps?.find(step => step.id === 'bootstrap-tool')
       assert.equal(tool?.run, 'npm install --prefix "$RUNNER_TEMP/repoctl-bootstrap-tool" --ignore-scripts --no-package-lock --no-audit --no-fund "repoctl@$REPOCTL_BOOTSTRAP_TOOL_VERSION" --registry=https://registry.npmjs.org')
       const stage = name === 'bootstrap-publish' ? 'publish' : 'verify'

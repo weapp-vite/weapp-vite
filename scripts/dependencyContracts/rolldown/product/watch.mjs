@@ -12,6 +12,8 @@ function createWatchInput(files, state) {
     cwd: files.cwd,
     preserveEntrySignatures: 'strict',
     output: { dir: path.join(files.cwd, 'out'), format: 'es' },
+    // 只让本用例修改的依赖触发重建，避免 macOS 延迟送达入口文件的创建事件。
+    watch: { include: /(?:^|[/\\])dep\.js$/u },
     plugins: [{
       name: 'product-contract-watch',
       buildStart(input) {
@@ -45,7 +47,7 @@ function createWatchInput(files, state) {
 }
 
 export async function watching(watch, root) {
-  const files = await fixture(root, 'product-watch')
+  const files = await fixture(await realpath(root), 'product-watch')
   const finished = deferred()
   const state = { events: [], runtimeValues: [], outputSnapshots: [] }
   const changes = []

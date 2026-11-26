@@ -13,8 +13,10 @@ vi.mock('./loadEntry', () => ({
   createEntryLoader: vi.fn((options) => {
     entryLoaderOptionsRef.current = options
     return Object.assign(
-      async function loadEntry(this: any, id: string, type: 'app' | 'page' | 'component') {
-        return await loadEntryMock.call(this, id, type)
+      async function loadEntry(this: any, id: string, type: 'app' | 'page' | 'component', options?: { metadataOnly?: boolean }) {
+        return options === undefined
+          ? await loadEntryMock.call(this, id, type)
+          : await loadEntryMock.call(this, id, type, options)
       },
       {
         invalidateResolveCache: vi.fn(),
@@ -884,8 +886,8 @@ describe('useLoadEntry emitDirtyEntries', () => {
     const pluginCtx = createPluginContext()
     await hook.emitDirtyEntries.call(pluginCtx)
 
-    expect(pluginCtx.load).toHaveBeenCalledTimes(1)
-    expect(loadEntryMock).not.toHaveBeenCalled()
+    expect(pluginCtx.load).not.toHaveBeenCalled()
+    expect(loadEntryMock).toHaveBeenCalledWith(ids[0], 'component', { metadataOnly: true })
     expect(pluginCtx.emitFile).not.toHaveBeenCalled()
     expect(ctx.runtimeState.build.hmr.profile.pendingReasonSummary).toEqual([])
   })
@@ -914,8 +916,8 @@ describe('useLoadEntry emitDirtyEntries', () => {
     const pluginCtx = createPluginContext()
     await hook.emitDirtyEntries.call(pluginCtx)
 
-    expect(pluginCtx.load).toHaveBeenCalledTimes(1)
-    expect(loadEntryMock).not.toHaveBeenCalled()
+    expect(pluginCtx.load).not.toHaveBeenCalled()
+    expect(loadEntryMock).toHaveBeenCalledWith(ids[0], 'component', { metadataOnly: true })
     expect(pluginCtx.emitFile).not.toHaveBeenCalled()
     expect(ctx.runtimeState.build.hmr.profile.pendingReasonSummary).toEqual([])
   })
@@ -941,8 +943,8 @@ describe('useLoadEntry emitDirtyEntries', () => {
     const pluginCtx = createPluginContext()
     await hook.emitDirtyEntries.call(pluginCtx)
 
-    expect(pluginCtx.load).toHaveBeenCalledTimes(1)
-    expect(loadEntryMock).not.toHaveBeenCalled()
+    expect(pluginCtx.load).not.toHaveBeenCalled()
+    expect(loadEntryMock).toHaveBeenCalledWith(ids[0], 'component', { metadataOnly: true })
     expect(pluginCtx.emitFile).not.toHaveBeenCalled()
     expect(ctx.runtimeState.build.hmr.profile.pendingReasonSummary).toEqual([])
   })

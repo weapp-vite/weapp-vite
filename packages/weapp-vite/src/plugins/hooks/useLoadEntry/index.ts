@@ -459,9 +459,10 @@ export function useLoadEntry(
         )
         return
       }
-      const refreshWatchMetadata = ctx.configService.inlineConfig?.build?.watch && !ctx.configService.isDev
-      if (!refreshWatchMetadata && !shouldPreloadEntryAssetOnly(ctx.runtimeState.build.hmr.profile.dirtyReasonSummary)) {
-        await this.load(resolvedId)
+      if (!this.meta?.watchMode && !shouldPreloadEntryAssetOnly(ctx.runtimeState.build.hmr.profile.dirtyReasonSummary)) {
+        const relativeBase = removeExtensionDeep(ctx.configService.relativeAbsoluteSrcRoot(entryId))
+        const entryType = entriesMap.get(relativeBase)?.type === 'page' ? 'page' : 'component'
+        await loadEntry.call(this, resolvedId.id, entryType, { metadataOnly: true })
         return
       }
       const relativeBase = removeExtensionDeep(ctx.configService.relativeAbsoluteSrcRoot(entryId))
