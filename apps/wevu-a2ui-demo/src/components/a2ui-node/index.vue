@@ -25,6 +25,19 @@ const display = computed(() => {
 })
 const isCaption = computed(() => props.node.type === 'Text' && props.node.props.variant === 'caption')
 const isLongText = computed(() => props.node.type === 'TextField' && props.node.props.variant === 'longText')
+const isInvalid = computed(() => props.node.props.isValid === false)
+const validationMessage = computed(() => {
+  const errors = props.node.props.validationErrors
+  return Array.isArray(errors)
+    ? errors.filter((error): error is string => typeof error === 'string').join('；')
+    : ''
+})
+const validationErrorId = computed(() => `${props.node.componentId}-error`)
+const fieldClass = computed(() => isInvalid.value ? 'a2ui-field a2ui-field--invalid' : 'a2ui-field')
+const buttonClass = computed(() => {
+  const variant = props.node.props.variant === 'primary' ? 'a2ui-button a2ui-button--primary' : 'a2ui-button'
+  return isInvalid.value ? `${variant} a2ui-button--invalid` : variant
+})
 const buttonLabel = computed(() => String(props.node.children.find(child => child.type === 'Text')?.props.text ?? ''))
 
 function isNode(value: A2uiPropValue | undefined): value is A2uiNode {
@@ -90,7 +103,7 @@ function tap() {
   >
     {{ display.text }}
   </text>
-  <view v-else-if="props.node.type === 'TextField'" class="a2ui-field">
+  <view v-else-if="props.node.type === 'TextField'" :class="fieldClass">
     <text class="a2ui-label">{{ display.label }}</text>
     <textarea
       v-if="isLongText"
@@ -108,15 +121,22 @@ function tap() {
       :placeholder="display.placeholder"
       @input="input"
     >
+    <text v-if="isInvalid && validationMessage" :id="validationErrorId" class="a2ui-error">
+      {{ validationMessage }}
+    </text>
   </view>
-  <button
-    v-else-if="props.node.type === 'Button'"
-    :id="props.node.componentId"
-    :class="props.node.props.variant === 'primary' ? 'a2ui-button a2ui-button--primary' : 'a2ui-button'"
-    @tap="tap"
-  >
-    {{ buttonLabel }}
-  </button>
+  <block v-else-if="props.node.type === 'Button'">
+    <button
+      :id="props.node.componentId"
+      :class="buttonClass"
+      @tap="tap"
+    >
+      {{ buttonLabel }}
+    </button>
+    <text v-if="isInvalid && validationMessage" :id="validationErrorId" class="a2ui-error">
+      {{ validationMessage }}
+    </text>
+  </block>
   <a2ui-order
     v-else-if="props.node.type === 'OrderSummary'"
     :number="display.number"
@@ -201,6 +221,19 @@ function tap() {
   padding: 20rpx;
 }
 
+.a2ui-field--invalid .a2ui-input,
+.a2ui-field--invalid .a2ui-textarea {
+  border-color: #a03528;
+}
+
+.a2ui-error {
+  display: block;
+  margin-top: 12rpx;
+  font-size: 24rpx;
+  line-height: 1.5;
+  color: #a03528;
+}
+
 .a2ui-button {
   width: 100%;
   font-size: 28rpx;
@@ -210,6 +243,10 @@ function tap() {
 .a2ui-button--primary {
   color: #fff;
   background: #234f3c;
+}
+
+.a2ui-button--invalid {
+  opacity: 0.6;
 }
 
 .a2ui-unknown {

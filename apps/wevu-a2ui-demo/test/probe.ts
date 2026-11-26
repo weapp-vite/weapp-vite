@@ -44,7 +44,10 @@ export function probe() {
     version: '1.0',
     updateDataModel: { surfaceId: SURFACE_ID, path: '/form/reason', value: '兼容检查' },
   })
-  const reason = find(views.find(view => view.id === SURFACE_ID)?.root, 'reason')?.props.value
+  const reasonNode = find(views.find(view => view.id === SURFACE_ID)?.root, 'reason')
+  const reason = reasonNode?.props.value
+  const reasonValid = reasonNode?.props.isValid
+  const reasonErrors = reasonNode?.props.validationErrors
   session.dispose()
 
   let basicViews: A2uiSurfaceView[] = []
@@ -60,5 +63,5 @@ export function probe() {
   }
   const nestedLabel = find(basicViews.find(view => view.id === BASIC_SURFACE_ID)?.root, 'label')?.props.text
   basicSession.dispose()
-  return { reason, nestedLabel }
+  return { reason, reasonValid, reasonErrorCount: Array.isArray(reasonErrors) ? reasonErrors.length : -1, nestedLabel }
 }

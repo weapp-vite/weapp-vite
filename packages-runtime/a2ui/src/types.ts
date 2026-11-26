@@ -53,7 +53,7 @@ export type A2uiFunctionHandler = (args: Record<string, unknown>) => unknown | P
 export interface A2uiSessionOptions extends A2uiSessionListeners {
   /** A2UI 1.0 catalog 文档；组件与函数由消费方声明。 */
   catalog: Record<string, any>
-  /** 可选 catalog 函数实现；未提供的已声明函数在调用时通过 onError 报错。 */
+  /** 可选 catalog 函数实现；宿主实现优先于内置标准函数，其余未实现函数在调用时通过 onError 报错。 */
   functionImplementations?: Readonly<Record<string, A2uiFunctionHandler>>
 }
 

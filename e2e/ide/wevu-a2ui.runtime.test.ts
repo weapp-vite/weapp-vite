@@ -85,6 +85,8 @@ describe('Wevu A2UI runtime', { concurrent: false }, () => {
         { selector: '.heading', text: '让每一次购物都有回应。' },
         { selector: '//text[@id="hint"]', query: 'xpath', text: '请描述商品问题，方便我们为你处理。' },
         { selector: '//input[@id="reason"]', query: 'xpath', count: 1 },
+        { selector: '//text[@id="reason-error"]', query: 'xpath', text: '请填写售后原因；至少填写四个字' },
+        { selector: '//text[@id="submit-error"]', query: 'xpath', text: '请先填写有效的售后原因' },
         { selector: '//textarea[@id="detail"]', query: 'xpath', attributes: { placeholder: '选填：物流、包装等细节' } },
         { selector: '//text[@id="order-product"]', query: 'xpath', text: '日常随行杯 · 雾白' },
       ],
@@ -105,6 +107,8 @@ describe('Wevu A2UI runtime', { concurrent: false }, () => {
     await expect.poll(async () => (await element(page, 'text', 'status')).text(), replyPoll).toBe('演示订单：DEMO-2026-001，实付 ¥129.00')
     await inputReason(page, '杯盖有划痕')
     await expect.poll(() => page.data('model.reason')).toBe('杯盖有划痕')
+    await expect.poll(async () => (await page.getElementsByXpath('//text[@id="reason-error"]', { fallback: false })).length).toBe(0)
+    await expect.poll(async () => (await page.getElementsByXpath('//text[@id="submit-error"]', { fallback: false })).length).toBe(0)
     const submit = await element(page, 'button', 'submit')
     await submit.tap()
     await submit.tap()

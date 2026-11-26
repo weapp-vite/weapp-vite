@@ -49,6 +49,29 @@ describe('A2UI 售后演示会话', () => {
     session.dispose()
   })
 
+  it('用标准函数投影校验反馈并在有效输入后清除', () => {
+    const session = setup()
+    expect(nodeOf(session, 'reason').props).toMatchObject({
+      isValid: false,
+      validationErrors: ['请填写售后原因', '至少填写四个字'],
+    })
+    expect(nodeOf(session, 'submit').props).toMatchObject({
+      isValid: false,
+      validationErrors: ['请先填写有效的售后原因'],
+    })
+
+    session.interact({ type: 'input', nodeId: nodeOf(session, 'reason').id, value: '短' })
+    expect(nodeOf(session, 'reason').props).toMatchObject({
+      isValid: false,
+      validationErrors: ['至少填写四个字'],
+    })
+
+    session.interact({ type: 'input', nodeId: nodeOf(session, 'reason').id, value: '杯盖有划痕' })
+    expect(nodeOf(session, 'reason').props).toMatchObject({ isValid: true, validationErrors: [] })
+    expect(nodeOf(session, 'submit').props).toMatchObject({ isValid: true, validationErrors: [] })
+    session.dispose()
+  })
+
   it('动作外发后由 agent 回包，提交进行中重复点击被去重', async () => {
     vi.useFakeTimers()
     const session = setup()

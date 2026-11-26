@@ -64,9 +64,11 @@ session.dispose()
 | `onError(error)` | 可选；接收 Core surface、消息处理与表达式错误，可返回 Promise |
 | `dispose()` | 幂等；停止投影、释放 resolver 与 processor，之后不再回调 |
 
-`functionImplementations` 为可选能力扩展。catalog 中声明的函数会保留完整签名并照常参与校验，未提供实现的函数在调用时抛出表达式错误，并通过 `onError` 上报；构造会话时提供未声明函数的实现会立即失败。只按对象自身属性查找实现，`toString` 等继承成员不会被误当作实现。
+`functionImplementations` 为可选能力扩展。catalog 中声明的函数会保留完整签名并照常参与校验；宿主实现优先于内置实现，只按对象自身属性查找，`toString` 等继承成员不会被误当作实现。构造会话时提供未声明函数的实现会立即失败。
 
-实现只接收已校验的参数字典，不接收 Core `DataContext` 或 `AbortSignal`，因此 `dispose()` 不会强制取消已启动的异步实现。动作 handler 不要 `await session.interact(...)`：动作捕获区通过会话级队列串行，等待同一队列会挂起。`functionCall` 动作在本地执行且不外发 `onAction`；本包不接收 `callRendererFunction` / `agentFunctionResponse`。
+默认启用不依赖 `Intl` 或浏览器 `window` 的标准函数：`required`、`regex`、`length`、`numeric`、`email`、`and`、`or`、`not`、`formatString`。协议系统函数 `@index` 由 Core 提供。只有 catalog 声明的返回类型与内置实现一致时才启用内置实现；`formatNumber`、`formatCurrency`、`formatDate`、`pluralize` 与 `openUrl` 仍需宿主按小程序平台能力提供。其余未实现函数在调用时抛出表达式错误，并通过 `onError` 上报。
+
+宿主实现只接收已校验的参数字典，不接收 Core `DataContext` 或 `AbortSignal`，因此 `dispose()` 不会强制取消已启动的异步实现。动作 handler 不要 `await session.interact(...)`：动作捕获区通过会话级队列串行，等待同一队列会挂起。`functionCall` 动作在本地执行且不外发 `onAction`；本包不接收 `callRendererFunction` / `agentFunctionResponse`。
 
 ## 视图投影
 
@@ -89,6 +91,7 @@ interface A2uiNode {
 - 可写输入与动作分别通过 `bindingName` / `actionName` 选择；省略时仅在候选数量为 1 时回退，多个候选或显式未知名称会抛出 `TypeError`；
 - 仅直接暴露在节点顶层的可写绑定可选择；深层绑定只投影当前值，深层函数属性也不会被登记为动作；
 - 同一节点的可写绑定与动作可同时存在；动作执行通过会话级队列串行，异步动作完成前不会提前清理消息捕获状态；
+- catalog 通过 `Checkable` 声明 `@checks` 时，Core 求值结果投影为 `props.isValid` 与 `props.validationErrors`；宿主负责展示，校验失败不会自动阻止动作；
 - `updateComponents` 或非 `null` 对象型 `updateDataModel` 会递增 generation 并清空旧操作表，视图层可通过 id 变化重建引用；标量写入与 `null` 删除只更新绑定值。
 
 ```ts
@@ -152,7 +155,7 @@ Chat 消息编排的参考实现采用同样的 envelope 校验、generation 操
 - 消息：仅 `version: '1.0'` 的 `createSurface`、`updateComponents`、`updateDataModel`、`deleteSurface`；使用 `STRICT_VALIDATION` 与 1.0 目标版本。
 - `updateComponents` 按 id upsert 且必须保持整树可达：协议不删除单个组件，隐藏节点通过绑定值表达，否则 Core 抛出可达性完整性错误。
 - 节点 ID 遵循 Core 的 UAX #31 校验；模板 `ChildList`（`{ componentId, path }`）由 Core 解析，数据更新会导致实例重建。
-- 支持通过宿主实现 catalog 函数；不支持 checks、RPC 与 agent 函数响应，事件动作只外发且不等待 agent 回写。
+- 支持内置标准函数、宿主 catalog 函数与 `Checkable` 校验投影；不支持 RPC 与 agent 函数响应，事件动作只外发且不等待 agent 回写。
 - 不包含 Markdown 渲染、图片/勾选等目录扩展；catalog 能声明哪些组件由消费方决定，但视图层必须为每个类型提供宿主分支。
 - `updateDataModel` 失败时回滚目标 surface 的整份数据快照，避免 Core 部分写入后留下半成品；失败仍会向调用方抛出。快照是 O(N) 深拷贝，数据模型很大时应优先使用更小的增量路径。
 - 运行时只接受 JSON 数据；投影会丢弃未登记的函数与 `undefined`，将 `NaN`/`Infinity` 转为 `null`，并保留 props 中的嵌套组件节点。
@@ -161,8 +164,8 @@ Chat 消息编排的参考实现采用同样的 envelope 校验、generation 操
 
 ## 验证与发布边界
 
-包级 22 项单测覆盖投影绑定、多绑定/多动作选择、嵌套槽位、输入回写、动作外发、异步动作隔离、本地 `functionCall`、函数错误与继承成员边界、模板列表 respawn、路径删除、消息校验、失败回滚与幂等销毁；tsd 锁定公开类型。构建产物为 ESM + d.mts，`@a2ui/web_core` 作为外部依赖由宿主应用打包。
+包级 28 项单测覆盖投影绑定、多绑定/多动作选择、嵌套槽位、输入回写、动作外发、异步动作隔离、本地 `functionCall`、标准函数与校验反馈、函数错误与继承成员边界、模板列表 respawn、路径删除、消息校验、失败回滚与幂等销毁；tsd 锁定公开类型。构建产物为 ESM + d.mts，`@a2ui/web_core` 作为外部依赖由宿主应用打包。
 
-`apps/wevu-a2ui-demo` 与 `e2e/ide/wevu-a2ui.runtime.test.ts` 提供 headless 与真实微信 DevTools 的同场景验收，覆盖基础目录页、递归宿主、输入写回、增量替换后的输入保留、异常消息保留上一版界面和卸载清理。应用的 `test/noEval.test.ts` 从公共入口打包，在禁用 `Function` / `eval` 的 `vm` 上下文执行。
+`apps/wevu-a2ui-demo` 与 `e2e/ide/wevu-a2ui.runtime.test.ts` 提供 headless 与真实微信 DevTools 的同场景验收，覆盖基础目录页、递归宿主、校验错误展示与清除、输入写回、增量替换后的输入保留、异常消息保留上一版界面和卸载清理。应用的 `test/noEval.test.ts` 从公共入口打包，在禁用 `Function` / `eval` 的 `vm` 上下文执行。
 
-尚未提供：内置组件包与构建期 resolver（宿主组件目前由 `apps/wevu-a2ui-demo` 自带）、catalog 子集对齐（Row/Image/ChoicePicker 等）以及 checks/RPC 长尾。本包也未执行 npm 发布。
+尚未提供：内置组件包与构建期 resolver（宿主组件目前由 `apps/wevu-a2ui-demo` 自带）、catalog 子集对齐（Row/Image/ChoicePicker 等）以及 RPC 长尾。本包也未执行 npm 发布。

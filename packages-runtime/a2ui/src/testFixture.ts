@@ -48,53 +48,63 @@ export const testCatalog = {
       required: ['component', 'text'],
     },
     TextField: {
-      type: 'object',
-      properties: {
-        component: { const: 'TextField' },
-        label: { $ref: 'common_types.json#/$defs/DynamicString' },
-        value: { $ref: 'common_types.json#/$defs/DynamicString' },
-        placeholder: { $ref: 'common_types.json#/$defs/DynamicString' },
-        variant: {
-          type: 'string',
-          enum: ['longText', 'number', 'shortText', 'obscured'],
-          default: 'shortText',
+      allOf: [
+        { $ref: 'common_types.json#/$defs/Checkable' },
+        {
+          type: 'object',
+          properties: {
+            component: { const: 'TextField' },
+            label: { $ref: 'common_types.json#/$defs/DynamicString' },
+            value: { $ref: 'common_types.json#/$defs/DynamicString' },
+            placeholder: { $ref: 'common_types.json#/$defs/DynamicString' },
+            variant: {
+              type: 'string',
+              enum: ['longText', 'number', 'shortText', 'obscured'],
+              default: 'shortText',
+            },
+          },
+          required: ['component', 'label'],
         },
-      },
-      required: ['component', 'label'],
+      ],
     },
     Button: {
-      type: 'object',
-      properties: {
-        component: { const: 'Button' },
-        child: { $ref: 'common_types.json#/$defs/Child' },
-        variant: { type: 'string', enum: ['default', 'primary', 'borderless'], default: 'default' },
-        action: {
-          description: 'REF:common_types.json#/$defs/Action|Dispatches an event with a nonempty name to the application.',
-          allOf: [{ $ref: 'common_types.json#/$defs/Action' }],
-          not: {
-            anyOf: [
-              {
-                type: 'object',
-                properties: { functionCall: {} },
-                required: ['functionCall'],
-              },
-              {
-                type: 'object',
-                properties: {
-                  event: {
+      allOf: [
+        { $ref: 'common_types.json#/$defs/Checkable' },
+        {
+          type: 'object',
+          properties: {
+            component: { const: 'Button' },
+            child: { $ref: 'common_types.json#/$defs/Child' },
+            variant: { type: 'string', enum: ['default', 'primary', 'borderless'], default: 'default' },
+            action: {
+              description: 'REF:common_types.json#/$defs/Action|Dispatches an event with a nonempty name to the application.',
+              allOf: [{ $ref: 'common_types.json#/$defs/Action' }],
+              not: {
+                anyOf: [
+                  {
                     type: 'object',
-                    properties: { name: { const: '' } },
-                    required: ['name'],
+                    properties: { functionCall: {} },
+                    required: ['functionCall'],
                   },
-                },
-                required: ['event'],
+                  {
+                    type: 'object',
+                    properties: {
+                      event: {
+                        type: 'object',
+                        properties: { name: { const: '' } },
+                        required: ['name'],
+                      },
+                    },
+                    required: ['event'],
+                  },
+                ],
               },
-            ],
+            },
+            secondaryAction: { $ref: 'common_types.json#/$defs/Action' },
           },
+          required: ['component'],
         },
-        secondaryAction: { $ref: 'common_types.json#/$defs/Action' },
-      },
-      required: ['component'],
+      ],
     },
     Tabs: {
       type: 'object',
@@ -118,6 +128,157 @@ export const testCatalog = {
     },
   },
   functions: {
+    required: {
+      type: 'object',
+      returnType: 'validationResult',
+      properties: {
+        '@call': { const: 'required' },
+        'args': {
+          type: 'object',
+          properties: { value: {} },
+          required: ['value'],
+          unevaluatedProperties: false,
+        },
+      },
+      required: ['@call', 'args'],
+    },
+    regex: {
+      type: 'object',
+      returnType: 'validationResult',
+      properties: {
+        '@call': { const: 'regex' },
+        'args': {
+          type: 'object',
+          properties: {
+            value: { $ref: 'common_types.json#/$defs/DynamicString' },
+            pattern: { type: 'string' },
+          },
+          required: ['value', 'pattern'],
+          unevaluatedProperties: false,
+        },
+      },
+      required: ['@call', 'args'],
+    },
+    length: {
+      type: 'object',
+      returnType: 'validationResult',
+      properties: {
+        '@call': { const: 'length' },
+        'args': {
+          type: 'object',
+          properties: {
+            value: { $ref: 'common_types.json#/$defs/DynamicString' },
+            min: { type: 'integer', minimum: 0 },
+            max: { type: 'integer', minimum: 0 },
+          },
+          required: ['value'],
+          anyOf: [{ required: ['min'] }, { required: ['max'] }],
+          unevaluatedProperties: false,
+        },
+      },
+      required: ['@call', 'args'],
+    },
+    numeric: {
+      type: 'object',
+      returnType: 'validationResult',
+      properties: {
+        '@call': { const: 'numeric' },
+        'args': {
+          type: 'object',
+          properties: {
+            value: { $ref: 'common_types.json#/$defs/DynamicNumber' },
+            min: { type: 'number' },
+            max: { type: 'number' },
+          },
+          required: ['value'],
+          anyOf: [{ required: ['min'] }, { required: ['max'] }],
+          unevaluatedProperties: false,
+        },
+      },
+      required: ['@call', 'args'],
+    },
+    email: {
+      type: 'object',
+      returnType: 'validationResult',
+      properties: {
+        '@call': { const: 'email' },
+        'args': {
+          type: 'object',
+          properties: { value: { $ref: 'common_types.json#/$defs/DynamicString' } },
+          required: ['value'],
+          unevaluatedProperties: false,
+        },
+      },
+      required: ['@call', 'args'],
+    },
+    and: {
+      type: 'object',
+      returnType: 'boolean',
+      properties: {
+        '@call': { const: 'and' },
+        'args': {
+          type: 'object',
+          properties: {
+            values: {
+              type: 'array',
+              items: { $ref: 'common_types.json#/$defs/DynamicBoolean' },
+              minItems: 2,
+            },
+          },
+          required: ['values'],
+          unevaluatedProperties: false,
+        },
+      },
+      required: ['@call', 'args'],
+    },
+    or: {
+      type: 'object',
+      returnType: 'boolean',
+      properties: {
+        '@call': { const: 'or' },
+        'args': {
+          type: 'object',
+          properties: {
+            values: {
+              type: 'array',
+              items: { $ref: 'common_types.json#/$defs/DynamicBoolean' },
+              minItems: 2,
+            },
+          },
+          required: ['values'],
+          unevaluatedProperties: false,
+        },
+      },
+      required: ['@call', 'args'],
+    },
+    not: {
+      type: 'object',
+      returnType: 'boolean',
+      properties: {
+        '@call': { const: 'not' },
+        'args': {
+          type: 'object',
+          properties: { value: { $ref: 'common_types.json#/$defs/DynamicBoolean' } },
+          required: ['value'],
+          unevaluatedProperties: false,
+        },
+      },
+      required: ['@call', 'args'],
+    },
+    formatString: {
+      type: 'object',
+      returnType: 'string',
+      properties: {
+        '@call': { const: 'formatString' },
+        'args': {
+          type: 'object',
+          properties: { value: { $ref: 'common_types.json#/$defs/DynamicString' } },
+          required: ['value'],
+          unevaluatedProperties: false,
+        },
+      },
+      required: ['@call', 'args'],
+    },
     resolveValue: {
       type: 'object',
       returnType: 'string',
