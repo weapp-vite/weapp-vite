@@ -1,6 +1,6 @@
 ## 4. Tests and Runtime Acceptance
 
-- Co-locate tests as `*.test.ts` / `*.spec.ts` and update snapshots with behavior. Before adding or changing a test, follow the [test authoring and retention rules](CONTRIBUTING.md#文档与测试审查).
+- Co-locate tests as `*.test.ts` / `*.spec.ts` and update snapshots with behavior. Use [`$test-audit`](.agents/skills/test-audit/SKILL.md) when adding, changing, or removing tests.
 - Package TypeScript changes start with the owning package `typecheck`. Consumer-visible public exports, reusable types, configuration builders, or runtime contracts also require the package's `test:types` coverage when available. Add or update `tsd` coverage when fixing a consumer-visible type regression.
 - Narrow JSON from `fs.readJSON()` and similar APIs from `unknown` at the boundary. Diagnose broad root typecheck output by owning package before editing apps, templates, or generated output.
 - Assert stable semantics such as public exports, explicit markers, relative paths, object shape, values, and call behavior. Do not bind bundle tests or snapshots to generated helper names, minified identifiers, hash suffixes, machine paths, usernames, PIDs, ports, or one-off report paths. Runtime-created isolated temp paths and representative absolute paths in explicit path-normalization tests are allowed.
