@@ -2,16 +2,14 @@
  * 标准函数语义对齐 @a2ui/web_core 0.16.1 的 common/basic_functions 与 v1_0 实现。
  * Copyright 2024 Google LLC，Apache-2.0（https://www.apache.org/licenses/LICENSE-2.0）。
  */
-import type { DataContext, FunctionImplementation } from '@a2ui/web_core'
-import {
-  A2uiExpressionError,
-  analyzeRegex,
-  computed,
-  ExpressionParser,
-  getValue,
-  isSignal,
-  MAX_REGEX_VALUE_CODE_POINTS,
-} from '@a2ui/web_core'
+import type { FunctionImplementation } from '@a2ui/web_core/catalog'
+import type { DataContext } from '@a2ui/web_core/resolution'
+import { A2uiExpressionError } from '@a2ui/web_core/errors'
+import { ExpressionParser } from '@a2ui/web_core/expressions'
+import { computed, getValue, isSignal } from '@a2ui/web_core/reactivity'
+import { analyzeRegex, MAX_REGEX_VALUE_CODE_POINTS } from '@a2ui/web_core/v1_0'
+import type { A2uiLocale } from './types'
+import { formatA2uiCurrency, formatA2uiDate, formatA2uiNumber, formatA2uiPluralize } from './standardFormatting'
 
 type BuiltinFunction = Pick<FunctionImplementation, 'returnType' | 'execute'>
 
@@ -159,13 +157,15 @@ function adaptExpression(value: any, catalogId?: string): any {
       : undefined
   if (callName !== undefined) {
     const args: Record<string, unknown> = {}
-    for (const [key, item] of Object.entries(value.args ?? {})) {
-      Object.defineProperty(args, key, {
-        value: adaptExpression(item, catalogId),
-        enumerable: true,
-        writable: true,
-        configurable: true,
-      })
+    if (typeof value.args === 'object' && value.args !== null && !Array.isArray(value.args)) {
+      for (const [key, item] of Object.entries(value.args)) {
+        Object.defineProperty(args, key, {
+          value: adaptExpression(item, catalogId),
+          enumerable: true,
+          writable: true,
+          configurable: true,
+        })
+      }
     }
     const resolvedCatalogId = value.catalogId ?? (catalogId && !callName.startsWith('@') ? catalogId : undefined)
     return {
@@ -188,7 +188,7 @@ function adaptExpression(value: any, catalogId?: string): any {
 
 function formatString(value: unknown, context: DataContext) {
   const parts = new ExpressionParser().parse(coerceString(value))
-  const catalogId = context.surface?.defaultCatalog?.id
+  const catalogId = (context as unknown as { readonly activeCatalogId?: string }).activeCatalogId
   const signals = parts.map(part => (
     typeof part === 'object' && part !== null && !Array.isArray(part)
       ? context.resolveSignal(adaptExpression(part, catalogId))
@@ -197,17 +197,22 @@ function formatString(value: unknown, context: DataContext) {
   return computed(() => signals.map(part => coerceString(isSignal(part) ? getValue(part) : part)).join(''))
 }
 
-const implementations: Record<string, BuiltinFunction> = {
-  required: { returnType: 'validationResult', execute: args => validateRequired(args.value) },
-  regex: { returnType: 'validationResult', execute: args => validateRegex(args.value, String(args.pattern)) },
-  length: { returnType: 'validationResult', execute: args => validateLength(args.value, args.min as number | undefined, args.max as number | undefined) },
-  numeric: { returnType: 'validationResult', execute: args => validateNumeric(args.value, args.min as number | undefined, args.max as number | undefined) },
-  email: { returnType: 'validationResult', execute: args => validateEmail(args.value) },
-  and: { returnType: 'boolean', execute: args => (args.values as unknown[]).every(dynamicBoolean) },
-  or: { returnType: 'boolean', execute: args => (args.values as unknown[]).some(dynamicBoolean) },
-  not: { returnType: 'boolean', execute: args => !dynamicBoolean(args.value) },
-  formatString: { returnType: 'string', execute: (args, context) => formatString(args.value, context) },
+// Core 根入口不导出轻量标准实现，版本入口又会引入 Web 组件。
+export function createBuiltinFunctions(locale: A2uiLocale = 'zh-CN'): Map<string, BuiltinFunction> {
+  const implementations: Record<string, BuiltinFunction> = {
+    required: { returnType: 'validationResult', execute: args => validateRequired(args.value) },
+    regex: { returnType: 'validationResult', execute: args => validateRegex(args.value, String(args.pattern)) },
+    length: { returnType: 'validationResult', execute: args => validateLength(args.value, args.min as number | undefined, args.max as number | undefined) },
+    numeric: { returnType: 'validationResult', execute: args => validateNumeric(args.value, args.min as number | undefined, args.max as number | undefined) },
+    email: { returnType: 'validationResult', execute: args => validateEmail(args.value) },
+    and: { returnType: 'boolean', execute: args => (args.values as unknown[]).every(dynamicBoolean) },
+    or: { returnType: 'boolean', execute: args => (args.values as unknown[]).some(dynamicBoolean) },
+    not: { returnType: 'boolean', execute: args => !dynamicBoolean(args.value) },
+    formatString: { returnType: 'string', execute: (args, context) => formatString(args.value, context) },
+    formatNumber: { returnType: 'string', execute: args => formatA2uiNumber(args.value, args.decimals, args.grouping) },
+    formatCurrency: { returnType: 'string', execute: args => formatA2uiCurrency(args.value, args.currency, args.decimals, args.grouping, locale) },
+    formatDate: { returnType: 'string', execute: args => formatA2uiDate(args.value, args.format, locale) },
+    pluralize: { returnType: 'string', execute: args => formatA2uiPluralize(args.value, args, locale) },
+  }
+  return new Map(Object.entries(implementations))
 }
-
-// Core 的根入口不导出标准实现，版本入口又会引入 Web 组件，因此这里保留轻量等价实现。
-export const builtinFunctions = new Map<string, BuiltinFunction>(Object.entries(implementations))

@@ -35,12 +35,14 @@ const session = createA2uiSession({
     // views: A2uiSurfaceView[]，每项为 { id, root: A2uiNode }
     render(views)
   },
-  onAction(message) {
+  locale: 'zh-CN',
+  onAction(message, metadata) {
     // message: { version: '1.0', action: ActionPayload }
-    socket.send(message)
+    // metadata 仅在 surface 启用 sendDataModel 时存在，由宿主映射到 transport。
+    sendToAgent(message, metadata)
   },
-  onError(error) {
-    report(error)
+  onError(error, metadata) {
+    report(error, metadata)
   },
   functionImplementations: {
     async format(args) {
@@ -49,7 +51,7 @@ const session = createA2uiSession({
   },
 })
 
-session.receive(message) // 单个 A2UI 1.0 状态消息
+session.receive(message) // 单条消息、消息数组或 { messages } wrapper
 await session.interact(surfaceId, { type: 'input', nodeId, bindingName: 'value', value: 'hello' })
 await session.interact(surfaceId, { type: 'action', nodeId, actionName: 'action', eventId: 'event-1' })
 session.dispose()
@@ -57,18 +59,35 @@ session.dispose()
 
 | API | 行为 |
 | --- | --- |
-| `receive(message)` | 校验并应用 `createSurface`、`updateComponents`、`updateDataModel`、`deleteSurface`；RPC、内部操作、批量消息及空 `surfaceId` 直接拒绝 |
+| `receive(message)` | 校验并应用 `createSurface`、`updateComponents`、`updateDataModel`、`deleteSurface`；支持单条消息、标准数组与 `{ messages }` wrapper，RPC、内部操作及空 `surfaceId` 直接拒绝 |
 | `interact(surfaceId, event)` | `input` 写回选定的可写绑定；`action` 执行选定的 Core 动作并把产生的 `ActionPayload` 按顺序交给 `onAction`，可用 `eventId` 去重 |
-| `onSurfaces(views)` | 每次可见状态变化后整体推送；`updateDataModel` 的标量写入与 `null` 删除只更新绑定值，不替换节点 |
-| `onAction(message)` | 可返回 Promise；单个动作产生的消息按序串行等待，不同 `interact` 的异步回调可能交错；本地函数动作不会外发 |
-| `onError(error)` | 可选；接收 Core surface、消息处理与表达式错误，可返回 Promise |
+| `onSurfaces(views)` | 每次可见状态变化后整体推送；一批消息只提交一次最终视图，`updateDataModel` 的标量写入与 `null` 删除只更新绑定值，不替换节点 |
+| `onAction(message, metadata?)` | 可返回 Promise；单个动作产生的消息按序串行等待，不同 `interact` 的异步回调可能交错；本地函数动作不会外发 |
+| `onError(error, metadata?)` | 可选；接收 Core surface、消息处理与表达式错误，可返回 Promise |
 | `dispose()` | 幂等；停止投影、释放 resolver 与 processor，之后不再回调 |
 
-`functionImplementations` 为可选能力扩展。catalog 中声明的函数会保留完整签名并照常参与校验；宿主实现优先于内置实现，只按对象自身属性查找，`toString` 等继承成员不会被误当作实现。构造会话时提供未声明函数的实现会立即失败。
+`functionImplementations` 为可选能力扩展。catalog 中声明的函数会保留完整签名并照常参与校验；宿主实现优先于内置实现，只按对象自身属性查找，`toString` 等继承成员不会被误当作实现。构造会话时提供未声明函数的实现会立即失败。catalog 只接受标准的 `protocolVersion: '1.0'`，文档标题、说明、扩展字段等元数据会保留。
 
-默认启用不依赖 `Intl` 或浏览器 `window` 的标准函数：`required`、`regex`、`length`、`numeric`、`email`、`and`、`or`、`not`、`formatString`。协议系统函数 `@index` 由 Core 提供。只有 catalog 声明的返回类型与内置实现一致时才启用内置实现；`formatNumber`、`formatCurrency`、`formatDate`、`pluralize` 与 `openUrl` 仍需宿主按小程序平台能力提供。其余未实现函数在调用时抛出表达式错误，并通过 `onError` 上报。
+默认启用不依赖 `Intl` 或浏览器 `window` 的标准函数：`required`、`regex`、`length`、`numeric`、`email`、`and`、`or`、`not`、`formatString`、`formatNumber`、`formatCurrency`、`formatDate`、`pluralize`。协议系统函数 `@index` 由 Core 提供。数字、货币、日期与复数函数默认使用确定性的 `zh-CN` 输出，也可通过 `locale: 'en-US'` 切换；两者均不调用 `Intl`。`formatDate` 保留时间戳写入的 wall-clock 字段，`ISO` 输出对应 UTC instant；中文 `pluralize` 按 CLDR 的 `other` 类别处理。只有返回类型、参数 schema、调用方与用户激活约束均兼容标准函数时才启用内置实现，避免把同名自定义函数误当作标准函数；`openUrl` 仍需宿主按小程序平台能力提供。其余声明保持 schema-only；本包未启用 agent RPC，因此本地求值时会通过 `onError` 上报 Core 的 schema-only 表达式错误。
 
 宿主实现只接收已校验的参数字典，不接收 Core `DataContext` 或 `AbortSignal`，因此 `dispose()` 不会强制取消已启动的异步实现。动作 handler 不要 `await session.interact(...)`：动作捕获区通过会话级队列串行，等待同一队列会挂起。`functionCall` 动作在本地执行且不外发 `onAction`；本包不接收 `callRendererFunction` / `agentFunctionResponse`。
+
+## 批量消息与 transport metadata
+
+`receive` 接受单条状态消息、只读消息数组或仅含 `messages` 的 wrapper。所有成员先完成 envelope 形状校验，再逐条应用；处理阶段失败只回滚当前失败消息，已成功的前序消息保留。整批信号写入共享同一个 `batchWrite`，因此 `onSurfaces` 只收到一次最终视图；空批次是 no-op。
+
+`createSurface.sendDataModel: true` 启用 A2UI 1.0 的 renderer data model 上报。动作捕获时会深拷贝当前所有启用该选项的 surface，并通过 `onAction` 的第二个参数传入：
+
+```ts
+interface A2uiTransportMetadata {
+  readonly a2uiRendererDataModel?: {
+    readonly version: '1.0'
+    readonly surfaces: Record<string, Record<string, A2uiJsonValue>>
+  }
+}
+```
+
+没有启用 `sendDataModel` 的 surface 时不传 metadata。该快照不会修改 `ActionPayload.context`，也不会作为非标准字段混入动作消息；宿主负责把它映射到实际 transport metadata。`onError` 使用相同的可选第二参数。
 
 ## 视图投影
 
@@ -154,7 +173,7 @@ Chat 消息编排的参考实现采用同样的 envelope 校验、generation 操
 
 ## 协议与边界
 
-- 消息：仅 `version: '1.0'` 的 `createSurface`、`updateComponents`、`updateDataModel`、`deleteSurface`；使用 `STRICT_VALIDATION` 与 1.0 目标版本。
+- 消息与 catalog：仅接受 `version: '1.0'` / `protocolVersion: '1.0'` 的 `createSurface`、`updateComponents`、`updateDataModel`、`deleteSurface`；支持标准消息数组与 `{ messages }` wrapper，使用 `STRICT_VALIDATION` 与 1.0 目标版本。
 - `updateComponents` 按 id upsert 且必须保持整树可达：协议不删除单个组件，隐藏节点通过绑定值表达，否则 Core 抛出可达性完整性错误。
 - 节点 ID 遵循 Core 的 UAX #31 校验；模板 `ChildList`（`{ componentId, path }`）由 Core 解析，数据更新会导致实例重建。
 - 支持内置标准函数、宿主 catalog 函数与 `Checkable` 校验投影；不支持 RPC 与 agent 函数响应，事件动作只外发且不等待 agent 回写。
@@ -166,7 +185,7 @@ Chat 消息编排的参考实现采用同样的 envelope 校验、generation 操
 
 ## 验证与发布边界
 
-包级 33 项单测覆盖投影绑定、多绑定/多动作选择、嵌套槽位、输入回写、动作外发、异步动作隔离、动作幂等去重、本地 `functionCall`、标准函数与校验反馈、函数错误与继承成员边界、模板列表 respawn、路径删除、消息校验、失败回滚与幂等销毁；tsd 锁定公开类型。构建产物为 ESM + d.mts，`@a2ui/web_core` 作为外部依赖由宿主应用打包。
+包级单测覆盖投影绑定、多绑定/多动作选择、嵌套槽位、输入回写、动作外发、异步动作隔离、动作幂等去重、本地 `functionCall`、标准函数与校验反馈、中文格式化与 locale、大数四舍五入与 ISO 货币默认精度、catalog 元数据与 schema-only 函数边界、批量消息单次提交、renderer data model metadata、函数错误与继承成员边界、模板列表 respawn、路径删除、消息校验、失败回滚与幂等销毁；tsd 锁定公开类型。构建产物为 ESM + d.mts，`@a2ui/web_core` 作为外部依赖由宿主应用打包。
 
 `apps/wevu-a2ui-demo` 与 `e2e/ide/wevu-a2ui.runtime.test.ts` 提供 headless 与真实微信 DevTools 的同场景验收，覆盖基础目录页、递归宿主、校验错误展示与清除、输入写回、增量替换后的输入保留、异常消息保留上一版界面和卸载清理。应用的 `test/noEval.test.ts` 从公共入口打包，在禁用 `Function` / `eval` 的 `vm` 上下文执行。
 
