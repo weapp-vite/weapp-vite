@@ -22,7 +22,9 @@
 - `website/guide/multi-platform.md`
 - `skills/*/SKILL.md`
 
-## 再查公开入口
+## 再查受影响的公开入口
+
+先确定已有正文所在页，再核对其他入口的链接和摘要。以下路径用于定位。
 
 - `website/guide/ai.md`
 - `website/guide/skills.md`
@@ -49,24 +51,14 @@
 
 ### 新增或调整 skill
 
-- 补 `skills/<name>/SKILL.md`
-- 补 `skills/<name>/agents/openai.yaml`
-- 只在需要时补 `references/*`
-- 更新 AI 入口页与本地 skills 安装说明
-- 更新 skill 触发回归清单
-- 更新 `skills/scripts/score-skill-trigger-regression.mjs` 的预期映射与统计分组
-- 更新 `website/guide/skills.md`、`website/guide/ai-workflows.md` 与 `/ai` 可视化入口
-- 更新根 `AGENTS.md`、`CLAUDE.md` 与脚手架生成的 `AGENTS.md`
-- 移除已经合并进其他 skill 的旧名称，避免用户复制后调用失败
+- 核对 `SKILL.md`、`agents/openai.yaml` 和分发配置与实际安装结果。
+- 安装或触发契约变化时更新技能入口、触发回归清单和 `skills/scripts/score-skill-trigger-regression.mjs`。
+- 检查网站、`AGENTS.md`、`CLAUDE.md` 与脚手架是否引用了变更的名称或链接，按需更新。
 
 ### CLI / MCP / AI 能力变化
 
-- 更新 `website/guide/cli.md`
-- 更新 `website/guide/ai.md`
-- 更新 `website/guide/ai-workflows.md`
-- 更新 `website/packages/mcp.md`
-- 刷新 AI 学习页里的命令示例
-- 对齐 `wv prepare`、`wv mcp init|print|doctor`、`wv screenshot`、`wv compare`、`wv ide logs --open`
+- 命令说明以 `website/guide/cli.md` 或对应包页面为入口。AI 指南和学习页中的示例只有在引用的命令或行为变化时才更新。
+- 核对 `wv prepare`、`wv mcp init|print|doctor`、`wv screenshot/compare`、`wv ide logs --open` 等受影响的命令。
 
 ### React / JSX / 多平台 / mpcore 变化
 

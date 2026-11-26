@@ -1,4 +1,5 @@
 import type { ResolvedWechatDevtoolsTarget } from 'weapp-ide-cli'
+import type { DevtoolsMatrixOfficialQuery } from './devtoolsMatrix'
 import { describe, expect, it, vi } from 'vitest'
 import { parseDevtoolsMatrixTargets, runDevtoolsMatrix } from './devtoolsMatrix'
 
@@ -8,30 +9,58 @@ function observed(installationId: string, exitCode = 0) {
   return { exitCode, runtimeVersions: [{ installationId, version: '2.02.2608080', baseLibraryVersion: '3.17.3' }] }
 }
 describe('DevTools version matrix', () => {
-  it('continues after assertions fail and preserves all version outcomes in order', async () => {
+  it('keeps the requested version and preserves target order after assertions fail', async () => {
+    const pinnedVersion = '2.02.2608080'
+    const pinnedRequests = parseDevtoolsMatrixTargets(`stable@${pinnedVersion},rc,nightly`)
     const order: string[] = []
-    const result = await runDevtoolsMatrix(requests, { resolve, run: async (target) => {
+    const result = await runDevtoolsMatrix(pinnedRequests, { resolve, run: async (target) => {
       order.push(target.installationId)
       return observed(target.installationId, target.channel === 'rc' ? 1 : 0)
     } })
     expect(order).toEqual(['stable', 'rc', 'nightly'])
+    expect(result.entries.map(entry => entry.requested.devtoolsVersion)).toEqual([pinnedVersion, undefined, undefined])
     expect(result.entries.map(entry => entry.status)).toEqual(['passed', 'failed', 'passed'])
     expect(result.exitCode).toBe(1)
   })
-  it('records a missing installation and continues other installed targets', async () => {
+  it.each([
+    {
+      channel: 'rc',
+      error: Object.assign(new Error('not installed'), { code: 'WECHAT_DEVTOOLS_INSTALLATION_NOT_FOUND' }),
+      statuses: ['passed', 'blocked', 'passed'],
+    },
+    {
+      channel: 'stable',
+      error: new Error('DEVTOOLS_OFFICIAL_LATEST_REQUIRED'),
+      statuses: ['blocked', 'passed', 'passed'],
+    },
+  ])('reports the $channel selection error and continues other targets', async ({ channel, error, statuses }) => {
     const result = await runDevtoolsMatrix(requests, { resolve: async (request) => {
-      if (request.devtoolsChannel === 'rc') {
-        throw Object.assign(new Error('not installed'), { code: 'WECHAT_DEVTOOLS_INSTALLATION_NOT_FOUND' })
+      if (request.devtoolsChannel === channel) {
+        throw error
       }
       return await resolve(request)
     }, run: async target => observed(target.installationId) })
-    expect(result.entries.map(entry => entry.status)).toEqual(['passed', 'blocked', 'passed'])
+    expect(result.entries.map(entry => entry.status)).toEqual(statuses)
+    expect(result.entries.find(entry => entry.requested.devtoolsChannel === channel)?.reason).toBe(error.message)
   })
   it('halts after unsafe cleanup and lists remaining targets as not executed', async () => {
     const run = vi.fn(async () => ({ exitCode: 1, unsafeReason: 'host still alive' }))
     const result = await runDevtoolsMatrix(requests, { resolve, run })
     expect(run).toHaveBeenCalledTimes(1)
     expect(result.entries.map(entry => entry.status)).toEqual(['blocked', 'not-executed', 'not-executed'])
+  })
+  it('records the selected installation and halts after the runner rejects', async () => {
+    const reason = 'runner rejected after selecting an installation'
+    const run = vi.fn().mockRejectedValue(reason)
+    const result = await runDevtoolsMatrix(requests, { resolve, run })
+
+    expect(run).toHaveBeenCalledTimes(1)
+    expect(result.entries).toMatchObject([
+      { status: 'blocked', reason, selected: { installationId: 'stable' } },
+      { status: 'not-executed', reason },
+      { status: 'not-executed', reason },
+    ])
+    expect(result.exitCode).toBe(1)
   })
   it('records login expiry as blocked and continues the next installed version without retrying', async () => {
     const run = vi.fn(async (target: ResolvedWechatDevtoolsTarget) => target.channel === 'stable'
@@ -44,16 +73,15 @@ describe('DevTools version matrix', () => {
     expect(result.exitCode).toBe(1)
   })
   it('records each requested channel query and permits offline local selection', async () => {
-    const queryOfficial = vi.fn(async (request: typeof requests[number]) => {
-      if (request.devtoolsChannel === 'rc') {
-        throw new Error('offline')
-      }
-      return { channel: request.devtoolsChannel, version: '2.02.2608080', source: 'fixture', queriedAt: new Date().toISOString() }
-    })
+    const queryOfficial = vi.fn<(request: typeof requests[number]) => Promise<DevtoolsMatrixOfficialQuery>>()
+      .mockResolvedValueOnce({ channel: 'stable', version: '2.02.2608080', source: 'fixture', queriedAt: new Date().toISOString() })
+      .mockRejectedValueOnce(new Error('offline'))
+      .mockRejectedValueOnce('official version unavailable')
     const result = await runDevtoolsMatrix(requests, { resolve, queryOfficial, run: async target => observed(target.installationId) })
     expect(queryOfficial.mock.calls.map(([request]) => request.devtoolsChannel)).toEqual(['stable', 'rc', 'nightly'])
     expect(result.entries.map(entry => entry.official?.channel)).toEqual(['stable', 'rc', 'nightly'])
     expect(result.entries[1]!.official).toMatchObject({ version: null, error: 'offline' })
+    expect(result.entries[2]!.official).toMatchObject({ version: null, error: 'official version unavailable' })
     expect(result.exitCode).toBe(0)
   })
   it('keeps a successful filtered suite incomplete without halting the next version', async () => {
@@ -84,15 +112,6 @@ describe('DevTools version matrix', () => {
     expect(run).toHaveBeenCalledTimes(1)
     expect(result.entries[0]!.status).toBe('blocked')
     expect(result.entries.slice(1).map(entry => entry.status)).toEqual(['not-executed', 'not-executed'])
-  })
-  it('continues after a strict official selection check blocks a target', async () => {
-    const result = await runDevtoolsMatrix(requests, { resolve: async (request) => {
-      if (request.devtoolsChannel === 'stable') {
-        throw new Error('DEVTOOLS_OFFICIAL_LATEST_REQUIRED')
-      }
-      return resolve(request)
-    }, run: async target => observed(target.installationId) })
-    expect(result.entries.map(entry => entry.status)).toEqual(['blocked', 'passed', 'passed'])
   })
   it.each(['', 'stable,stable', 'beta', 'nightly@latest'])('rejects malformed target lists %s', (value) => {
     expect(() => parseDevtoolsMatrixTargets(value)).toThrow()

@@ -7,7 +7,7 @@ description: 面向 weapp-vite monorepo 的文档、website 与公开 skills 同
 
 ## 用途
 
-根据仓库真实能力，更新 `website`、`docs`、`README`、`skills`、脚手架 AI 指引和随包文档，避免公开入口落后于实现。
+根据源码、类型和 CLI 核对行为。先更新拥有该主题的正文，再核对各入口的摘要、链接和兼容承诺。
 
 ## 何时使用
 
@@ -52,7 +52,7 @@ description: 面向 weapp-vite monorepo 的文档、website 与公开 skills 同
    - `packages/create-weapp-vite/src/agents.ts`
    - `packages/create-weapp-vite/src/skills.ts`
    - `skills/*/SKILL.md`
-2. 建立“能力变化 -> 入口页”映射，再统一修改：
+2. 确定现有正文归属。官网负责完整公开用法，README 保留入口和最小示例。随包文档维护清单内的版本化离线说明，`AGENTS.md` 与 skills 分别维护执行约束和操作流程。按读者和发布形态核对入口：
    - 配置变化：`website/config/**`
    - CLI / AI / MCP：`website/guide/**`、`website/packages/**`、`website/.vitepress/components/AiLearningPage.vue`、`packages/weapp-vite/README.md`
    - 脚手架与 AI 约束：`website/packages/create-weapp-vite.md`、`packages/create-weapp-vite/src/agents.ts`
@@ -72,14 +72,7 @@ description: 面向 weapp-vite monorepo 的文档、website 与公开 skills 同
 4. 生成资产只通过脚本或构建刷新，不手改：
    - `website/public/llms-index.json`
    - `website/public/seo-quality-report.json`
-5. 若新增、删除或合并 skill，同时更新：
-   - `website/guide/skills.md`
-   - `website/guide/ai-workflows.md`
-   - `website/guide/ai.md`
-   - `website/.vitepress/components/AiLearningPage.vue`
-   - `skills/skill-trigger-regression-checklist.md`
-   - `skills/scripts/score-skill-trigger-regression.mjs`
-   - `CLAUDE.md` 与脚手架 `AGENTS.md` 模板
+5. skill 新增、删除或合并时，核对[同步清单](references/docs-sync-checklist.md)。仅更新受影响的分发、导航、引用和触发契约。
 6. 按最小范围验证：
    - `pnpm exec eslint --no-warn-ignored skills/*/SKILL.md`
    - 涉及 `website/**` 时跑 `pnpm --filter website-weapp-vite build`
@@ -98,7 +91,7 @@ description: 面向 weapp-vite monorepo 的文档、website 与公开 skills 同
 ## 约束
 
 - 不要跳过源码核对直接改文案。
-- 不要只改单一入口，遗漏 README、website、packaged docs 或 skills。
+- 同步以事实和入口一致为准。一个主题优先维护已有正文，其余入口按需更新摘要或链接。离线文档保留独立可用的内容。
 - 不要手工维护生成资产。
 - 不要把小程序运行时截图能力写成泛化的浏览器截图。
 - 不要忽略脚手架生成的 `AGENTS.md` 与本地 `dist/docs`，它们属于当前产品合约。
