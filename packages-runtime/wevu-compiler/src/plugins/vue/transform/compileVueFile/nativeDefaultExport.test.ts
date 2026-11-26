@@ -42,6 +42,29 @@ beforeEach(() => {
 afterEach(() => vi.unstubAllEnvs())
 
 describe('compileVueFile native default export reuse', () => {
+  it('reuses same-source page feature facts and falls back for old summaries', async () => {
+    const code = `import { onResize } from 'wevu/router'; onResize(() => {}); export default {}`
+    const source = `<script lang="ts">${code}</script><template><view /></template>`
+    const options = { isPage: true }
+    vi.stubEnv('WEAPP_VITE_NATIVE', '0')
+    const baseline = await compileVueFile(source, 'src/page.vue', options)
+
+    vi.stubEnv('WEAPP_VITE_NATIVE', '1')
+    analyze.mockReturnValueOnce([{ ...summary, pageFeatureFlags: ['enableOnResize'] }])
+    const native = await compileVueFile(source, 'src/page.vue', options)
+    expect(native).toEqual(baseline)
+    expect(analyze).toHaveBeenLastCalledWith([{
+      code,
+      filename: 'src/page.vue.ts',
+      pageFeatureModules: expect.arrayContaining(['wevu/router']),
+      pageFeatureHookToFeatureJson: expect.any(String),
+    }])
+
+    analyze.mockReturnValueOnce([{ ...summary }])
+    const oldBinding = await compileVueFile(source, 'src/page.vue', options)
+    expect(oldBinding).toEqual(baseline)
+  })
+
   it('keeps native disabled without traversing the single-script template AST', async () => {
     const source = createSource(objectScript)
     const baseline = await compileVueFile(source, 'src/component.vue')

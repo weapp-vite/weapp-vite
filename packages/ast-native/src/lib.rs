@@ -9,35 +9,26 @@ use std::cell::Cell;
 use napi_derive::napi;
 use oxc_allocator::Allocator;
 use oxc_ast::ast::{
-    Argument, ArrowFunctionBody, ArrowFunctionExpression, CallExpression, Expression, Function,
-    FunctionBody, ImportDeclarationSpecifier, ModuleExportName, ObjectProperty, Program,
+    Argument, CallExpression, Expression, ImportDeclarationSpecifier, ModuleExportName, Program,
     PropertyKey, Statement,
 };
 use oxc_ast_visit::{Visit, walk};
 use oxc_parser::Parser;
-use oxc_span::{GetSpan, SourceType};
-use oxc_syntax::scope::ScopeFlags;
+use oxc_span::SourceType;
 
 mod vue_sfc_signature;
 pub use vue_sfc_signature::get_vue_sfc_signature_payload_native;
 
 mod compiler_analysis;
 mod npm_chunk_analysis;
+mod on_page_scroll;
+pub use on_page_scroll::NativeOnPageScrollDiagnostic;
 #[cfg(test)]
 mod script_analysis_tests;
 
 #[cfg(test)]
 thread_local! {
     pub static SCRIPT_PARSE_COUNT: Cell<usize> = const { Cell::new(0) };
-}
-
-#[napi(object)]
-pub struct NativeOnPageScrollDiagnostic {
-    pub kind: String,
-    pub line: u32,
-    pub column: u32,
-    pub source_label: String,
-    pub sync_api: Option<String>,
 }
 
 #[napi(object)]
@@ -71,234 +62,6 @@ fn parse_program<'a>(
         return None;
     }
     Some(parsed.program)
-}
-
-struct LineStarts {
-    starts: Vec<usize>,
-}
-
-impl LineStarts {
-    fn new(code: &str) -> Self {
-        let mut starts = vec![0];
-        for (index, byte) in code.bytes().enumerate() {
-            if byte == b'\n' {
-                starts.push(index + 1);
-            }
-        }
-        Self { starts }
-    }
-
-    fn location(&self, offset: u32) -> (u32, u32) {
-        let offset = offset as usize;
-        let line_index = match self.starts.binary_search(&offset) {
-            Ok(index) => index,
-            Err(index) => index.saturating_sub(1),
-        };
-        (
-            (line_index + 1) as u32,
-            (offset - self.starts[line_index] + 1) as u32,
-        )
-    }
-}
-
-struct Inspection {
-    empty: bool,
-    first_set_data_call_start: Option<u32>,
-    sync_api_call_starts: BTreeMap<String, u32>,
-}
-
-struct PageScrollInspectionVisitor {
-    inspection: Inspection,
-}
-
-impl PageScrollInspectionVisitor {
-    fn new(empty: bool) -> Self {
-        Self {
-            inspection: Inspection {
-                empty,
-                first_set_data_call_start: None,
-                sync_api_call_starts: BTreeMap::new(),
-            },
-        }
-    }
-}
-
-impl<'a> Visit<'a> for PageScrollInspectionVisitor {
-    // 遍历从回调体开始，函数节点始终属于不应进入的嵌套作用域。
-    fn visit_function(&mut self, _function: &Function<'a>, _flags: ScopeFlags) {}
-
-    fn visit_arrow_function_expression(&mut self, _arrow: &ArrowFunctionExpression<'a>) {}
-
-    fn visit_call_expression(&mut self, call: &CallExpression<'a>) {
-        if callee_name(&call.callee) == Some("setData") {
-            self.inspection
-                .first_set_data_call_start
-                .get_or_insert(call.callee.span().start);
-        }
-
-        if let Expression::StaticMemberExpression(member) = &call.callee
-            && is_identifier_expression(&member.object, "wx")
-            && member.property.name.as_str().ends_with("Sync")
-        {
-            self.inspection
-                .sync_api_call_starts
-                .entry(format!("wx.{}", member.property.name.as_str()))
-                .or_insert(call.callee.span().start);
-        }
-
-        walk::walk_call_expression(self, call);
-    }
-}
-
-struct OnPageScrollVisitor<'a> {
-    hook_names: HashSet<String>,
-    namespace_imports: HashSet<String>,
-    diagnostics: Vec<NativeOnPageScrollDiagnostic>,
-    line_starts: &'a LineStarts,
-}
-
-impl<'a> OnPageScrollVisitor<'a> {
-    fn report_function_body(&mut self, body: &FunctionBody<'a>, source_label: &str, start: u32) {
-        let mut inspector = PageScrollInspectionVisitor::new(body.statements.is_empty());
-        inspector.visit_function_body(body);
-        self.report_inspection(inspector.inspection, source_label, start);
-    }
-
-    fn report_inspection(&mut self, inspection: Inspection, source_label: &str, start: u32) {
-        let (line, column) = self.line_starts.location(start);
-        if inspection.empty {
-            self.diagnostics.push(NativeOnPageScrollDiagnostic {
-                kind: "empty".to_string(),
-                line,
-                column,
-                source_label: source_label.to_string(),
-                sync_api: None,
-            });
-        }
-        if let Some(start) = inspection.first_set_data_call_start {
-            let (line, column) = self.line_starts.location(start);
-            self.diagnostics.push(NativeOnPageScrollDiagnostic {
-                kind: "setData".to_string(),
-                line,
-                column,
-                source_label: source_label.to_string(),
-                sync_api: None,
-            });
-        }
-
-        for (sync_api, start) in inspection.sync_api_call_starts {
-            let (line, column) = self.line_starts.location(start);
-            self.diagnostics.push(NativeOnPageScrollDiagnostic {
-                kind: "syncApi".to_string(),
-                line,
-                column,
-                source_label: source_label.to_string(),
-                sync_api: Some(sync_api),
-            });
-        }
-    }
-
-    fn report_function_expression(
-        &mut self,
-        function: &Function<'a>,
-        source_label: &str,
-        start: u32,
-    ) {
-        if let Some(body) = &function.body {
-            self.report_function_body(body, source_label, start);
-        }
-    }
-
-    fn report_arrow_function(
-        &mut self,
-        arrow: &ArrowFunctionExpression<'a>,
-        source_label: &str,
-        start: u32,
-    ) {
-        if let ArrowFunctionBody::FunctionBody(body) = &arrow.body {
-            self.report_function_body(body, source_label, start);
-            return;
-        }
-
-        let mut inspector = PageScrollInspectionVisitor::new(false);
-        inspector.visit_arrow_function_body(&arrow.body);
-        self.report_inspection(inspector.inspection, source_label, start);
-    }
-}
-
-impl<'a> Visit<'a> for OnPageScrollVisitor<'a> {
-    fn visit_object_property(&mut self, property: &ObjectProperty<'a>) {
-        if static_property_name(&property.key) == Some("onPageScroll") {
-            let start = if property.method {
-                property.key.span().end
-            } else {
-                property.value.span().start
-            };
-            match &property.value {
-                Expression::FunctionExpression(function) => {
-                    self.report_function_expression(function, "onPageScroll", start);
-                    return;
-                }
-                Expression::ArrowFunctionExpression(arrow) => {
-                    self.report_arrow_function(arrow, "onPageScroll", start);
-                    return;
-                }
-                _ => {}
-            }
-        }
-
-        walk::walk_object_property(self, property);
-    }
-
-    fn visit_call_expression(&mut self, call: &CallExpression<'a>) {
-        if is_on_page_scroll_callee(&call.callee, &self.hook_names, &self.namespace_imports)
-            && let Some(argument) = call.arguments.first()
-        {
-            match argument {
-                Argument::FunctionExpression(function) => {
-                    self.report_function_expression(
-                        function,
-                        "onPageScroll(...)",
-                        function.span.start,
-                    );
-                    return;
-                }
-                Argument::ArrowFunctionExpression(arrow) => {
-                    self.report_arrow_function(arrow, "onPageScroll(...)", arrow.span.start);
-                    return;
-                }
-                _ => {}
-            }
-        }
-
-        walk::walk_call_expression(self, call);
-    }
-}
-
-#[napi(js_name = "collectOnPageScrollDiagnosticsNative")]
-pub fn collect_on_page_scroll_diagnostics_native(
-    code: String,
-    filename: Option<String>,
-) -> Vec<NativeOnPageScrollDiagnostic> {
-    if !code.contains("onPageScroll") {
-        return Vec::new();
-    }
-
-    let allocator = Allocator::default();
-    let Some(program) = parse_program(&allocator, &code, filename, false) else {
-        return Vec::new();
-    };
-
-    let (hook_names, namespace_imports) = collect_wevu_scroll_imports(&program);
-    let line_starts = LineStarts::new(&code);
-    let mut visitor = OnPageScrollVisitor {
-        hook_names,
-        namespace_imports,
-        diagnostics: Vec::new(),
-        line_starts: &line_starts,
-    };
-    visitor.visit_program(&program);
-    visitor.diagnostics
 }
 
 struct StaticRequireVisitor {
@@ -649,38 +412,6 @@ fn analyze_script_program(
     }
 }
 
-fn collect_wevu_scroll_imports(program: &Program) -> (HashSet<String>, HashSet<String>) {
-    let mut hook_names = HashSet::from(["onPageScroll".to_string()]);
-    let mut namespace_imports = HashSet::new();
-
-    for statement in &program.body {
-        let Statement::ImportDeclaration(import_decl) = statement else {
-            continue;
-        };
-        if import_decl.source.value.as_str() != Some("wevu") {
-            continue;
-        }
-        let Some(specifiers) = &import_decl.specifiers else {
-            continue;
-        };
-        for specifier in specifiers {
-            match specifier {
-                ImportDeclarationSpecifier::ImportSpecifier(import_specifier)
-                    if module_export_name(&import_specifier.imported) == Some("onPageScroll") =>
-                {
-                    hook_names.insert(import_specifier.local.name.as_str().to_string());
-                }
-                ImportDeclarationSpecifier::ImportNamespaceSpecifier(namespace_specifier) => {
-                    namespace_imports.insert(namespace_specifier.local.name.as_str().to_string());
-                }
-                _ => {}
-            }
-        }
-    }
-
-    (hook_names, namespace_imports)
-}
-
 fn collect_feature_flag_imports(
     program: &Program,
     module_id: &str,
@@ -772,6 +503,14 @@ fn may_contain_platform_api_text(code: &str) -> bool {
         .any(|needle| code.contains(needle))
 }
 
+pub(crate) fn static_property_name<'a>(key: &'a PropertyKey<'a>) -> Option<&'a str> {
+    match key {
+        PropertyKey::StaticIdentifier(identifier) => Some(identifier.name.as_str()),
+        PropertyKey::StaticStringLiteral(literal) => literal.value.as_str(),
+        _ => None,
+    }
+}
+
 fn is_platform_api_identifier(name: &str) -> bool {
     matches!(name, "wx" | "my" | "tt" | "swan" | "jd" | "xhs")
 }
@@ -787,43 +526,4 @@ fn has_platform_api_member_expression(expression: &Expression) -> bool {
         }
         _ => false,
     }
-}
-
-fn static_property_name<'a>(key: &'a PropertyKey<'a>) -> Option<&'a str> {
-    match key {
-        PropertyKey::StaticIdentifier(identifier) => Some(identifier.name.as_str()),
-        PropertyKey::StaticStringLiteral(literal) => literal.value.as_str(),
-        _ => None,
-    }
-}
-
-fn callee_name<'a>(callee: &'a Expression<'a>) -> Option<&'a str> {
-    match callee {
-        Expression::Identifier(identifier) => Some(identifier.name.as_str()),
-        Expression::StaticMemberExpression(member) => Some(member.property.name.as_str()),
-        _ => None,
-    }
-}
-
-fn is_identifier_expression(expression: &Expression, name: &str) -> bool {
-    matches!(expression, Expression::Identifier(identifier) if identifier.name.as_str() == name)
-}
-
-fn is_on_page_scroll_callee(
-    callee: &Expression,
-    hook_names: &HashSet<String>,
-    namespace_imports: &HashSet<String>,
-) -> bool {
-    match callee {
-        Expression::Identifier(identifier) => hook_names.contains(identifier.name.as_str()),
-        Expression::StaticMemberExpression(member) => {
-            is_identifier_expression_set(&member.object, namespace_imports)
-                && member.property.name.as_str() == "onPageScroll"
-        }
-        _ => false,
-    }
-}
-
-fn is_identifier_expression_set(expression: &Expression, names: &HashSet<String>) -> bool {
-    matches!(expression, Expression::Identifier(identifier) if names.contains(identifier.name.as_str()))
 }

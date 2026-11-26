@@ -5,6 +5,9 @@ fn input(code: &str) -> NativeCompilerScriptInput {
     NativeCompilerScriptInput {
         code: code.to_string().into(),
         filename: Some("page.ts".to_string()),
+        page_feature_modules: None,
+        page_feature_hook_to_feature_json: None,
+        collect_on_page_scroll_diagnostics: None,
     }
 }
 

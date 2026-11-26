@@ -54,7 +54,14 @@ export function injectWevuPageFeaturesInJs(
  */
 export async function injectWevuPageFeaturesInJsWithResolver(
   source: string,
-  options: { id: string, resolver: ModuleResolver, astEngine?: AstEngineName, minify?: boolean, sourceMap?: boolean },
+  options: {
+    id: string
+    resolver: ModuleResolver
+    astEngine?: AstEngineName
+    minify?: boolean
+    sourceMap?: boolean
+    pageFeatureFlags?: readonly WevuPageFeatureFlag[]
+  },
 ): Promise<{ code: string, transformed: boolean, map?: EncodedSourceMapLike | null }> {
   const preflight = collectTargetOptionsObjectsFromCode(source, options.id, {
     astEngine: options.astEngine,
@@ -69,10 +76,9 @@ export async function injectWevuPageFeaturesInJsWithResolver(
     return { code: source, transformed: false }
   }
 
-  const enabled = new Set<WevuPageFeatureFlag>()
-  for (const flag of collectWevuPageFeatureFlagsFromCode(source, options)) {
-    enabled.add(flag)
-  }
+  const enabled = new Set<WevuPageFeatureFlag>(
+    options.pageFeatureFlags ?? collectWevuPageFeatureFlagsFromCode(source, options),
+  )
 
   const moduleCache = new Map<string, ModuleAnalysis>()
   moduleCache.set(options.id, preflight.module)

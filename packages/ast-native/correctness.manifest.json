@@ -18,7 +18,7 @@
   "suites": [
     {
       "file": "test/compilerAnalysis.test.ts",
-      "minimumAssertions": 33
+      "minimumAssertions": 34
     },
     {
       "file": "test/compilerAmbientParity.test.ts",

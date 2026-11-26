@@ -22,6 +22,9 @@ export interface NativeScriptAnalysisInput {
 export interface NativeCompilerScriptInput {
   code: string
   filename?: string
+  pageFeatureModules?: string[]
+  pageFeatureHookToFeatureJson?: string
+  collectOnPageScrollDiagnostics?: boolean
 }
 
 export interface NativeCompilerScriptImport {
@@ -47,7 +50,9 @@ export interface NativeCompilerScriptAnalysis {
   hasDefaultExport: boolean
   defineOptionsStatements: NativeCompilerScriptSpan[]
   registeredComponents?: NativeCompilerRegisteredComponent[]
+  pageFeatureFlags?: string[]
   reservedPropsDiagnostic?: { warningOffset?: number }
+  onPageScrollDiagnostics?: NativeOnPageScrollDiagnostic[]
 }
 
 export interface NativeNpmChunkAnalysisInput {

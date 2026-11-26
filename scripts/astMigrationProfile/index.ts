@@ -12,7 +12,7 @@ import { redactSequenceEvidence } from '../editSequence/evidenceRedaction'
 import { compilerCases } from './cases'
 import { collectCompilerTrials } from './collection'
 import { assertFrozenIdentity, defaultAddonPath, freezeIdentity } from './identity'
-import { sha256, summarize } from './results'
+import { sha256, summarize, summarizeDiagnostics } from './results'
 
 export function parseArguments(args: string[]) {
   const values = new Map<string, string>()
@@ -63,7 +63,8 @@ async function runOwnedCompilerProfile(args: string[], root: string, environment
       gc: 'Only GC events whose startTime lies inside the actual awaited compileVueFile interval; excludes earlier forced/preparation GC even when delivered later.',
       parity: 'Raw v8-serialized outcomes compared before report redaction; includes full map/sourcesContent, warnings order, diagnostics and metadata. Error stack is excluded; code/location/cause retained.',
       counters: 'Rust parse and total JS fallback counts are null: release binding does not expose them. Rejected batch items and thrown native calls are measured separately.',
-      memory: 'RSS at compile boundaries and whole child process maxRSS, including preparation/import; not allocation or retained memory.',
+      memory: 'Wall samples record RSS and process maxRSS. Separate diagnostic samples record sampled allocation and eight repeated compile iterations with forced GC between iterations; retainedHeap reports post-GC heap and RSS deltas. Diagnostic timings are not used for wall percentiles.',
+      phases: 'Only diagnostic workers install the profile phase recorder. It measures compileVueFile parse, component discovery, SFC compileScript, style, template, script, transformScript, config and finalize phases, plus observable Babel/SFC/native calls.',
     },
   }
   const rawDirectory = `${output}.raw`
@@ -84,7 +85,7 @@ async function runOwnedCompilerProfile(args: string[], root: string, environment
       }
       samples.push({ ...sample, outcome: { status: sample.outcome.status, rawEvidence: reference } })
     }
-    const report = redactSequenceEvidence({ ...metadata, frozen, ...collection, samples, summary: summarize(collection) }, root)
+    const report = redactSequenceEvidence({ ...metadata, frozen, ...collection, samples, summary: summarize(collection), diagnosticSummary: summarizeDiagnostics(collection) }, root)
     const temporary = `${output}.partial`
     await writeFile(temporary, `${JSON.stringify(report, null, 2)}\n`)
     await rename(temporary, output)
@@ -146,7 +147,7 @@ async function runOwnedCompilerProfile(args: string[], root: string, environment
   if (collection.status !== 'passed') {
     throw new Error('Real compiler profile failed; saved partial report contains completed samples and the original failure.')
   }
-  process.stdout.write(`${JSON.stringify(summarize(collection), null, 2)}\n`)
+  process.stdout.write(`${JSON.stringify({ compiler: summarize(collection), diagnostics: summarizeDiagnostics(collection) }, null, 2)}\n`)
   return collection
 }
 

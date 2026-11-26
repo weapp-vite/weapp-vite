@@ -1,6 +1,7 @@
 import type { NativeCompilerScriptAnalysis } from '@weapp-vite/ast'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { parse } from 'vue/compiler-sfc'
+import { WE_VU_PAGE_HOOK_TO_FEATURE, WE_VU_RUNTIME_MODULE_IDS } from '../../../../constants'
 import { analyzeNativeScriptBlocks, mayShareNativeOptionsAnalysis } from './nativeAnalysis'
 
 const analyze = vi.hoisted(() => vi.fn())
@@ -54,6 +55,23 @@ describe('compiler native batch ownership', () => {
       { code: original.content, filename: 'src/page.vue.ts' },
     ])
     expect(result).toEqual({ scripts: { script: summary, scriptSetup: summary }, defineOptions: macro })
+  })
+
+  it('requests page feature facts inside the existing compiler batch', () => {
+    const code = `import { onResize } from 'wevu/router'; onResize(() => {}); export default {}`
+    const { descriptor } = parse(`<script>${code}</script>`)
+    analyze.mockReturnValue([{ ...summary, pageFeatureFlags: ['enableOnResize'] }])
+
+    const result = analyzeNativeScriptBlocks(descriptor, 'src/page.vue', undefined, true)
+
+    expect(result?.scripts.script?.pageFeatureFlags).toEqual(['enableOnResize'])
+    expect(analyze).toHaveBeenCalledTimes(1)
+    expect(analyze).toHaveBeenCalledWith([{
+      code,
+      filename: 'src/page.vue.ts',
+      pageFeatureModules: [...WE_VU_RUNTIME_MODULE_IDS, 'wevu/router', 'wevu/dev/router'],
+      pageFeatureHookToFeatureJson: JSON.stringify(WE_VU_PAGE_HOOK_TO_FEATURE),
+    }])
   })
 
   it('retains successful siblings when a script cannot be analyzed', () => {

@@ -1,5 +1,6 @@
 import type { ModuleResolver } from './types'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
+import * as pageFeatureAnalysis from '../../../ast/operations/pageFeatures'
 import { injectWevuPageFeaturesInJs, injectWevuPageFeaturesInJsWithResolver } from './inject'
 
 describe('injectWevuPageFeatures', () => {
@@ -56,6 +57,61 @@ defineComponent({
     expect(result.transformed).toBe(true)
     expect(result.code).toContain('features')
     expect(result.code).toContain('enableOnShareTimeline')
+  })
+
+  it('uses precomputed page flags without parsing the current file for hook calls again', async () => {
+    const collectFlags = vi.spyOn(pageFeatureAnalysis, 'collectWevuPageFeatureFlagsFromCode')
+    try {
+      const result = await injectWevuPageFeaturesInJsWithResolver(`
+import { defineComponent } from 'wevu'
+defineComponent({ setup() {} })
+    `.trim(), {
+        id: '/project/src/pages/index.ts',
+        pageFeatureFlags: ['enableOnShareTimeline'],
+        resolver: {
+          async resolveId() {
+            return undefined
+          },
+          async loadCode() {
+            return undefined
+          },
+        },
+      })
+
+      expect(result.transformed).toBe(true)
+      expect(result.code).toContain('enableOnShareTimeline')
+      expect(collectFlags).not.toHaveBeenCalled()
+    }
+    finally {
+      collectFlags.mockRestore()
+    }
+  })
+
+  it('merges precomputed flags with features discovered in reachable imports', async () => {
+    const pageId = '/project/src/pages/index.ts'
+    const helperId = '/project/src/pages/useReachBottom.ts'
+    const result = await injectWevuPageFeaturesInJsWithResolver(`
+import { defineComponent } from 'wevu'
+import { useReachBottom } from './useReachBottom'
+defineComponent({ setup() { useReachBottom() } })
+    `.trim(), {
+      id: pageId,
+      pageFeatureFlags: ['enableOnShareTimeline'],
+      resolver: {
+        async resolveId(source, importer) {
+          return importer === pageId && source === './useReachBottom' ? helperId : undefined
+        },
+        async loadCode(id) {
+          return id === helperId
+            ? 'import { onReachBottom } from \'wevu\'; export function useReachBottom() { onReachBottom(() => ({})) }'
+            : undefined
+        },
+      },
+    })
+
+    expect(result.transformed).toBe(true)
+    expect(result.code).toContain('enableOnShareTimeline')
+    expect(result.code).toContain('enableOnReachBottom')
   })
 
   it('injects features with oxc ast engine option', () => {

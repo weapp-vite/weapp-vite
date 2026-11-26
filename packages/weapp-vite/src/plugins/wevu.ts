@@ -1,9 +1,15 @@
 import type { Plugin } from 'vite'
 import type { CompilerContext } from '../context'
+import {
+  analyzeCompilerScriptsWithNative,
+  collectOnPageScrollWarningsWithNative,
+} from '@weapp-vite/ast'
 import path from 'pathe'
 import {
   createPageEntryMatcher,
   injectWevuPageFeaturesInJsWithResolver,
+  WE_VU_PAGE_HOOK_TO_FEATURE,
+  WE_VU_RUNTIME_MODULE_IDS,
 } from 'wevu/compiler'
 import { resolveAstEngine } from '../ast'
 import logger from '../logger'
@@ -18,6 +24,9 @@ import { mayNeedWevuPageFeatureAnalysis } from './wevuPageFeatureHints'
 
 const JS_LIKE_SOURCE_RE = /\.[cm]?[jt]sx?$/
 const JS_LIKE_SOURCE_FILTER_RE = /\.[cm]?[jt]sx?(?:\?.*)?$/
+const PAGE_FEATURE_MODULES = [...WE_VU_RUNTIME_MODULE_IDS, 'wevu/router', 'wevu/dev/router']
+const PAGE_FEATURE_HOOK_TO_FEATURE_JSON = JSON.stringify(WE_VU_PAGE_HOOK_TO_FEATURE)
+const KNOWN_PAGE_FEATURE_FLAGS = new Set<string>(Object.values(WE_VU_PAGE_HOOK_TO_FEATURE))
 
 /** 页面缓存只持有扫描服务，避免与 transform 中的解析回调共享 hook 上下文。 */
 function createCompilerPageMatcher(configService: NonNullable<CompilerContext['configService']>, scanService: NonNullable<CompilerContext['scanService']>) {
@@ -108,8 +117,24 @@ export function createWevuAutoPageFeaturesPlugin(ctx: CompilerContext): Plugin {
             return null
           }
           const astEngine = resolveAstEngine(configService.weappViteConfig)
+          const nativeAnalysis = astEngine !== 'oxc'
+            ? analyzeCompilerScriptsWithNative([{
+              code,
+              filename,
+              pageFeatureModules: PAGE_FEATURE_MODULES,
+              pageFeatureHookToFeatureJson: PAGE_FEATURE_HOOK_TO_FEATURE_JSON,
+              collectOnPageScrollDiagnostics: code.includes('onPageScroll'),
+            }])?.[0]
+            : undefined
+          const pageFeatureFlags = nativeAnalysis?.pageFeatureFlags
+          const nativePageFeatureFlags = pageFeatureFlags?.every(flag => KNOWN_PAGE_FEATURE_FLAGS.has(flag))
+            ? pageFeatureFlags as Array<(typeof WE_VU_PAGE_HOOK_TO_FEATURE)[keyof typeof WE_VU_PAGE_HOOK_TO_FEATURE]>
+            : undefined
           if (code.includes('onPageScroll')) {
-            for (const warning of collectOnPageScrollPerformanceWarnings(code, filename, {
+            const warnings = nativeAnalysis?.onPageScrollDiagnostics
+              ? collectOnPageScrollWarningsWithNative(code, filename, nativeAnalysis.onPageScrollDiagnostics)
+              : undefined
+            for (const warning of warnings ?? collectOnPageScrollPerformanceWarnings(code, filename, {
               engine: astEngine,
             })) {
               logger.warn(warning)
@@ -128,6 +153,7 @@ export function createWevuAutoPageFeaturesPlugin(ctx: CompilerContext): Plugin {
               { readFile: readFileCached },
               { checkMtime: getReadFileCheckMtime(configService) },
             ),
+            ...(nativePageFeatureFlags ? { pageFeatureFlags: nativePageFeatureFlags } : {}),
             sourceMap: false,
           })
           if (!result.transformed) {

@@ -46,15 +46,15 @@ function formatNativeOnPageScrollWarning(
 export function collectOnPageScrollWarningsWithNative(
   code: string,
   filename: string,
+  knownDiagnostics?: readonly NativeOnPageScrollDiagnostic[],
 ) {
-  const binding = loadNativeAstBindingSync()
-  const collectNative = binding?.collectOnPageScrollDiagnosticsNative
-  if (!collectNative) {
+  const diagnostics = knownDiagnostics ?? loadNativeAstBindingSync()?.collectOnPageScrollDiagnosticsNative?.(code, filename)
+  if (!diagnostics) {
     return undefined
   }
   const warnings: string[] = []
   const warningSet = new Set<string>()
-  for (const diagnostic of collectNative(code, filename)) {
+  for (const diagnostic of diagnostics) {
     const warning = formatNativeOnPageScrollWarning(diagnostic, filename)
     if (warningSet.has(warning)) {
       continue

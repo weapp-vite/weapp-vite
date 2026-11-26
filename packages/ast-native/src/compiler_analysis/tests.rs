@@ -5,6 +5,25 @@ fn input(code: &str, filename: &str) -> NativeCompilerScriptInput {
     NativeCompilerScriptInput {
         code: code.to_string().into(),
         filename: Some(filename.to_string()),
+        page_feature_modules: None,
+        page_feature_hook_to_feature_json: None,
+        collect_on_page_scroll_diagnostics: None,
+    }
+}
+
+fn page_feature_input(code: &str) -> NativeCompilerScriptInput {
+    NativeCompilerScriptInput {
+        code: code.to_string().into(),
+        filename: Some("page.ts".to_string()),
+        page_feature_modules: Some(vec![
+            "wevu".to_string(),
+            "wevu/router".to_string(),
+            "wevu/dev/router".to_string(),
+        ]),
+        page_feature_hook_to_feature_json: Some(
+            r#"{"onPageScroll":"enableOnPageScroll","usePageScrollRestoration":"enableOnPageScroll","onPullDownRefresh":"enableOnPullDownRefresh","onReachBottom":"enableOnReachBottom","onRouteDone":"enableOnRouteDone","onTabItemTap":"enableOnTabItemTap","onResize":"enableOnResize","onShareAppMessage":"enableOnShareAppMessage","onShareTimeline":"enableOnShareTimeline","onAddToFavorites":"enableOnAddToFavorites","onSaveExitState":"enableOnSaveExitState"}"#.to_string(),
+        ),
+        collect_on_page_scroll_diagnostics: None,
     }
 }
 
@@ -241,6 +260,94 @@ fn compiler_batch_reuses_identical_summary_and_returns_owned_values() {
     assert_eq!(
         second.registered_components.as_ref().unwrap()[0].name,
         "Card"
+    );
+}
+
+#[test]
+fn compiler_batch_collects_page_feature_flags_in_call_order_from_the_same_walk() {
+    let code = r#"
+import { onResize as resize, onPageScroll } from 'wevu/router';
+import * as router from 'wevu/dev/router';
+import { onPullDownRefresh as refresh } from 'other-router';
+resize(() => {});
+router.onShareTimeline?.(() => {});
+onPageScroll(() => {});
+refresh(() => {});
+"#;
+    let result = analyze_compiler_scripts_native(vec![page_feature_input(code)]);
+    assert_eq!(
+        result[0]
+            .as_ref()
+            .unwrap()
+            .page_feature_flags
+            .as_ref()
+            .unwrap(),
+        &[
+            "enableOnResize".to_string(),
+            "enableOnShareTimeline".to_string(),
+            "enableOnPageScroll".to_string(),
+        ]
+    );
+
+    let mut input = page_feature_input(code);
+    input.page_feature_modules = None;
+    input.page_feature_hook_to_feature_json = None;
+    let without_page_features = analyze_compiler_scripts_native(vec![input]);
+    assert!(
+        without_page_features[0]
+            .as_ref()
+            .unwrap()
+            .page_feature_flags
+            .is_none()
+    );
+}
+
+#[test]
+fn compiler_batch_skips_page_call_collection_when_not_requested() {
+    let code = "function setup() { onResize(() => {}); router.onReachBottom(() => {}) }";
+    let allocator = oxc_allocator::Allocator::default();
+    let program = crate::parse_program(&allocator, code, Some("page.ts".to_string()), true)
+        .expect("script should parse");
+    let mut visitor = CompilerDiagnosticVisitor::default();
+
+    visitor.visit_program(&program);
+
+    assert!(visitor.page_feature_calls.is_empty());
+}
+
+#[test]
+fn compiler_batch_collects_scroll_diagnostics_with_page_features_in_one_parse() {
+    let code = "import { onPageScroll } from 'wevu'\nonPageScroll(() => {\n  this.setData({ top: 1 })\n  wx.getStorageSync('key')\n})";
+    let mut input = page_feature_input(code);
+    input.collect_on_page_scroll_diagnostics = Some(true);
+    SCRIPT_PARSE_COUNT.set(0);
+
+    let results = analyze_compiler_scripts_native(vec![input]);
+
+    assert_eq!(SCRIPT_PARSE_COUNT.get(), 1);
+    let analysis = results[0].as_ref().unwrap();
+    assert_eq!(
+        analysis.page_feature_flags.as_ref().unwrap(),
+        &["enableOnPageScroll".to_string()]
+    );
+    assert_eq!(
+        analysis.on_page_scroll_diagnostics.as_ref().unwrap(),
+        &[
+            NativeOnPageScrollDiagnostic {
+                kind: "setData".to_string(),
+                line: 2,
+                column: 14,
+                source_label: "onPageScroll(...)".to_string(),
+                sync_api: None,
+            },
+            NativeOnPageScrollDiagnostic {
+                kind: "syncApi".to_string(),
+                line: 2,
+                column: 14,
+                source_label: "onPageScroll(...)".to_string(),
+                sync_api: Some("wx.getStorageSync".to_string()),
+            },
+        ]
     );
 }
 

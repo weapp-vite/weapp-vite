@@ -1,16 +1,33 @@
 import path from 'pathe'
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock('wevu/compiler', () => ({
+  WE_VU_PAGE_HOOK_TO_FEATURE: { onPageScroll: 'enableOnPageScroll' },
+  WE_VU_RUNTIME_MODULE_IDS: ['wevu'],
   createPageEntryMatcher: vi.fn(),
   injectWevuPageFeaturesInJsWithResolver: vi.fn(),
 }))
+
+vi.mock('@weapp-vite/ast', async (importOriginal) => {
+  const actual = await importOriginal<Record<string, unknown>>()
+  return {
+    ...actual,
+    analyzeCompilerScriptsWithNative: vi.fn(() => undefined),
+    collectOnPageScrollWarningsWithNative: vi.fn(() => []),
+  }
+})
 
 vi.mock('../logger', () => ({
   default: {
     warn: vi.fn(),
   },
 }))
+
+afterEach(async () => {
+  const { analyzeCompilerScriptsWithNative, collectOnPageScrollWarningsWithNative } = await import('@weapp-vite/ast')
+  vi.mocked(analyzeCompilerScriptsWithNative).mockReset().mockReturnValue(undefined)
+  vi.mocked(collectOnPageScrollWarningsWithNative).mockReset().mockReturnValue([])
+})
 
 describe('createWevuAutoPageFeaturesPlugin', () => {
   it.each(['buildStart', 'closeBundle', 'closeWatcher'] as const)('refreshes page classification after %s when the plugin is reused', async (boundary) => {
@@ -81,6 +98,44 @@ describe('createWevuAutoPageFeaturesPlugin', () => {
     expect(await transform.call({}, source, componentFile)).toBeNull()
     expect(pageMatcher.isPageFile.mock.calls).toEqual([[filename], [componentFile]])
     expect(injectWevuPageFeaturesInJsWithResolver).toHaveBeenCalledExactlyOnceWith(source, expect.objectContaining({ id: filename }))
+  })
+
+  it('reuses the native page summary for warning formatting and feature injection', async () => {
+    const { createPageEntryMatcher, injectWevuPageFeaturesInJsWithResolver } = await import('wevu/compiler')
+    const { analyzeCompilerScriptsWithNative, collectOnPageScrollWarningsWithNative } = await import('@weapp-vite/ast')
+    const { createWevuAutoPageFeaturesPlugin } = await import('./wevu')
+    const root = path.resolve('page-classification-fixture')
+    const filename = path.join(root, 'src/pages/home.ts')
+    const source = 'import { onPageScroll } from \'wevu\'; onPageScroll(() => {})'
+    const diagnostics = [{ kind: 'empty', line: 1, column: 58, sourceLabel: 'onPageScroll(...)' }]
+    vi.mocked(createPageEntryMatcher).mockReset().mockReturnValue({ isPageFile: vi.fn(async () => true), markDirty: vi.fn() })
+    vi.mocked(injectWevuPageFeaturesInJsWithResolver).mockReset().mockResolvedValue({ transformed: false } as any)
+    vi.mocked(analyzeCompilerScriptsWithNative).mockReset().mockReturnValue([{
+      imports: [],
+      defineOptionsStatements: [],
+      pageFeatureFlags: ['enableOnPageScroll'],
+      onPageScrollDiagnostics: diagnostics,
+    }])
+    vi.mocked(collectOnPageScrollWarningsWithNative).mockReset().mockReturnValue(['native warning'])
+    const plugin = createWevuAutoPageFeaturesPlugin({
+      configService: { cwd: root, absoluteSrcRoot: path.join(root, 'src') },
+      scanService: {},
+      runtimeState: { scan: { isDirty: false } },
+    } as any)
+    const transform = (plugin.transform as any).handler
+
+    await transform.call({}, source, filename)
+
+    expect(analyzeCompilerScriptsWithNative).toHaveBeenCalledTimes(1)
+    expect(analyzeCompilerScriptsWithNative).toHaveBeenCalledWith([expect.objectContaining({
+      code: source,
+      filename,
+      collectOnPageScrollDiagnostics: true,
+    })])
+    expect(collectOnPageScrollWarningsWithNative).toHaveBeenCalledExactlyOnceWith(source, filename, diagnostics)
+    expect(injectWevuPageFeaturesInJsWithResolver).toHaveBeenCalledWith(source, expect.objectContaining({
+      pageFeatureFlags: ['enableOnPageScroll'],
+    }))
   })
 
   it('invalidates an existing page matcher while fast rejecting a script after routes change', async () => {

@@ -22,6 +22,7 @@ export type {
   NativeNpmLocalRootFact,
   NativeNpmPlatformApiFact,
   NativeNpmRequireFact,
+  NativeOnPageScrollDiagnostic,
 } from './native'
 export {
   collectComponentPropsFromCode,

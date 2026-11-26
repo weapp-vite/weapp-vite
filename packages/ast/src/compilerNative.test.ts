@@ -106,6 +106,51 @@ describe('compiler native result validation', () => {
     expect(value).toEqual([valid, { ...valid, reservedPropsDiagnostic: {} }, { ...valid, reservedPropsDiagnostic: diagnostic }])
   })
 
+  it('accepts and owns the optional page feature summary', () => {
+    const raw = {
+      ...valid,
+      pageFeatureFlags: ['enableOnResize'],
+    }
+    const result = readNativeCompilerScriptAnalysis(raw, '')
+    raw.pageFeatureFlags[0] = 'changed'
+
+    expect(result?.pageFeatureFlags).toEqual(['enableOnResize'])
+  })
+
+  it('accepts and owns optional page scroll diagnostics', () => {
+    const raw = {
+      ...valid,
+      onPageScrollDiagnostics: [{
+        kind: 'syncApi',
+        line: 2,
+        column: 3,
+        sourceLabel: 'onPageScroll(...)',
+        syncApi: 'wx.getStorageSync',
+      }],
+    }
+    const result = readNativeCompilerScriptAnalysis(raw, '')
+    raw.onPageScrollDiagnostics[0]!.sourceLabel = 'changed'
+
+    expect(result?.onPageScrollDiagnostics).toEqual([{
+      kind: 'syncApi',
+      line: 2,
+      column: 3,
+      sourceLabel: 'onPageScroll(...)',
+      syncApi: 'wx.getStorageSync',
+    }])
+  })
+
+  it.each([
+    'null',
+    '[{ kind: "unknown", line: 1, column: 1, sourceLabel: "onPageScroll" }]',
+    '[{ kind: "empty", line: 0, column: 1, sourceLabel: "onPageScroll" }]',
+    '[{ kind: "syncApi", line: 1, column: 1, sourceLabel: "onPageScroll" }]',
+    '[{ kind: "setData", line: 1, column: 1, sourceLabel: "onPageScroll", syncApi: "wx.getStorageSync" }]',
+  ])('rejects malformed page scroll diagnostics per item: %s', async (diagnostics) => {
+    const { native } = await fixture(`exports.analyzeCompilerScriptsNative = () => [valid, { ...valid, onPageScrollDiagnostics: ${diagnostics} }, valid]`)
+    expect(native.analyzeCompilerScriptsWithNative(Array.from({ length: 3 }, () => ({ code: 'export default {}' })))).toEqual([valid, null, valid])
+  })
+
   it('falls back once for a throwing diagnostic getter and keeps valid neighbors', async () => {
     const { native } = await fixture('exports.analyzeCompilerScriptsNative = () => [valid, { ...valid, get reservedPropsDiagnostic() { throw new Error("diagnostic failure") } }, valid]')
     const binding = native.loadNativeAstBindingSync()!
@@ -162,7 +207,7 @@ describe('compiler native result validation', () => {
     expect(result).toEqual(expected)
   })
 
-  it.each(['imports', 'defineOptionsStatements', 'registeredComponents'])('rejects sparse %s arrays', async (field) => {
+  it.each(['imports', 'defineOptionsStatements', 'registeredComponents', 'pageFeatureFlags'])('rejects sparse %s arrays', async (field) => {
     const { native } = await fixture(`exports.analyzeCompilerScriptsNative = () => [valid, { ...valid, ${field}: new Array(1) }]`)
     expect(native.analyzeCompilerScriptsWithNative([{ code: 'defineProps({})' }, { code: 'defineProps({})' }])).toEqual([valid, null])
   })
