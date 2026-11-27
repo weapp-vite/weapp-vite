@@ -81,7 +81,7 @@ it.each([false, true])('pins actual DevEngine inputs for virtual source ownershi
       },
     }],
   }, { format: 'esm', entryFileNames: 'app.js', sourcemap: true }, {
-    watch: { exclude: [path.join(root, 'dist'), `${root}/dist/**`], skipWrite: true, usePolling: true, pollInterval: 20, compareContentsForPolling: true },
+    watch: { exclude: [path.join(root, 'dist'), `${root}/dist/**`], skipWrite: true, watcher: { usePolling: true, pollInterval: 20, compareContentsForPolling: true } },
     onOutput(result) {
       record('onOutput', result instanceof Error ? { error: true } : { outputCount: result.output.length })
       if (result instanceof Error) {

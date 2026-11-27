@@ -120,7 +120,7 @@ async function collectVueHmrSequence(repoRoot: string, source: string, updates: 
     }, createStatefulHmrHostFormatPlugin()],
   }, { format: 'esm', entryFileNames: 'compiled-component.js' }, {
     // 连续等长修改与还原使用内容轮询，避免宿主文件事件合并导致漏报。
-    watch: { skipWrite: true, usePolling: true, pollInterval: 20, compareContentsForPolling: true },
+    watch: { skipWrite: true, watcher: { usePolling: true, pollInterval: 20, compareContentsForPolling: true } },
     onOutput(result) {
       record('onOutput', result instanceof Error ? { error: trace.error(result) } : { outputCount: result.output.length })
       if (result instanceof Error) {

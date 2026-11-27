@@ -3,7 +3,7 @@ import { completeProductReport, createProductReport, failProductReport, recordPr
 import { applyViteAcceptancePolicy, finalizeViteAcceptanceReport } from './acceptance.mjs'
 import { viteProductContractNames, viteRequiredContractNames } from './inventory.mjs'
 
-const versions = { vite: '8.3.5', rolldown: '1.2.16' }
+const versions = { vite: '8.4.0', rolldown: '1.3.4' }
 
 type AcceptanceReport = Omit<ReturnType<typeof createProductReport>, 'results'> & {
   results: { name: string }[]
@@ -39,9 +39,9 @@ describe('version-bound Vite acceptance exception', () => {
   })
 
   it.each([
-    { vite: '8.3.6', rolldown: '1.2.16' },
-    { vite: '8.3.5', rolldown: '1.2.15' },
-    { vite: '8.3.5', rolldown: '1.2.17' },
+    { vite: '8.4.1', rolldown: '1.3.4' },
+    { vite: '8.4.0', rolldown: '1.3.3' },
+    { vite: '8.4.0', rolldown: '1.3.5' },
   ])('rejects automatic inheritance by %j', (installed) => {
     const value = createProductReport('vite', viteRequiredContractNames)
     expect(() => applyViteAcceptancePolicy(value, installed)).toThrow(/review or remove/i)

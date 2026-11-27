@@ -87,7 +87,7 @@ it('preserves complete native output after a watched module re-emits a component
       },
     }],
   }, { entryFileNames: '[name].js' }, {
-    watch: { enabled: true, skipWrite: true, usePolling: true, pollInterval: 20, compareContentsForPolling: true },
+    watch: { enabled: true, skipWrite: true, watcher: { usePolling: true, pollInterval: 20, compareContentsForPolling: true } },
     onHmrUpdates(result) {
       if (result instanceof Error) {
         errors.push(result)

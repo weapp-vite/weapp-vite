@@ -110,8 +110,6 @@ const serverWatch = {
   usePolling: true,
   interval: 100,
   binaryInterval: 200,
-  pollInterval: 100,
-  compareContentsForPolling: true,
 } satisfies ServerWatchOptions
 defineConfig({ server: { watch: serverWatch } })
 expectError(({ usePolling: true, backend: 'polling' }) satisfies ServerWatchOptions)

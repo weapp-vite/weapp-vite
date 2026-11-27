@@ -1,0 +1,11 @@
+diff --git a/dist/node/chunks/node.js b/dist/node/chunks/node.js
+--- a/dist/node/chunks/node.js
++++ b/dist/node/chunks/node.js
+@@ -12190,6 +12190,6 @@
+ 				this._readyCount += paths.length;
+ 				Promise.all(paths.map(async (path) => {
+ 					const res = await this._nodeFsHandler._addToNodeFs(path, !_internal, 0, 0, _origAdd);
+-					if (res) this._emitReady();
++					// _addToNodeFs already accounts for missing paths before returning them.
+ 					return res;
+ 				})).then((results) => {

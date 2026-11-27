@@ -234,7 +234,7 @@
     "eslint": "catalog:",
     "fdir": "catalog:",
     "get-tsconfig": "catalog:",
-    "local-pkg": "^1.2.1",
+    "local-pkg": "^2.0.0",
     "lru-cache": "catalog:",
     "magic-string": "catalog:",
     "merge": "catalog:",

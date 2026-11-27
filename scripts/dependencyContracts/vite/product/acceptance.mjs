@@ -3,7 +3,7 @@ import { viteProductContractNames, viteRequiredContractNames } from './inventory
 
 /** 固定版本的临时验收例外；升级后必须显式重新评审，不能自动继承。 */
 export function applyViteAcceptancePolicy(report, versions) {
-  assert.deepEqual(versions, { vite: '8.3.5', rolldown: '1.2.16' }, 'Review or remove the Vite acceptance waivers before changing compiler versions')
+  assert.deepEqual(versions, { vite: '8.4.0', rolldown: '1.3.4' }, 'Review or remove the Vite acceptance waivers before changing compiler versions')
   assert.deepEqual(report.planned, [...viteRequiredContractNames])
   Object.assign(report, versions, {
     fullInventory: [...viteProductContractNames],

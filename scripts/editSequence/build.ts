@@ -393,7 +393,7 @@ export class BuildSequenceSession {
       plugins,
       experimental: { devMode: { lazy: false, implement: createStatefulHmrRolldownRuntimeSource() } },
     }, output, {
-      watch: { skipWrite: true, usePolling: true, pollInterval: 20, compareContentsForPolling: true },
+      watch: { skipWrite: true, watcher: { usePolling: true, pollInterval: 20, compareContentsForPolling: true } },
       onOutput: result => this.publish(result),
       onAdditionalAssets: result => this.publish(result, true),
       onHmrUpdates: (result) => {

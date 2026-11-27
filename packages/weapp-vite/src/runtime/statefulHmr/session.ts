@@ -11,7 +11,7 @@ import type { StatefulHmrOutputSource } from './outputPublication'
 import type { StatefulHmrInitialPublicAssets, StatefulHmrOutputFile } from './outputWriter'
 import type { StatefulHmrProfileBatch, StatefulHmrProfileHandoff } from './profile'
 import type { StatefulHmrSnapshotHandoff } from './snapshotHandoff'
-import type { StatefulHmrDevEngineBatch, StatefulHmrDevEngineUpdate } from './viteAdapter'
+import type { StatefulHmrDevEngineBatch, StatefulHmrDevEngineUpdate, StatefulHmrDevWatcherOptions } from './viteAdapter'
 import { Buffer } from 'node:buffer'
 import {
   WEAPP_VITE_STATEFUL_HMR_BRIDGE_KEY,
@@ -305,7 +305,7 @@ class StatefulHmrSession {
     private readonly restart: () => Promise<void>,
     private readonly entryIds: Set<string>,
     private readonly snapshots: StatefulHmrSnapshots,
-    devWatchOptions: { compareContentsForPolling?: boolean, pollInterval?: number, usePolling?: boolean },
+    devWatchOptions: StatefulHmrDevWatcherOptions,
     private readonly delegatedComponentEntryIds: Set<string>,
     private readonly buildEvents: DevBuildWatcherController,
   ) {

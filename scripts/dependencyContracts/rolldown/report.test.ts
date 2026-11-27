@@ -15,7 +15,7 @@ vi.mock('node:fs/promises', () => ({
   mkdir: vi.fn(async () => {}),
   mkdtemp: vi.fn(async (prefix: string) => `${prefix}mock`),
   readdir: vi.fn(async () => ['bindingify-input-options-mock.mjs']),
-  readFile: vi.fn(async (file: string) => file.endsWith('package.json') ? '{"name":"rolldown","version":"1.2.16"}' : 'official-entry'),
+  readFile: vi.fn(async (file: string) => file.endsWith('package.json') ? '{"name":"rolldown","version":"1.3.4"}' : 'official-entry'),
   rm: vi.fn(async () => {}),
   writeFile: mocks.writeFile,
 }))
@@ -103,7 +103,7 @@ it.each(['product', 'diagnostic'] as const)('retains %s observations and separat
   const report = await execute(kind)
   expect(report.suite).toBe(kind === 'product' ? 'product-lifecycle' : 'dependency-internals')
   expect(report.status).toBe('failed')
-  expect(report.rolldown).toBe('1.2.16')
+  expect(report.rolldown).toBe('1.3.4')
   expect(report.completed).toEqual(names.slice(0, 1))
   expect(report.failed).toBe(names[1])
   expect(report.notExecuted).toEqual(names.slice(2))
