@@ -17,6 +17,9 @@ describe('weapp-vite policy through the public repoctl engine', () => {
 
   it('releases published skill content but not contributor-only guidance', async () => {
     expect(names(await plan({ files: ['skills/wevu-best-practices/references/store-patterns.md'] }))).toEqual(['create-weapp-vite', 'wevu'])
+    expect(names(await plan({ files: ['skills/wevu-json-render-best-practices/references/components-and-resolver.md'] }))).toEqual(['@wevu/json-render'])
+    expect(names(await plan({ files: ['skills/wevu-a2ui-best-practices/references/host-rendering.md'] }))).toEqual(['@wevu/a2ui'])
+    expect(names(await plan({ files: ['skills/distribution.json'] })).sort()).toEqual(['@wevu/a2ui', '@wevu/json-render', '@weapp-vite/react', 'create-weapp-vite', 'weapp-vite', 'wevu'].sort())
     expect(names(await plan({ files: ['skills/release-and-changeset-best-practices/SKILL.md'] }))).toEqual([])
   })
 

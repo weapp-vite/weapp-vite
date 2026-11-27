@@ -1,10 +1,11 @@
 # Wevu JSON renderer
 
-`@wevu/json-render` 是独立的实验性 Wevu renderer 包，直接依赖 `@json-render/core@0.21.0`，提供组件目录、状态与事件连接、递归 SFC 和流式更新。
+`@wevu/json-render` 是独立的实验性 Wevu renderer 包，直接依赖 `@json-render/core@0.23.2`，提供组件目录、状态与事件连接、递归 SFC 和流式更新。
 
 - 包源码与完整使用说明：`packages-runtime/json-render/README.md`。
 - 应用示例：`apps/wevu-json-render-demo`，业务数据、订单组件和售后动作保留在应用中。
 - 站点入口：`website/packages/wevu-json-render.md`。
+- Agent Skill：`wevu-json-render-best-practices`，同时覆盖 `@wevu/json-render-components` 的预编译 renderer 与 fallback 接入。
 - 构建期入口：`@wevu/json-render/resolver` 的 `JsonRendererResolver()`。
 - 运行时入口：`createJsonRenderer` / `useJsonRenderer`，通过 `CatalogSpec`、`RenderNode`、`RendererEvent` 连接预编译组件。
 

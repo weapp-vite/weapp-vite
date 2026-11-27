@@ -14,6 +14,12 @@ keywords:
 
 包只负责会话与视图投影：接收服务端下发的 surface 状态消息，维护组件树与数据模型，把解析后的绑定求值成一份组件无关的 JSON 节点树。渲染宿主由消费项目提供预编译 SFC，本包不生成模板，也不在 AppService 中执行模型返回的代码。
 
+本包随 npm 包分发 `wevu-a2ui-best-practices`，覆盖 surface 消息、catalog、数据模型、视图投影、输入与动作交互、函数实现及递归宿主。手动安装：
+
+```sh
+npx skills add sonofmagic/skills --skill wevu-a2ui-best-practices
+```
+
 ## 与 json-render 的差异
 
 `@wevu/json-render` 使用自有的 JSON 描述与 JSONL Patch 协议，业务状态由渲染器持有；`@wevu/a2ui` 直接消费上游 A2UI 消息流，界面与数据由 `createSurface`、`updateComponents`、`updateDataModel`、`deleteSurface` 四类状态消息驱动，动作以 `action.event` 外发给 agent，回包再改写数据模型。两者共用同一套小程序渲染约束：不使用 `<component :is>`，递归宿主 SFC，不引入 lit 或 Web 自定义元素。
@@ -58,8 +64,8 @@ session.receive({ version: '1.0', createSurface: { surfaceId: 'after-sales', cat
 - 输入值支持 JSON 标量与复合值；异步动作串行执行并持续捕获消息，`onAction` / `onError` 可异步等待，不同 `interact` 的异步回调可能交错。
 - catalog 函数保留声明与校验，宿主通过 `functionImplementations` 注入实现；缺失实现通过 `onError` 上报表达式错误，`functionCall` 动作只在本地执行。
 - 异步函数实现不接收 `AbortSignal`，`dispose()` 不会强制取消已启动实现；动作 handler 内不要 `await interact`，避免等待同一动作队列。
-- 每次组件或对象级数据替换会提升 generation，节点 id 形如 `组件ID-vN`，用于宿主重建与选择器稳定。
+- 每次组件或对象级数据替换会提升 generation，投影节点 id 形如 `${Core 解析节点 id}-v${generation}`，不等同于协议 `componentId` 加后缀，用于宿主重建与选择器稳定。
 
-不支持 `callRendererFunction`、checks、agent 函数响应等完整 Basic Catalog 能力，也不接管 transport、agent 或 RPC。Core 的依赖图会带入 `zod@3` 与 `zod-to-json-schema`（约 77 kB gzip），`lit` 等声明依赖在小程序入口不可达。当前验证目标是微信 DevTools 与 mpcore headless。
+不支持 `callRendererFunction`、agent 函数响应等完整 Basic Catalog 能力；`Checkable` 仅投影校验结果供宿主展示，不自动阻止动作，也不接管 transport、agent 或 RPC。Core 的依赖图会带入 `zod@3` 与 `zod-to-json-schema`（约 77 kB gzip），`lit` 等声明依赖在小程序入口不可达。当前验证目标是微信 DevTools 与 mpcore headless。
 
 完整会话语义与投影规则见 [包 README](https://github.com/weapp-vite/weapp-vite/tree/main/packages-runtime/a2ui)。可运行的售后示例见 [wevu-a2ui-demo](https://github.com/weapp-vite/weapp-vite/tree/main/apps/wevu-a2ui-demo)。

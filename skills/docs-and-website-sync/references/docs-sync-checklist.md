@@ -8,6 +8,8 @@
 - `packages/weapp-vite/src/types/config/**`
 - `packages/weapp-vite/src/plugins/react/**`
 - `packages-runtime/react/src/**`
+- `packages-runtime/json-render/src/**`、`packages-runtime/json-render-components/**`
+- `packages-runtime/a2ui/src/**`
 - `packages-runtime/wevu/src/**`
 - `mpcore/packages/**`
 - `packages/weapp-vite/docs/README.md`

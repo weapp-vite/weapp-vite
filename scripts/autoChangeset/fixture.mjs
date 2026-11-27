@@ -10,7 +10,11 @@ export function changesetFixture(policy, { files = ['packages-runtime/wevu/src/i
   const manifests = {
     'package.json': { name: 'fixture', private: true },
     'packages/create-weapp-vite/package.json': { name: 'create-weapp-vite', version: '1.0.0' },
+    'packages/weapp-vite/package.json': { name: 'weapp-vite', version: '1.0.0' },
+    'packages-runtime/react/package.json': { name: '@weapp-vite/react', version: '1.0.0' },
     'packages-runtime/wevu/package.json': { name: 'wevu', version: '1.0.0', dependencies: { '@weapp-core/constants': 'workspace:*' } },
+    'packages-runtime/json-render/package.json': { name: '@wevu/json-render', version: '1.0.0' },
+    'packages-runtime/a2ui/package.json': { name: '@wevu/a2ui', version: '1.0.0' },
     '@weapp-core/constants/package.json': { name: '@weapp-core/constants', version: '1.0.0' },
     'mpcore/packages/simulator/package.json': { name: '@mpcore/simulator', version: '1.0.0' },
     'mpcore/packages/test/package.json': { name: '@mpcore/test', version: '1.0.0' },

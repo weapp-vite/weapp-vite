@@ -1,0 +1,7 @@
+interface:
+  display_name: 'Wevu A2UI Best Practices'
+  short_description: 'A2UI 1.0 surface、数据模型、投影交互与递归宿主实践'
+  default_prompt: 'Use $wevu-a2ui-best-practices to implement and diagnose @wevu/a2ui 1.0 surface messages, catalogs, data models, node projection, input/action interactions, function implementations, compatibility, and recursive host components in WeChat mini-programs.'
+
+policy:
+  allow_implicit_invocation: true

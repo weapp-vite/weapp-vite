@@ -14,6 +14,7 @@ description: 面向小程序中 wevu 运行时的实践手册，覆盖生命周�
 - 本 skill 随 `wevu` 提供，运行时 API、响应式、生命周期、事件、store 与 router 由该包负责；只使用这些能力不要求安装 `weapp-vite`、克隆框架仓库或加载其他 skill。本文 `references/` 均相对本 skill，运行时入门也可查 [Wevu 文档](https://vite.weapp.dev/wevu/)。
 - 构建沿用消费项目自己的工具链。使用 `weapp.*` 配置、`wv` CLI、SFC 宏/模板编译、编译期 layout 或自动类型生成时，才需显式安装 `weapp-vite`；编译器优化不等于仅安装 `wevu` 就会自动生效。
 - React 互操作另需 `@weapp-vite/react` 及其 peer dependencies，TDesign/Vant 等 UI 示例另需对应组件库；相关 skill 仅在已安装时可选，不是运行时 API 的前提。
+- json-render catalog/spec、SpecStream 与预编译 renderer 归 `wevu-json-render-best-practices`；A2UI 1.0 surface、数据模型与投影交互归 `wevu-a2ui-best-practices`。两者使用 Wevu 时仍需遵守本 skill 的生命周期与事件边界。
 - 验证先读取消费项目 `package.json`，只运行其已有 typecheck、build 与相关测试 scripts，并在目标小程序 IDE/真机检查页面行为。没有 `weapp-vite` 时不运行 `wv prepare/analyze`；不要求框架仓库测试、包构建或发布命令。
 
 ## 何时使用
@@ -34,6 +35,8 @@ description: 面向小程序中 wevu 运行时的实践手册，覆盖生命周�
 - `.vue` 模板和宏：使用 `weapp-vite-vue-sfc-best-practices`。
 - 原生迁移：使用 `native-to-weapp-vite-wevu-migration`。
 - 项目级 `weapp.react`、React hooks 或 `@weapp-vite/react` bridge：使用 `weapp-vite-react-best-practices`。
+- json-render spec、状态动作或 SpecStream：使用 `wevu-json-render-best-practices`。
+- A2UI 1.0 surface、数据模型或投影交互：使用 `wevu-a2ui-best-practices`。
 
 ## 核心流程
 

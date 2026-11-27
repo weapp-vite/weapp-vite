@@ -99,6 +99,44 @@
         { "id": "evidence-boundary", "description": "记录实际版本与静态依据，给出双实例创建、独立事件、逐个卸载的最小验证思路；明确无脚本/宿主所以没有运行证明，不把诊断、计划同意或 AI 结论写成人工结果批准，不自动沉淀新规则。", "verification": "ai" }
       ],
       "review": { "state": "candidate" }
+    },
+    {
+      "id": "json-render-stream-state-boundary",
+      "skill": "wevu-json-render-best-practices",
+      "mode": "diagnose",
+      "dependencies": ["@wevu/json-render"],
+      "task": "这个 json-render 页面在收到一段完整 JSONL Patch 后仍显示旧文本，Input 里修改的值也没有保留。请只读诊断会话代码，指出哪些写法绕过了公开状态/流契约，并给出最小修改与验证建议。不要实际修改、安装依赖、调用构建器或 IDE；项目没有测试脚本，也没有提供运行时日志。",
+      "files": {
+        "src/pages/index/index.mjs": "import { createJsonRenderer, defineRendererCatalog, standardComponents } from '@wevu/json-render'\n\nconst catalog = defineRendererCatalog({\n  components: standardComponents,\n  actions: {},\n})\nconst renderer = createJsonRenderer({\n  catalog,\n  spec: {\n    root: 'input',\n    elements: {\n      input: {\n        type: 'Input',\n        props: { label: '备注', placeholder: '请输入', value: { $bindState: '/note' } },\n      },\n    },\n  },\n  initialState: { note: '初始文本' },\n  actions: {},\n})\nconst { tree } = renderer\nconst stream = renderer.createStream()\nfunction receive(chunk) {\n  if (!stream.push(chunk)) {\n    throw new Error('流更新失败')\n  }\n}\nfunction input(value) {\n  renderer.state.note = value\n}\nfunction onNodeEvent(event) {\n  return renderer.dispatch(event.detail)\n}\nexport { receive, input, onNodeEvent, renderer, tree }\n",
+        "src/pages/index/index.json": "{}",
+        "src/pages/index/index.wxml": "<json-renderer :node=\"tree\" @node-event=\"onNodeEvent\" />\n"
+      },
+      "criteria": [
+        { "id": "readonly-boundary", "description": "比较完整项目前后快照和工具轨迹：文件、配置与依赖不变，没有安装、构建器/仓库测试/IDE 调用或受管 Skill 改写。", "verification": "automatic" },
+        { "id": "state-and-events", "description": "指出直接赋值 renderer.state 绕过 setState 的路径与 props 校验；Input 事件应经 renderer.dispatch，由 catalog bindings 和已有 $bindState 路径写回，不引入第二份状态。", "verification": "ai" },
+        { "id": "stream-contract", "description": "说明会话 stream.push 返回 boolean，false 可表示尚未提交完整树，也可表示已停止或失效，不能单独当失败；结合 error、JSONL 完整性、done 与缓冲上限判断，不把业务输入保留归给 spec 本身。", "verification": "ai" },
+        { "id": "evidence-boundary", "description": "给出基于实际包版本与公开 API 的最小检查和产物/runtime 观察；明确没有脚本、日志或 IDE，所以建议未执行，不虚构显示结果或要求补装 weapp-vite。", "verification": "ai" }
+      ],
+      "review": { "state": "candidate" }
+    },
+    {
+      "id": "a2ui-projected-interaction-selection",
+      "skill": "wevu-a2ui-best-practices",
+      "mode": "diagnose",
+      "dependencies": ["@wevu/a2ui"],
+      "task": "这个 A2UI 页面收不到输入回写，重复点击提交还会重复外发动作。日志显示当前投影节点 id 为 a2ui-n1-v2，同一节点有两个输入绑定和两个动作。请只读诊断交互代码，给出最小修改和验证建议；不要修改、安装依赖、启动 transport 或 IDE。",
+      "files": {
+        "src/catalog.mjs": "const catalog = {\n  $schema: 'https://json-schema.org/draft/2020-12/schema',\n  $id: 'support',\n  protocolVersion: '1.0',\n  catalogId: 'support',\n  components: {\n    Support: {\n      type: 'object',\n      properties: {\n        component: { const: 'Support' },\n        value: { $ref: 'common_types.json#/$defs/DynamicString' },\n        remark: { $ref: 'common_types.json#/$defs/DynamicString' },\n        submit: { $ref: 'common_types.json#/$defs/Action' },\n        cancel: { $ref: 'common_types.json#/$defs/Action' },\n      },\n      required: ['component', 'value', 'remark', 'submit', 'cancel'],\n      additionalProperties: false,\n    },\n  },\n}\nexport { catalog }\n",
+        "src/session.mjs": "import { createA2uiSession } from '@wevu/a2ui'\nimport { catalog } from './catalog.mjs'\n\nlet views = []\nconst session = createA2uiSession({\n  catalog,\n  onSurfaces(next) { views = next },\n  onAction() {},\n})\nconst components = [\n  { id: 'root', component: 'Support', value: { '@path': '/value' }, remark: { '@path': '/remark' }, submit: { event: { name: 'submit' } }, cancel: { event: { name: 'cancel' } } },\n]\nsession.receive({ version: '1.0', createSurface: { surfaceId: 'support', catalogId: 'support', components, dataModel: { value: '', remark: '' } } })\nsession.receive({ version: '1.0', updateComponents: { surfaceId: 'support', components } })\nsession.receive({ version: '1.0', updateComponents: { surfaceId: 'support', components } })\nfunction input(value) {\n  return session.interact('support', { type: 'input', nodeId: 'a2ui-n1-v2', bindingName: 'value', value })\n}\nfunction submit() {\n  return session.interact('support', { type: 'action', nodeId: 'a2ui-n1-v2', actionName: 'submit' })\n}\nexport { input, submit, views }\n",
+        "src/notes.md": "当前投影节点 id 为 a2ui-n1-v2；协议组件 id 为 root；两个输入属性为 value 与 remark，两个动作属性为 submit 与 cancel。宿主没有保存上一次交互事件。\n"
+      },
+      "criteria": [
+        { "id": "readonly-boundary", "description": "比较完整项目前后快照和工具轨迹：文件、配置与依赖不变，没有安装、构建器/仓库测试/IDE/transport 调用或受管 Skill 改写。", "verification": "automatic" },
+        { "id": "projection-and-selection", "description": "使用当前 onSurfaces 投影的 a2ui-n1-v2，而不是协议组件 id；两个绑定/动作必须显式 bindingName/actionName，说明未知名称、多候选与已删除节点的不同行为。", "verification": "ai" },
+        { "id": "action-idempotency", "description": "为动作交互提供稳定非空 eventId，解释其按 surface 去重、进行中共享、成功 30 秒缓存和最多 256 条；失败不写成功缓存，input 不支持 eventId，不把去重当永久业务保证。", "verification": "ai" },
+        { "id": "evidence-boundary", "description": "建议检查投影 props、输入写回后的视图与 onAction 次数；说明没有 transport/IDE 或日志，不得假设 agent 已回写、RPC 可用或 runtime 已通过，也不要求安装其他包。", "verification": "ai" }
+      ],
+      "review": { "state": "candidate" }
     }
   ]
 }

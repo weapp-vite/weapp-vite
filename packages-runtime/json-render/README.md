@@ -1,8 +1,18 @@
 # @wevu/json-render
 
-json-render 的 Wevu 微信小程序适配层。复用 `@json-render/core@0.21.0` 的表达式、绑定与 SpecStream 解析，以预编译 SFC 渲染界面，并通过小程序泛型组件接入业务组件。
+json-render 的 Wevu 微信小程序适配层。复用 `@json-render/core@0.23.2` 的表达式、绑定与 SpecStream 解析，以预编译 SFC 渲染界面，并通过小程序泛型组件接入业务组件。
 
 当前为实验性 workspace 包，尚未发布到 npm；首轮仅承诺本页列出的协议子集与微信目标。不会在 AppService 中生成模板或执行模型返回的代码。
+
+## Agent Skill
+
+本包随 npm 包分发 `wevu-json-render-best-practices`，同时覆盖 `@wevu/json-render-components` 的预编译 renderer、fallback 与类型接入，不单独分发重复技能。
+
+```sh
+npx skills add sonofmagic/skills --skill wevu-json-render-best-practices
+```
+
+使用 pnpm >= 12.11 时，也可在消费项目中启用可选依赖安装并由用户批准；详见 [Skills 指南](https://vite.weapp.dev/guide/skills)。
 
 ## 安装与构建配置
 

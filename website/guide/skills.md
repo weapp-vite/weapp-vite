@@ -14,7 +14,7 @@ date: 2026-05-03
 
 # AI Skills 使用指南
 
-按项目需要选择构建、Vue SFC、Wevu 或 React 技能。
+按项目需要选择构建、Vue SFC、Wevu、React 或生成式 UI 技能。
 
 ## 手动安装
 
@@ -44,8 +44,10 @@ pnpm 从 12.11.0 支持随直接依赖安装 skills，让技能内容跟随依�
 | `weapp-vite` | `weapp-vite-best-practices`、`weapp-vite-vue-sfc-best-practices` |
 | `wevu` | `wevu-best-practices` |
 | `@weapp-vite/react` | `weapp-vite-react-best-practices` |
+| `@wevu/json-render` | `wevu-json-render-best-practices` |
+| `@wevu/a2ui` | `wevu-a2ui-best-practices` |
 
-这三个包不携带文档、发布或 E2E 维护技能；`@weapp-agent/cli` 另行发布 `weapp-acceptance`。
+这些包不携带文档、发布或 E2E 维护技能；`@weapp-agent/cli` 另行发布 `weapp-acceptance`。`wevu-json-render-best-practices` 同时覆盖 `@wevu/json-render` 与配套资源包 `@wevu/json-render-components`，不为资源包重复分发 skill。
 
 在项目或 workspace 根的 `pnpm-workspace.yaml` 中指定目录，再安装并审批：
 
@@ -90,6 +92,8 @@ pnpm approve
 | `$weapp-vite-vue-sfc-best-practices`    | 小程序 `.vue`、JSON 宏、`definePageMeta`、layout、`v-model`、模板兼容               | `.weapp-vite` 类型文件、Vue SFC 文档、模板兼容清单                           |
 | `$weapp-vite-react-best-practices` | React 渲染、事件和原生组件桥接 | 技能内 `references/`、`@weapp-vite/react` 公开类型 |
 | `$wevu-best-practices` | 生命周期、响应式、事件、store 和 router | 技能内 `references/`、Wevu 文档 |
+| `$wevu-json-render-best-practices` | json-render catalog/spec、状态动作、SpecStream、预编译 renderer 与自定义节点 | 技能内 `references/`、`@wevu/json-render` 公开类型 |
+| `$wevu-a2ui-best-practices` | A2UI 1.0 surface、数据模型、投影交互、函数与递归宿主 | 技能内 `references/`、`@wevu/a2ui` 公开类型 |
 | `$native-to-weapp-vite-wevu-migration`  | 原生小程序迁移到 `weapp-vite + 原生`，或继续升级到 `weapp-vite + wevu + Vue SFC`    | 路线选择、迁移清单、API 映射、回滚与验收计划                                 |
 
 
@@ -103,7 +107,7 @@ pnpm approve
 | --------------------------------------------------- | --------------------------------------------- |
 | `skills/<name>/SKILL.md`                            | skill 正文、触发场景、输出要求                |
 | `skills/<name>/agents/openai.yaml`                  | display name、short description、隐式触发提示 |
-| `skills/distribution.json`                         | 唯一消费包 owner，以及不随三个消费包发布的按需/贡献者分类 |
+| `skills/distribution.json`                         | 唯一消费包 owner，以及不随消费包发布的按需/贡献者分类               |
 | `skills/skill-trigger-regression-checklist.md`      | 主用例、边界用例、冲突场景                    |
 | `skills/scripts/score-skill-trigger-regression.mjs` | 预期 skill 映射与统计分组                     |
 | `skills/scripts/check-public-skill-sync.mjs`        | 公开目录、元数据、评分映射与入口一致性检查    |
@@ -122,7 +126,7 @@ pnpm seo-quality-check
 随包内容或归属变化时，还需运行真实打包与消费验收：
 
 ```sh
-pnpm exec turbo run build --filter=weapp-vite... --filter=wevu... --filter=@weapp-vite/react...
+pnpm exec turbo run build --filter=weapp-vite... --filter=wevu... --filter=@weapp-vite/react... --filter=@wevu/json-render... --filter=@wevu/a2ui...
 node skills/scripts/verify-package-skills.mjs
 ```
 

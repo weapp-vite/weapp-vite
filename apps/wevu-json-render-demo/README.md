@@ -1,6 +1,6 @@
 # Wevu × json-render 示例
 
-本应用消费独立的 `@wevu/json-render` workspace 包，验证 JSON 描述经 Wevu 渲染、输入绑定、自定义组件事件和 SpecStream 更新的完整闭环。适配包直接依赖 `@json-render/core@0.21.0`；应用保留组件目录、订单数据和售后业务动作，不再维护独立的通用 renderer。
+本应用消费独立的 `@wevu/json-render` workspace 包，验证 JSON 描述经 Wevu 渲染、输入绑定、自定义组件事件和 SpecStream 更新的完整闭环。适配包直接依赖 `@json-render/core@0.23.2`；应用保留组件目录、订单数据和售后业务动作，不再维护独立的通用 renderer。
 
 包的完整 API 与协议范围见 [@wevu/json-render README](../../packages-runtime/json-render/README.md)。当前包尚未发布到 npm。
 

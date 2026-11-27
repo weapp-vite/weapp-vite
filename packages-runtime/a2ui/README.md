@@ -4,6 +4,16 @@ A2UI 1.0 的组件无关小程序渲染运行时。复用 `@a2ui/web_core@0.16.1
 
 当前为实验性 workspace 包，尚未发布到 npm；只承诺 A2UI 1.0 的四种 surface 状态消息与微信小程序目标。不在 AppService 中生成模板、执行模型返回的代码，也不引入 lit。
 
+## Agent Skill
+
+本包随 npm 包分发 `wevu-a2ui-best-practices`，覆盖 surface 消息、catalog、数据模型、视图投影、输入与动作交互、函数实现、递归宿主及运行时验收。
+
+```sh
+npx skills add sonofmagic/skills --skill wevu-a2ui-best-practices
+```
+
+使用 pnpm >= 12.11 时，也可在消费项目中启用可选依赖安装并由用户批准；详见 [Skills 指南](https://vite.weapp.dev/guide/skills)。
+
 ## 定位
 
 与 `@wevu/json-render` 一样，本包只做运行时，不提供 UI 组件：

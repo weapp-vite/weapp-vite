@@ -2,6 +2,12 @@
 
 `@wevu/json-render` 自动依赖的预编译小程序组件资源包。消费应用需在 dependencies 中同时声明主适配包和本包，供小程序 npm 构建显式识别；业务代码只使用主包 API 和 `JsonRendererResolver()`。
 
+本包的使用指南包含在主包随包分发的 `wevu-json-render-best-practices` 中，不重复发布独立技能：
+
+```sh
+npx skills add sonofmagic/skills --skill wevu-json-render-best-practices
+```
+
 - `components/renderer/index.vue`：基础控件、递归节点和 `custom-node` 泛型转发。
 - `components/fallback`：未提供业务泛型时的默认原生组件。
 - `src/types.ts`：主包与组件共享的可序列化 `RenderNode` / `RendererEvent` 契约，通过 `./types` 仅导出类型。

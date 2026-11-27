@@ -36,9 +36,11 @@ npx skills add sonofmagic/skills --skill weapp-vite-best-practices
 6. `.vue` 宏、模板兼容、`v-model`/`usingComponents` 问题优先用 `weapp-vite-vue-sfc-best-practices`。
 7. React 19 JSX/TSX、`weapp.react`、render mode、React Compiler 和原生/Wevu bridge 优先用 `weapp-vite-react-best-practices`。
 8. `wevu` 生命周期、状态、事件、store、Wevu JSX/TSX，以及卡顿、掉帧、白屏、内存告警这类运行时治理优先用 `wevu-best-practices`。
-9. 原生小程序迁移到 `weapp-vite + 原生`，或继续迁移到 `weapp-vite + wevu + Vue SFC`，优先用 `native-to-weapp-vite-wevu-migration`。
-10. DevTools 自动化、`preview/upload/automator/config` 命令治理优先用 `weapp-vite-best-practices`。
-11. 先让 AI 明确使用哪个 Skill，再开始具体任务。
+9. json-render catalog/spec、`$state` / `$bindState`、SpecStream 与预编译 renderer 优先用 `wevu-json-render-best-practices`。
+10. A2UI 1.0 surface、数据模型、节点投影、输入动作与递归宿主优先用 `wevu-a2ui-best-practices`。
+11. 原生小程序迁移到 `weapp-vite + 原生`，或继续迁移到 `weapp-vite + wevu + Vue SFC`，优先用 `native-to-weapp-vite-wevu-migration`。
+12. DevTools 自动化、`preview/upload/automator/config` 命令治理优先用 `weapp-vite-best-practices`。
+13. 先让 AI 明确使用哪个 Skill，再开始具体任务。
 
 ## MCP
 
