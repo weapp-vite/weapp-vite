@@ -1,4 +1,5 @@
 export type { MiniProgramRuntimeCapabilities, MiniProgramRuntimeCapabilityName, MpPlatform } from '../types'
 export * from './descriptors'
+export * from './globalKeys'
 export * from './helpers'
 export { getMiniProgramDirectivePrefix, getSupportedMiniProgramDirectivePrefixes } from './template'

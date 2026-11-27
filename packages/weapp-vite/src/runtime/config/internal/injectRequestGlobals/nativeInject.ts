@@ -5,8 +5,9 @@ import { existsSync, readFileSync } from 'node:fs'
 import path from 'node:path'
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
-import { WEB_RUNTIME_GLOBAL_INSTALL_PREDICATE } from '@weapp-core/constants'
 import {
+  resolveNativeRequestGlobalsRuntimeEnsureModuleId,
+  resolveNativeRequestGlobalsRuntimeGlobalModuleId,
   resolveNativeRequestGlobalsRuntimeModuleId,
   resolveRequestGlobalsBindingTargets,
   WEB_RUNTIME_DERIVED_BINDING_TARGETS,
@@ -68,6 +69,20 @@ const NATIVE_TARGET_EXPORTS = {
   File: 'FilePolyfill',
   FormData: 'FormDataPolyfill',
 } satisfies Record<RequestGlobalFreeBindingTarget, string>
+
+const NATIVE_GLOBAL_ENSURE_EXPORTS: Partial<Record<RequestGlobalFreeBindingTarget, string>> = {
+  Headers: 'ensureWebRuntimeHeaders',
+  Response: 'ensureWebRuntimeResponse',
+  TextDecoder: 'ensureWebRuntimeTextDecoder',
+  performance: 'ensureWebRuntimePerformance',
+  crypto: 'ensureWebRuntimeCrypto',
+  URL: 'ensureWebRuntimeURL',
+  URLSearchParams: 'ensureWebRuntimeURLSearchParams',
+  Blob: 'ensureWebRuntimeBlob',
+  File: 'ensureWebRuntimeFile',
+  FormData: 'ensureWebRuntimeFormData',
+  TextDecoderStream: 'ensureWebRuntimeTextDecoderStream',
+}
 
 export function mergeWebRuntimeNativeInject(
   nativeInject: Record<string, string | [string, string]>,
@@ -144,14 +159,40 @@ export function createWebRuntimeGlobalBridgeCode(plan: WebRuntimeNativeInject, t
   const mapping = plan.userInject?.[`globalThis.${target}`] ?? plan.userInject?.[target]
   const localName = '__weappViteGlobalBinding'
   const key = JSON.stringify(target)
+  const ensureExport = NATIVE_GLOBAL_ENSURE_EXPORTS[target as RequestGlobalFreeBindingTarget]
+  const runtimeModuleId = resolveNativeRequestGlobalsRuntimeModuleId()
+  const usesLightweightEnsure = !ensureExport || target === 'performance' || target === 'crypto'
+  const runtimeEnsureModuleId = usesLightweightEnsure
+    ? resolveNativeRequestGlobalsRuntimeGlobalModuleId()
+    : resolveNativeRequestGlobalsRuntimeEnsureModuleId()
+  const runtimeImport = ensureExport
+    ? `import { ${ensureExport} as __weappViteEnsureGlobal, markWebRuntimeGlobalInstalled as __weappViteMarkNativeGlobal } from ${JSON.stringify(runtimeEnsureModuleId)}`
+    : `import { markWebRuntimeGlobalInstalled as __weappViteMarkNativeGlobal, shouldInstallWebRuntimeGlobal as __weappViteShouldInstallGlobal } from ${JSON.stringify(runtimeEnsureModuleId)}`
+  const ensureArgs = target === 'Response'
+    ? `, ${localName}`
+    : target === 'TextDecoderStream'
+      ? ', __weappViteUsesNativeStreams'
+      : ''
+  const resolveValue = ensureExport
+    ? `__weappViteEnsureGlobal(__weappViteGlobalCurrent, ${localName}${ensureArgs})`
+    : `__weappViteShouldInstallGlobal(__weappViteGlobalCurrent) ? ${localName} : __weappViteGlobalCurrent`
   return [
-    `import { ${WEB_RUNTIME_GLOBAL_INSTALL_PREDICATE} } from ${JSON.stringify(WEB_RUNTIME_INJECT_VIRTUAL_ID)}`,
+    runtimeImport,
+    ...(target === 'TextDecoderStream'
+      ? [`import { usesNativeStreams as __weappViteUsesNativeStreams } from ${JSON.stringify(runtimeModuleId)}`]
+      : []),
     mapping
       ? createNativeInjectOverrideImport(mapping, localName)
       : `import { ${target} as ${localName} } from ${JSON.stringify(WEB_RUNTIME_INJECT_VIRTUAL_ID)}`,
-    `const __weappViteGlobalCurrent = Reflect.get(globalThis, ${key})`,
-    // 写入条件由运行时共享判定：宿主缺失或仅有占位实现时写入，真实实现与运行期覆盖保留。
-    `if (${WEB_RUNTIME_GLOBAL_INSTALL_PREDICATE}(__weappViteGlobalCurrent)) { try { Reflect.set(globalThis, ${key}, ${localName}) } catch {} }`,
+    `let __weappViteGlobalCurrent`,
+    `try { __weappViteGlobalCurrent = globalThis[${key}] } catch {}`,
+    `const __weappViteGlobalValue = ${resolveValue}`,
+    `if (__weappViteGlobalValue !== __weappViteGlobalCurrent) {`,
+    `  try {`,
+    `    globalThis[${key}] = __weappViteGlobalValue`,
+    `    if (globalThis[${key}] === __weappViteGlobalValue) { __weappViteMarkNativeGlobal(__weappViteGlobalValue) }`,
+    `  } catch {}`,
+    `}`,
     '',
   ].join('\n')
 }
@@ -263,8 +304,6 @@ export function createWebRuntimeNativeInject(
   const defaultBindingTargets = moduleBindingTargets.filter(target => !isUserOverride(target))
   const runtimeModuleId = resolveNativeRequestGlobalsRuntimeModuleId()
   const code = [
-    // 全局桥接只调用这一个共享判定，写入条件不再复制到每个桥接模块。
-    `export { ${WEB_RUNTIME_GLOBAL_INSTALL_PREDICATE} } from ${JSON.stringify(runtimeModuleId)}`,
     ...(networkDefaults !== undefined
       ? [`import { setMiniProgramNetworkDefaults } from ${JSON.stringify(runtimeModuleId)}`]
       : []),

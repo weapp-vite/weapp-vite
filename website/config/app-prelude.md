@@ -75,7 +75,7 @@ export default defineConfig({
 > [!NOTE]
 > `app.prelude` 当前仅支持无 `import` / `export` 的自包含脚本。
 >
-> `native` 要求 `appPrelude.enabled !== false`。`appPrelude.webRuntime` 在该模式下行为固定为精确最优解，无策略开关：自由标识符与全局对象点号访问精确绑定（可 tree-shake、不写全局），字符串计算属性、全局解构、别名与 `globalTargets` 声明的目标生成宿主优先的幂等桥接，分包交给打包器自然分组。用户只用 `targets` 选择绑定资格（opt-out 作用域，实际进包量由 tree-shake 裁剪）、`globalTargets` 精确补充静态推断不到的隐藏访问（独立于 `targets` 绑定资格，安装声明目标及其必要依赖闭包），不全量安装与声明无关的未用实现。Web Runtime 的求值顺序始终由普通模块依赖保证；Prelude 自身引用目标时遵循相同规则，binding 不会反向依赖 Prelude。
+> `native` 要求 `appPrelude.enabled !== false`。`appPrelude.webRuntime` 在该模式下行为固定为精确最优解，无策略开关：自由标识符与全局对象点号访问精确绑定（可 tree-shake、不写全局），字符串计算属性、全局解构、别名与 `globalTargets` 声明的目标生成幂等桥接。桥接保留完整宿主实现，替换缺失、占位或上一轮 native 安装的值，并按目标修补已知能力缺口；写入使用受保护的 `globalThis[key]`，不依赖 `Reflect.get/set`。分包交给打包器自然分组。用户只用 `targets` 选择绑定资格（opt-out 作用域，实际进包量由 tree-shake 裁剪）、`globalTargets` 精确补充静态推断不到的隐藏访问（独立于 `targets` 绑定资格，安装声明目标及其必要依赖闭包），不全量安装与声明无关的未用实现。Web Runtime 的求值顺序始终由普通模块依赖保证；Prelude 自身引用目标时遵循相同规则，binding 不会反向依赖 Prelude。
 >
 > 旧模式与未指定 `mode` 时，嵌套 Web Runtime 始终提前安装；需要旧模式延迟安装时，使用顶层 `weapp.injectWebRuntimeGlobals.prelude: false`。
 

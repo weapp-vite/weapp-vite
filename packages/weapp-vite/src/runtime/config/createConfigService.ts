@@ -40,11 +40,15 @@ function createConfigService(ctx: MutableCompilerContext, oxcRuntimeSupport: Oxc
   const aliasManager = createAliasManager(oxcRuntimeSupport.alias, [])
 
   function injectBuiltinAliases(config: LoadConfigResult['config'], wevuRuntime?: WevuRuntimeAliasMode) {
-    aliasManager.injectBuiltinAliases(config, builtinAliases.resolve({
+    const aliases = builtinAliases.resolve({
       cwd: loadingOptions?.cwd ?? options.cwd,
       isDev: loadingOptions?.isDev ?? options.isDev,
       wevuRuntime: wevuRuntime ?? config.weapp?.wevu?.runtime,
+    }).map(({ find, replacement }) => ({
+      find: new RegExp(`^${find.replace(/[.*+?^${}()|[\]\\]/gu, '\\$&')}$`, 'u'),
+      replacement,
     }))
+    aliasManager.injectBuiltinAliases(config, aliases)
   }
 
   const normalizeComparablePath = (input: string) => {

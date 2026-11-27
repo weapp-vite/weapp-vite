@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { runInNewContext } from 'node:vm'
-import { REQUEST_GLOBAL_PLACEHOLDER_KEY, WEB_RUNTIME_GLOBAL_TARGETS } from '@weapp-core/constants'
+import { REQUEST_GLOBAL_NATIVE_OWNER_KEY, REQUEST_GLOBAL_PLACEHOLDER_KEY, WEB_RUNTIME_GLOBAL_TARGETS } from '@weapp-core/constants'
 import { rolldown } from 'rolldown'
 import { describe, expect, it } from 'vitest'
 import { resolveRequestRuntimeOptions } from '../injectRequestGlobals'
@@ -35,6 +35,12 @@ function createNativeInjectPlugin(plan: NonNullable<ReturnType<typeof createWebR
       if (id === 'weapp-vite/web-apis/runtime') {
         return { id: 'virtual:runtime', moduleSideEffects: true }
       }
+      if (id === 'weapp-vite/web-apis/runtime-global') {
+        return { id: 'virtual:runtime-global', moduleSideEffects: true }
+      }
+      if (id === 'weapp-vite/web-apis/runtime-ensure') {
+        return { id: 'virtual:runtime-ensure', moduleSideEffects: true }
+      }
       if (id in sources) {
         return { id, moduleSideEffects: true }
       }
@@ -50,6 +56,12 @@ function createNativeInjectPlugin(plan: NonNullable<ReturnType<typeof createWebR
       }
       if (id === 'virtual:runtime') {
         return { code: sources['virtual:runtime']!, moduleSideEffects: true }
+      }
+      if (id === 'virtual:runtime-global') {
+        return { code: sources['virtual:runtime-global']!, moduleSideEffects: true }
+      }
+      if (id === 'virtual:runtime-ensure') {
+        return { code: sources['virtual:runtime-ensure']!, moduleSideEffects: true }
       }
       return id in sources ? { code: sources[id]!, moduleSideEffects: true } : null
     },
@@ -92,12 +104,73 @@ export class URLSearchParamsPolyfill {}
 export class BlobPolyfill {}
 export class FilePolyfill {}
 export class FormDataPolyfill {}
-export function shouldInstallWebRuntimeGlobal(current) {
-  return current == null || Boolean(current && (typeof current === 'object' || typeof current === 'function') && current[${JSON.stringify(REQUEST_GLOBAL_PLACEHOLDER_KEY)}] === true)
-}
+export const usesNativeStreams = true
 export function setMiniProgramNetworkDefaults(defaults) {
   globalThis.__webRuntimeNetworkDefaults = defaults
 }
+`
+
+const runtimeEnsureSource = `
+export function shouldInstallWebRuntimeGlobal(current) {
+  return current == null
+    || Boolean(current && (typeof current === 'object' || typeof current === 'function') && current[${JSON.stringify(REQUEST_GLOBAL_PLACEHOLDER_KEY)}] === true)
+    || Boolean(current && (typeof current === 'object' || typeof current === 'function') && current[${JSON.stringify(REQUEST_GLOBAL_NATIVE_OWNER_KEY)}] === true)
+}
+export function markWebRuntimeGlobalInstalled(value) {
+  if (value && (typeof value === 'object' || typeof value === 'function')) {
+    try {
+      Object.defineProperty(value, ${JSON.stringify(REQUEST_GLOBAL_NATIVE_OWNER_KEY)}, { value: true, configurable: true })
+    }
+    catch {}
+  }
+  return value
+}
+export function ensureWebRuntimeHeaders(current, fallback) {
+  if (shouldInstallWebRuntimeGlobal(current)) {
+    return fallback
+  }
+  if (typeof current !== 'function') {
+    return fallback
+  }
+  try {
+    if (typeof current.prototype?.getSetCookie !== 'function') {
+      current.prototype.getSetCookie = () => []
+    }
+    return current
+  }
+  catch {
+    return fallback
+  }
+}
+export function ensureWebRuntimeResponse(current, fallback) { return shouldInstallWebRuntimeGlobal(current) ? fallback : current }
+export function ensureWebRuntimeTextDecoder(current, fallback) { return shouldInstallWebRuntimeGlobal(current) ? fallback : current }
+export function ensureWebRuntimePerformance(current, fallback) { return shouldInstallWebRuntimeGlobal(current) ? fallback : current }
+export function ensureWebRuntimeCrypto(current, fallback) { return shouldInstallWebRuntimeGlobal(current) ? fallback : current }
+export function ensureWebRuntimeURL(current, fallback) { return shouldInstallWebRuntimeGlobal(current) ? fallback : current }
+export function ensureWebRuntimeURLSearchParams(current, fallback) { return shouldInstallWebRuntimeGlobal(current) ? fallback : current }
+export function ensureWebRuntimeBlob(current, fallback) { return shouldInstallWebRuntimeGlobal(current) ? fallback : current }
+export function ensureWebRuntimeFile(current, fallback) { return shouldInstallWebRuntimeGlobal(current) ? fallback : current }
+export function ensureWebRuntimeFormData(current, fallback) { return shouldInstallWebRuntimeGlobal(current) ? fallback : current }
+export function ensureWebRuntimeTextDecoderStream(current, fallback) { return shouldInstallWebRuntimeGlobal(current) ? fallback : current }
+`
+
+const runtimeGlobalSource = `
+export function shouldInstallWebRuntimeGlobal(current) {
+  return current == null
+    || Boolean(current && (typeof current === 'object' || typeof current === 'function') && current[${JSON.stringify(REQUEST_GLOBAL_PLACEHOLDER_KEY)}] === true)
+    || Boolean(current && (typeof current === 'object' || typeof current === 'function') && current[${JSON.stringify(REQUEST_GLOBAL_NATIVE_OWNER_KEY)}] === true)
+}
+export function markWebRuntimeGlobalInstalled(value) {
+  if (value && (typeof value === 'object' || typeof value === 'function')) {
+    try {
+      Object.defineProperty(value, ${JSON.stringify(REQUEST_GLOBAL_NATIVE_OWNER_KEY)}, { value: true, configurable: true })
+    }
+    catch {}
+  }
+  return value
+}
+export function ensureWebRuntimePerformance(current, fallback) { return shouldInstallWebRuntimeGlobal(current) ? fallback : current }
+export function ensureWebRuntimeCrypto(current, fallback) { return shouldInstallWebRuntimeGlobal(current) ? fallback : current }
 `
 
 async function generateCjs(plan: NonNullable<ReturnType<typeof createWebRuntimeNativeInject>>, entry: string, sources: Record<string, string> = {}) {
@@ -106,6 +179,8 @@ async function generateCjs(plan: NonNullable<ReturnType<typeof createWebRuntimeN
     plugins: [createNativeInjectPlugin(plan, {
       'virtual:entry': entry,
       'virtual:runtime': runtimeSource,
+      'virtual:runtime-global': runtimeGlobalSource,
+      'virtual:runtime-ensure': runtimeEnsureSource,
       ...sources,
     })],
     transform: { inject: plan.inject },
@@ -200,6 +275,69 @@ export const ready = true
     expect(() => runInNewContext(code, { module, exports: module.exports, globalThis: hostGlobal })).not.toThrow()
     expect(hostGlobal.fetch).toBe(placeholder)
     expect(module.exports.ready).toBe(true)
+  })
+
+  it('repairs an incomplete host Headers implementation instead of replacing it', async () => {
+    const plan = createWebRuntimeNativeInject(['fetch'], undefined, undefined, ['Headers'])!
+    const code = await generateCjs(plan, `
+import "virtual:weapp-vite-web-runtime:global:Headers";
+export const ready = true
+`)
+    class HostHeaders {}
+    const hostGlobal = { Headers: HostHeaders } as Record<string, unknown>
+    const module = { exports: {} as Record<string, unknown> }
+    runInNewContext(code, { module, exports: module.exports, globalThis: hostGlobal })
+
+    expect(hostGlobal.Headers).toBe(HostHeaders)
+    expect(typeof (HostHeaders.prototype as unknown as Record<string, unknown>).getSetCookie).toBe('function')
+    expect(module.exports.ready).toBe(true)
+  })
+
+  it('replaces its own previous native bridge installation on the next generation', async () => {
+    const plan = createWebRuntimeNativeInject(['fetch'], undefined, undefined, ['fetch'])!
+    const code = await generateCjs(plan, `
+import "virtual:weapp-vite-web-runtime:global:fetch";
+export const ready = true
+`)
+    const hostGlobal: Record<string, unknown> = {}
+    runInNewContext(code, { module: { exports: {} }, exports: {}, globalThis: hostGlobal })
+    const firstFetch = hostGlobal.fetch
+    expect((firstFetch as Record<string, unknown>)[REQUEST_GLOBAL_NATIVE_OWNER_KEY]).toBe(true)
+
+    runInNewContext(code, { module: { exports: {} }, exports: {}, globalThis: hostGlobal })
+    expect(hostGlobal.fetch).not.toBe(firstFetch)
+    expect((hostGlobal.fetch as Record<string, unknown>)[REQUEST_GLOBAL_NATIVE_OWNER_KEY]).toBe(true)
+  })
+
+  it('keeps booting when reading or writing a bridged global throws', async () => {
+    const plan = createWebRuntimeNativeInject(['fetch'], undefined, undefined, ['fetch'])!
+    const code = await generateCjs(plan, `
+import "virtual:weapp-vite-web-runtime:global:fetch";
+export const ready = true
+`)
+    const hostGlobal: Record<string, unknown> = {}
+    Object.defineProperty(hostGlobal, 'fetch', {
+      configurable: true,
+      get() {
+        throw new Error('blocked getter')
+      },
+      set() {
+        throw new Error('blocked setter')
+      },
+    })
+    const module = { exports: {} as Record<string, unknown> }
+
+    expect(() => runInNewContext(code, { module, exports: module.exports, globalThis: hostGlobal })).not.toThrow()
+    expect(module.exports.ready).toBe(true)
+  })
+
+  it('emits direct guarded global access without Reflect in bridge code', () => {
+    const plan = createWebRuntimeNativeInject(['fetch'], undefined, undefined, ['fetch'])!
+    const bridge = createWebRuntimeGlobalBridgeCode(plan, 'fetch')
+
+    expect(bridge).not.toMatch(/Reflect\.(?:get|set)/u)
+    expect(bridge).toContain('globalThis["fetch"]')
+    expect(bridge).toContain('markWebRuntimeGlobalInstalled')
   })
 
   it('installs declared globalTargets precisely without installing unused bindings', async () => {
@@ -364,6 +502,8 @@ export const read = () => fetch()
               '@wevu/api',
               '@weapp-core/api',
               '@weapp-core/constants',
+              '@weapp-core/shared/platforms/runtime',
+              '@weapp-core/shared/platforms/runtime/global-keys',
               'web-streams-polyfill',
             ].includes(id)) {
               return {

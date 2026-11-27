@@ -10,6 +10,15 @@ import { cryptoPolyfill } from './crypto'
 import { CustomEventPolyfill, EventPolyfill } from './events'
 import { EventSourcePolyfill } from './eventsource'
 import { fetch } from './fetch'
+import {
+  hasUsableConstructor,
+  hasUsablePrototypeMethods,
+  hasWebCompatibleUrlConstructor,
+  patchHeadersConstructor,
+  patchResponseConstructor,
+  patchUrlConstructor,
+  patchUrlSearchParamsConstructor,
+} from './globalPatch'
 import { isPlaceholderRequestGlobal } from './globalValue'
 import { HeadersPolyfill, RequestPolyfill, ResponsePolyfill } from './http'
 import { performancePolyfill } from './performance'
@@ -52,44 +61,6 @@ function assignHostGlobal(host: WebRuntimeGlobalsHost, key: string, value: unkno
   }
 }
 
-function defineHostGlobal(host: WebRuntimeGlobalsHost, key: string, descriptor: PropertyDescriptor) {
-  try {
-    Object.defineProperty(host, key, {
-      configurable: true,
-      ...descriptor,
-    })
-    return true
-  }
-  catch {
-    return false
-  }
-}
-
-function hasUsableConstructor(value: unknown, args: unknown[] = []) {
-  if (typeof value !== 'function' || isPlaceholderRequestGlobal(value)) {
-    return false
-  }
-  try {
-    Reflect.construct(value, args)
-    return true
-  }
-  catch {
-    return false
-  }
-}
-
-function hasUsablePrototypeMethods(value: unknown, methods: string[], properties: string[] = []) {
-  if (typeof value !== 'function' || isPlaceholderRequestGlobal(value)) {
-    return false
-  }
-  const prototype = (value as { prototype?: unknown }).prototype
-  if (!prototype || (typeof prototype !== 'object' && typeof prototype !== 'function')) {
-    return false
-  }
-  const prototypeRecord = prototype as Record<string, unknown>
-  return Boolean(methods.every(method => typeof prototypeRecord[method] === 'function') && properties.every(property => property in prototypeRecord))
-}
-
 function ensureRuntimeHostAliases(host: WebRuntimeGlobalsHost) {
   for (const alias of ['global', 'self', 'window']) {
     try {
@@ -109,104 +80,13 @@ export function createWebRuntimeInstallContext(): WebRuntimeInstallContext {
   return { hosts, primaryHost }
 }
 
-function createUrlParser(URLConstructor: typeof URL) {
-  return function parse(input: string | URL, base?: string | URL) {
-    try {
-      return new URLConstructor(input, base)
-    }
-    catch {
-      return null
-    }
-  }
-}
-
-function createUrlCanParser(URLConstructor: typeof URL) {
-  return function canParse(input: string | URL, base?: string | URL) {
-    try {
-      Reflect.construct(URLConstructor, base === undefined ? [input] : [input, base])
-      return true
-    }
-    catch {
-      return false
-    }
-  }
-}
-
-function hasWebCompatibleUrlConstructor(value: unknown) {
-  if (!hasUsableConstructor(value, ['https://request-globals.invalid'])) {
-    return false
-  }
-  try {
-    return new (value as typeof URL)('123', 'fake://abc').href === 'fake://abc/123'
-  }
-  catch {
-    return false
-  }
-}
-
-function patchUrlConstructor(host: WebRuntimeGlobalsHost) {
-  const URLConstructor = host.URL as typeof URL
-  let patched = true
-  if (typeof URLConstructor.parse !== 'function') {
-    patched = assignHostGlobal(URLConstructor, 'parse', createUrlParser(URLConstructor)) && patched
-  }
-  if (typeof URLConstructor.canParse !== 'function') {
-    patched = assignHostGlobal(URLConstructor, 'canParse', createUrlCanParser(URLConstructor)) && patched
-  }
-  return patched
-}
-
-function compareUrlSearchParamKeys(leftKey: string, rightKey: string) {
-  if (leftKey < rightKey) {
-    return -1
-  }
-  if (leftKey > rightKey) {
-    return 1
-  }
-  return 0
-}
-
-function sortUrlSearchParams(this: URLSearchParams) {
-  const entries = Array.from(this.entries()).sort(([leftKey], [rightKey]) => compareUrlSearchParamKeys(leftKey, rightKey))
-  const keys = [...new Set(entries.map(([key]) => key))]
-  for (const key of keys) {
-    this.delete(key)
-  }
-  for (const [key, value] of entries) {
-    this.append(key, value)
-  }
-}
-
-function patchUrlSearchParamsConstructor(host: WebRuntimeGlobalsHost) {
-  const prototype = (host.URLSearchParams as typeof URLSearchParams | undefined)?.prototype as (URLSearchParams & Record<string, unknown>) | undefined
-  if (!prototype || !['append', 'delete', 'entries', 'forEach'].every(method => typeof prototype[method] === 'function')) {
-    return false
-  }
-  let patched = true
-  if (!('size' in prototype)) {
-    patched = defineHostGlobal(prototype, 'size', {
-      get(this: URLSearchParams) {
-        let size = 0
-        this.forEach(() => {
-          size += 1
-        })
-        return size
-      },
-    }) && patched
-  }
-  if (typeof prototype.sort !== 'function') {
-    patched = assignHostGlobal(prototype, 'sort', sortUrlSearchParams) && patched
-  }
-  return patched
-}
-
 /** URL 与二进制数据构造器作为网络运行时的一组依赖安装。 */
 export function installWebRuntimeUrlGlobals(context: WebRuntimeInstallContext) {
   for (const host of context.hosts) {
-    if (!hasWebCompatibleUrlConstructor(host.URL) || !patchUrlConstructor(host)) {
+    if (!hasWebCompatibleUrlConstructor(host.URL) || !patchUrlConstructor(host.URL)) {
       assignHostGlobal(host, 'URL', URLPolyfill)
     }
-    if (!patchUrlSearchParamsConstructor(host)) {
+    if (!patchUrlSearchParamsConstructor(host.URLSearchParams)) {
       assignHostGlobal(host, 'URLSearchParams', URLSearchParamsPolyfill)
     }
     if (!hasUsablePrototypeMethods(host.Blob, ['arrayBuffer', 'slice'])) {
@@ -229,23 +109,9 @@ export function installWebRuntimeFetch(context: WebRuntimeInstallContext) {
   }
 }
 
-function patchHeadersConstructor(host: WebRuntimeGlobalsHost) {
-  const prototype = (host.Headers as typeof Headers | undefined)?.prototype
-  if (!prototype) {
-    return false
-  }
-  if (typeof prototype.getSetCookie === 'function') {
-    return true
-  }
-  return assignHostGlobal(prototype, 'getSetCookie', function getSetCookie(this: Headers) {
-    const value = this.get('set-cookie')
-    return value == null ? [] : [value]
-  })
-}
-
 export function installWebRuntimeHeaders(context: WebRuntimeInstallContext) {
   for (const host of context.hosts) {
-    if (typeof host.Headers !== 'function' || isPlaceholderRequestGlobal(host.Headers) || !patchHeadersConstructor(host)) {
+    if (typeof host.Headers !== 'function' || isPlaceholderRequestGlobal(host.Headers) || !patchHeadersConstructor(host.Headers)) {
       assignHostGlobal(host, 'Headers', HeadersPolyfill)
     }
   }
@@ -259,21 +125,9 @@ export function installWebRuntimeRequest(context: WebRuntimeInstallContext) {
   }
 }
 
-function patchResponseConstructor(host: WebRuntimeGlobalsHost) {
-  const ResponseConstructor = host.Response as typeof Response
-  let patched = true
-  if (typeof ResponseConstructor.json !== 'function') {
-    patched = assignHostGlobal(ResponseConstructor, 'json', ResponsePolyfill.json) && patched
-  }
-  if (typeof ResponseConstructor.error !== 'function') {
-    patched = assignHostGlobal(ResponseConstructor, 'error', ResponsePolyfill.error) && patched
-  }
-  return patched
-}
-
 export function installWebRuntimeResponse(context: WebRuntimeInstallContext) {
   for (const host of context.hosts) {
-    if (typeof host.Response !== 'function' || isPlaceholderRequestGlobal(host.Response) || !patchResponseConstructor(host)) {
+    if (typeof host.Response !== 'function' || isPlaceholderRequestGlobal(host.Response) || !patchResponseConstructor(host.Response, ResponsePolyfill)) {
       assignHostGlobal(host, 'Response', ResponsePolyfill)
     }
   }

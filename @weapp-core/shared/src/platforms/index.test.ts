@@ -24,6 +24,7 @@ import {
   supportsMiniProgramAutoTouchAppStyle,
   supportsMiniProgramRuntimeCapability,
 } from './index'
+import { MINI_PROGRAM_RUNTIME_GLOBAL_KEYS } from './runtime/globalKeys'
 
 describe('mini program platform registry', () => {
   it('keeps native JD script aliases separate from the portable WXS output contract', () => {
@@ -88,6 +89,7 @@ describe('mini program platform registry', () => {
     expect(getMiniProgramPlatformByRuntimeGlobalKey('wx')).toBe('weapp')
     expect(getMiniProgramPlatformByRuntimeGlobalKey('xhs')).toBe('xhs')
     expect(getMiniProgramRuntimeGlobalKeys()).toEqual(['wx', 'my', 'swan', 'tt', 'jd', 'xhs'])
+    expect(MINI_PROGRAM_RUNTIME_GLOBAL_KEYS).toEqual(getMiniProgramRuntimeGlobalKeys())
     expect(getMiniProgramRuntimeGlobalKeysByResolvePriority()).toEqual(['my', 'wx', 'tt', 'swan', 'jd', 'xhs'])
     expect(getMiniProgramRouteRuntimeGlobalKeys()).toEqual(['wx', 'tt', 'my', 'swan', 'jd', 'xhs'])
     expect(getMiniProgramRuntimeHostConfigKey('weapp')).toBe('__wxConfig')

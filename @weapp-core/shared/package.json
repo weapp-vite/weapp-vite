@@ -56,6 +56,10 @@
         "types": "./src/platforms/runtime/index.ts",
         "default": "./src/platforms/runtime/index.ts"
       },
+      "./platforms/runtime/global-keys": {
+        "types": "./src/platforms/runtime/globalKeys.ts",
+        "default": "./src/platforms/runtime/globalKeys.ts"
+      },
       "./native-dom": {
         "types": "./src/native-dom.ts",
         "default": "./src/native-dom.ts"
@@ -89,6 +93,10 @@
     "./platforms/runtime": {
       "types": "./dist/platforms/runtime/index.d.ts",
       "import": "./dist/platforms/runtime/index.js"
+    },
+    "./platforms/runtime/global-keys": {
+      "types": "./dist/platforms/runtime/globalKeys.d.ts",
+      "import": "./dist/platforms/runtime/globalKeys.js"
     },
     "./native-dom": {
       "types": "./dist/native-dom.d.ts",
@@ -150,6 +158,10 @@
       "./platforms/runtime": {
         "types": "./dist/platforms/runtime/index.d.ts",
         "import": "./dist/platforms/runtime/index.js"
+      },
+      "./platforms/runtime/global-keys": {
+        "types": "./dist/platforms/runtime/globalKeys.d.ts",
+        "import": "./dist/platforms/runtime/globalKeys.js"
       },
       "./native-dom": {
         "types": "./dist/native-dom.d.ts",

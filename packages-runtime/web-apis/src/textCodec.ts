@@ -1,25 +1,9 @@
-import { REQUEST_GLOBAL_PLACEHOLDER_KEY } from '@weapp-core/constants'
 import { encodeTextFallback, isArrayBufferLike } from './shared'
 import { decodeUtf8 } from './textCodec/utf8'
 
-type TextDecoderInput = AllowSharedBufferSource | undefined
+export { hasUsableTextDecoderConstructor } from './globalPatch'
 
-/** 仅检测独立实例的增量 UTF-8 行为，不能把占位函数或单次解码器当作完整能力。 */
-export function hasUsableTextDecoderConstructor(value: unknown): value is typeof globalThis.TextDecoder {
-  if (typeof value !== 'function' || (value as unknown as Record<string, unknown>)[REQUEST_GLOBAL_PLACEHOLDER_KEY]) {
-    return false
-  }
-  try {
-    const decoder = new (value as typeof globalThis.TextDecoder)()
-    return decoder.decode(new Uint8Array([0xE4]), { stream: true }) === ''
-      && decoder.decode(new Uint8Array([0xB8, 0xAD, 0xF0, 0x9F]), { stream: true }) === '中'
-      && decoder.decode(new Uint8Array([0x99, 0x82])) === '🙂'
-      && decoder.decode(new Uint8Array([0xFF])) === '\uFFFD'
-  }
-  catch {
-    return false
-  }
-}
+type TextDecoderInput = AllowSharedBufferSource | undefined
 
 function normalizeTextDecoderInput(input?: TextDecoderInput) {
   if (input === undefined) {

@@ -24,6 +24,14 @@ export function resolveNativeRequestGlobalsRuntimeModuleId() {
   return 'weapp-vite/web-apis/runtime'
 }
 
+export function resolveNativeRequestGlobalsRuntimeEnsureModuleId() {
+  return 'weapp-vite/web-apis/runtime-ensure'
+}
+
+export function resolveNativeRequestGlobalsRuntimeGlobalModuleId() {
+  return 'weapp-vite/web-apis/runtime-global'
+}
+
 export function resolveRequestGlobalsBindingTargets(targets: WeappInjectRequestGlobalsTarget[]) {
   const expandedTargets = resolveRequestGlobalsTargetDependencies(targets)
   const bindingTargets: RequestGlobalFreeBindingTarget[] = [...expandedTargets]

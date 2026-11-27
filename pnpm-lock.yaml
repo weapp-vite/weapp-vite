@@ -3150,6 +3150,9 @@ importers:
       '@weapp-core/constants':
         specifier: workspace:*
         version: link:../../@weapp-core/constants
+      '@weapp-core/shared':
+        specifier: workspace:*
+        version: link:../../@weapp-core/shared
       '@wevu/api':
         specifier: workspace:*
         version: link:../weapi

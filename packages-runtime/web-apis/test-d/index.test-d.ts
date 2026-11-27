@@ -27,6 +27,8 @@ import {
   URLPolyfill,
   URLSearchParamsPolyfill,
 } from '@wevu/web-apis'
+import { ensureWebRuntimeHeaders } from '@wevu/web-apis/runtime-ensure'
+import { ensureWebRuntimeCrypto, ensureWebRuntimeGlobal, ensureWebRuntimePerformance, markWebRuntimeGlobalInstalled, shouldInstallWebRuntimeGlobal } from '@wevu/web-apis/runtime-global'
 import { expectAssignable, expectError, expectType } from 'tsd'
 
 const target: WeappInjectWebRuntimeGlobalsTarget = 'fetch'
@@ -35,6 +37,12 @@ expectAssignable<WeappInjectRequestGlobalsTarget>(target)
 expectAssignable<WeappInjectWebRuntimeGlobalsTarget>('performance')
 expectAssignable<WeappInjectWebRuntimeGlobalsTarget>('crypto')
 expectAssignable<WeappInjectWebRuntimeGlobalsTarget>('queueMicrotask')
+expectType<boolean>(shouldInstallWebRuntimeGlobal(undefined))
+expectType<unknown>(ensureWebRuntimeGlobal(undefined, fetch))
+expectType<unknown>(ensureWebRuntimePerformance(undefined, performance))
+expectType<unknown>(ensureWebRuntimeCrypto(undefined, crypto))
+expectType<unknown>(ensureWebRuntimeHeaders(undefined, Headers))
+expectType<typeof fetch>(markWebRuntimeGlobalInstalled(fetch))
 
 const options: InstallWebRuntimeGlobalsOptions = {
   targets: ['fetch', 'Request', 'XMLHttpRequest', 'performance', 'crypto'],

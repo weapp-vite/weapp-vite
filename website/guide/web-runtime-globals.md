@@ -95,7 +95,7 @@ export default defineConfig({
 | 不可点号注入的显式全局访问 | 静态依赖目标级桥接 | 仅涉及目标 |
 | `globalTargets` | 在相关入口静态依赖目标级桥接 | 仅声明目标 |
 
-binding 模块类似 transform-runtime，只精确导入并重导出目标。全局桥接从 binding 或用户 override 导入目标，检查宿主能力后仅在缺失时幂等写入 `globalThis`。模块缓存保证同一目标只安装一次；主包、普通分包、独立分包、共享 chunk、Vue 和动态导入都遵循普通模块依赖，不依赖固定 chunk 名或优先级。
+binding 模块类似 transform-runtime，只精确导入并重导出目标。全局桥接从 binding 或用户 override 导入目标，使用受保护的 `globalThis[key]` 读写：完整宿主实现优先保留，缺失、占位或上一轮 native 安装的值可替换，已有但不完整的实现按目标修补。写入成功后回读确认并标记 native 所有权，因此 HMR 可以替换自身旧实例，同时不覆盖真实宿主或用户实现。模块缓存保证同一目标只安装一次；主包、普通分包、独立分包、共享 chunk、Vue 和动态导入都遵循普通模块依赖，不依赖固定 chunk 名或优先级。
 
 自由标识符与点号全局访问的局部绑定和词法遮蔽交给 Rolldown。桥接分析只处理无法按固定 dotted 键注入的形式，包括字符串中括号、可选计算访问、全局对象解构和别名，并排除局部遮蔽。第三方库内部的动态 key、间接别名或动态求值无法可靠静态推断；需要这些访问时配置 `globalTargets`，不需要配置库名：
 
@@ -113,7 +113,7 @@ export default defineConfig({
 })
 ```
 
-`native` 不读取 `dependencies`，不生成 `installWebRuntimeXXX`、eager installer context、finalizer 或 axios 环境模块，也不执行 `__wvAXFE__` bundle patch。axios 与其他库没有特殊分支：自由标识符和点号全局访问直接注入，计算属性等不可点号注入的读取由目标桥接提供。宿主已有能力优先，因此桥接不会覆盖宿主实现。
+`native` 不读取 `dependencies`，不生成 `installWebRuntimeXXX`、eager installer context、finalizer 或 axios 环境模块，也不执行 `__wvAXFE__` bundle patch。axios 与其他库没有特殊分支：自由标识符和点号全局访问直接注入，计算属性等不可点号注入的读取由目标桥接提供。桥接不会用 polyfill 替换完整宿主实现；可修补的缺口（如 `Headers.getSetCookie`、`Response.json/error`、`URL.parse/canParse`）会就地修复并保留构造器身份。
 
 用户在 `build.rolldownOptions.transform.inject` 中的映射始终优先。自由标识符覆盖会同步到对应的 `globalThis.<target>`、`window.<target>` 等点号注入键；显式 dotted 覆盖最高，并供仍走桥接的访问使用。基础 binding 不反向导入用户 override，避免覆盖模块读取其他目标时形成循环。
 
@@ -223,7 +223,8 @@ export default defineConfig({
 构建后重点检查使用 Web 全局对象的模块是否通过 `import` 或 `require` 依赖 Web Runtime 绑定。`native` 模式可额外检查：
 
 - 仅使用自由标识符或全局对象点号访问时不写全局，也没有 installer、eager 状态或 axios patch。
-- 不可点号注入的显式全局访问和 `globalTargets` 只依赖涉及的目标桥接，宿主已有能力保持不变。
+- 不可点号注入的显式全局访问和 `globalTargets` 只依赖涉及的目标桥接；完整宿主能力保持不变，已知不完整能力按目标修补。
+- 桥接使用受保护的 `globalThis[key]` 读写，不依赖 `Reflect.get/set`；native 安装值带所有权标记，HMR 可替换自身旧实例。
 - 自定义 Prelude 作为普通模块执行，引用目标时建立正常依赖，binding 不反向依赖 Prelude。
 - 主包、普通分包、独立分包和动态导入都使用可解析的构建图依赖。
 - 所有 emitted JS 均无 `installWebRuntime*`、`axiosEnv`、`eagerBindings` 或 `__wvAXFE__`。

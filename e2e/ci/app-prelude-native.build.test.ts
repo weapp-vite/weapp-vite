@@ -299,21 +299,21 @@ describe('e2e app: app-prelude-native (build)', { concurrent: false }, () => {
     // axios 使用自由标识符 fetch/URL，native 将它们绑定到模块属性，不在 axios 闭包内写全局。
     expect(axiosCode).toMatch(/typeof\s+[A-Za-z_$][\w$]*\.fetch\s*===\s*["']function["']/u)
     expect(axiosCode).toMatch(/new\s+[A-Za-z_$][\w$]*\.URLPolyfill\(/u)
-    expect(axiosCode).not.toContain('Reflect.set(globalThis, "fetch"')
-    expect(axiosCode).not.toContain('Reflect.set(globalThis, "URL"')
+    expect(axiosCode).not.toMatch(/globalThis\[["']fetch["']\]\s*=/u)
+    expect(axiosCode).not.toMatch(/globalThis\[["']URL["']\]\s*=/u)
     expect(axiosCode).toContain('setMiniProgramNetworkDefaults')
 
     // `globalTargets` 声明的隐藏访问必须在主包入口闭包内生成幂等桥接，不依赖 axios 专用补丁。
     const appClosure = await resolveClosure('app.js', codeByFile)
     const appCode = [...appClosure].map(file => codeByFile.get(file) ?? '').join('\n')
     for (const target of ['fetch', 'Request', 'Response']) {
-      expect(appCode, `globalTargets bridge for ${target}`).toContain(`Reflect.set(globalThis, ${JSON.stringify(target)}`)
-      expect(appCode, `idempotent guard for ${target}`).toContain(`Reflect.get(globalThis, ${JSON.stringify(target)}`)
+      expect(appCode, `globalTargets bridge for ${target}`).toMatch(new RegExp(`globalThis\\[["']${target}["']\\]\\s*=`, 'u'))
+      expect(appCode, `idempotent guard for ${target}`).toMatch(new RegExp(`globalThis\\[["']${target}["']\\]\\s*===`, 'u'))
     }
     // 未开启 prelude 时安装范围仍精确收敛：既未声明也未源码检测到的目标不得写入全局。
     // 与上方 `globalTargets` 断言相对，这里挑选的目标在 fixture 源码里只作为自由标识符使用。
     for (const target of ['XMLHttpRequest', 'WebSocket', 'EventSource']) {
-      expect(allCode, `unrequested ${target} must stay module-local`).not.toContain(`Reflect.set(globalThis, ${JSON.stringify(target)}`)
+      expect(allCode, `unrequested ${target} must stay module-local`).not.toMatch(new RegExp(`globalThis\\[["']${target}["']\\]\\s*=`, 'u'))
     }
   })
 
@@ -339,7 +339,7 @@ describe('e2e app: app-prelude-native (build)', { concurrent: false }, () => {
     // globalTargets 声明的隐藏访问在主包入口闭包内精确桥接。
     const appCode = [...appClosure].map(file => codeByFile.get(file) ?? '').join('\n')
     for (const target of ['fetch', 'Request', 'Response']) {
-      expect(appCode, `globalTargets bridge for ${target}`).toContain(`Reflect.set(globalThis, ${JSON.stringify(target)}`)
+      expect(appCode, `globalTargets bridge for ${target}`).toMatch(new RegExp(`globalThis\\[["']${target}["']\\]\\s*=`, 'u'))
     }
 
     // 独立分包保持自包含：不跨包引用主包 Prelude vendor。
@@ -355,13 +355,13 @@ describe('e2e app: app-prelude-native (build)', { concurrent: false }, () => {
     const { codeByFile } = await readJavaScriptGraph()
     const allCode = [...codeByFile.values()].join('\n')
     // 精确桥接逐目标读写全局；ES5 + 压缩下含全局写入的产物不得残留 ES2015+ 语法，读取字面量压缩后仍稳定。
-    const bridgeFiles = [...codeByFile.entries()].filter(([, code]) => /Reflect\.set\(globalThis/u.test(code))
+    const bridgeFiles = [...codeByFile.entries()].filter(([, code]) => /globalThis\[["'][A-Za-z_$][\w$]*["']\]\s*=/u.test(code))
     expect(bridgeFiles.length).toBeGreaterThan(0)
     for (const [file, code] of bridgeFiles) {
       expect(code, `${file} must stay ES5`).not.toMatch(/=>|\b(?:const|let)\s/u)
     }
     for (const target of ['fetch', 'Request', 'Response']) {
-      expect(allCode, `globalTargets bridge for ${target}`).toMatch(new RegExp(`Reflect\\.set\\(globalThis,\\s*${JSON.stringify(target)}`, 'u'))
+      expect(allCode, `globalTargets bridge for ${target}`).toMatch(new RegExp(`globalThis\\[["']${target}["']\\]\\s*=`, 'u'))
     }
     expect(allCode).not.toMatch(/installWebRuntime|axiosEnv|eagerBindings|__wvAXFE__/u)
   })
@@ -374,12 +374,12 @@ describe('e2e app: app-prelude-native (build)', { concurrent: false }, () => {
     const axiosCode = [...axiosClosure].map(file => codeByFile.get(file) ?? '').join('\n')
     expect(axiosCode).toContain('native-override')
     expect(axiosCode).toMatch(/typeof\s+[A-Za-z_$][\w$]*\.nativeFetch\s*===\s*["']function["']/u)
-    expect(axiosCode).not.toContain('Reflect.set(globalThis, "fetch"')
+    expect(axiosCode).not.toMatch(/globalThis\[["']fetch["']\]\s*=/u)
 
     const appClosure = await resolveClosure('app.js', codeByFile)
     const appCode = [...appClosure].map(file => codeByFile.get(file) ?? '').join('\n')
     expect(appCode).toContain('native-override')
-    expect(appCode).toContain('Reflect.set(globalThis, "fetch"')
+    expect(appCode).toMatch(/globalThis\[["']fetch["']\]\s*=/u)
     expect([...codeByFile.values()].join('\n')).not.toMatch(/axiosEnv|__wvAXFE__/u)
   })
 

@@ -24,6 +24,11 @@ import { recordHmrProfileDuration } from '../../../../utils/hmrProfile'
 import { normalizeFsResolvedId } from '../../../../utils/resolvedId'
 import { REQUEST_GLOBAL_PASSIVE_BINDINGS_MARKER } from '../emit/constants'
 import { replaceImportMetaAccess, replaceImportMetaAccessInSfc } from './importMeta'
+import {
+  createNativeDeleteTargets,
+  isNativeDeleteGuardModuleId,
+  protectNativeInjectedGlobalDeletes,
+} from './nativeDelete'
 import { replacePlatformApiAccess } from './platform'
 import { resolveInjectWeapiOptions, shouldTransformId } from './shared'
 import { observeBundlerSourceInput } from './sourceInput'
@@ -145,23 +150,37 @@ export function createTransformHook(
       || Boolean(injectOptions && mayContainPlatformApiIdentifierByText(code))
   }
 
-  const transform: NonNullable<Plugin['transform']> = async function transform(code, id) {
+  const transform: NonNullable<Plugin['transform']> = async function transform(code, id, options) {
     if (parseSidecarSourceMetadata(id)) {
       return null
     }
     observeBundlerSourceInput(state, code, id)
-    const nativeGlobalImports = resolveNativeGlobalBridgeImports(id, code)
+    const nativePlan = state.nativeWebRuntimeInjectPlan
+    const nativeDeleteRewrite = usesNativeWebRuntimeInject()
+      && nativePlan
+      && isNativeDeleteGuardModuleId(id)
+      ? protectNativeInjectedGlobalDeletes(
+          code,
+          id,
+          createNativeDeleteTargets(nativePlan),
+          this as unknown as AstParserLike,
+          options?.moduleType,
+        )
+      : null
+    const transformInputCode = nativeDeleteRewrite?.code ?? code
+    const nativeGlobalImports = resolveNativeGlobalBridgeImports(id, transformInputCode)
     if (!shouldTransformId(id, {
       absoluteSrcRoot: configService.absoluteSrcRoot,
       isEntry: sourceId => state.loadedEntrySet?.has(sourceId) === true
         || state.resolvedEntryMap?.has(sourceId) === true,
     })) {
-      return nativeGlobalImports
-        ? { code: `${nativeGlobalImports}${code}`, map: null }
-        : null
+      if (nativeGlobalImports) {
+        return { code: `${nativeGlobalImports}${transformInputCode}`, map: nativeDeleteRewrite?.map ?? null }
+      }
+      return nativeDeleteRewrite
     }
-    if (!mayNeedTransformWork(code, nativeGlobalImports)) {
-      return null
+    if (!mayNeedTransformWork(transformInputCode, nativeGlobalImports)) {
+      return nativeDeleteRewrite
     }
     const startedAt = performance.now()
 
@@ -183,18 +202,18 @@ export function createTransformHook(
       const importMetaCode = importMetaTransformOptions
         ? (
             sourceId?.endsWith('.vue')
-              ? replaceImportMetaAccessInSfc(code, importMetaTransformOptions)
-              : replaceImportMetaAccess(code, importMetaTransformOptions)
+              ? replaceImportMetaAccessInSfc(transformInputCode, importMetaTransformOptions)
+              : replaceImportMetaAccess(transformInputCode, importMetaTransformOptions)
           )
-        : code
+        : transformInputCode
       const nextCode = `${nativeGlobalImports}${resolveRequestGlobalsTransformCode(id, importMetaCode) ?? importMetaCode}`
 
       if (!injectOptions) {
-        return nextCode === code
-          ? null
+        return nextCode === transformInputCode
+          ? nativeDeleteRewrite
           : {
               code: nextCode,
-              map: null,
+              map: nativeDeleteRewrite?.map ?? null,
             }
       }
 
@@ -202,8 +221,8 @@ export function createTransformHook(
         engine: astEngine,
         parserLike: this as unknown as AstParserLike,
       })
-      if (replaced === code) {
-        return null
+      if (replaced === transformInputCode) {
+        return nativeDeleteRewrite
       }
 
       return {

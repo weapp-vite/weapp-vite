@@ -96,9 +96,9 @@ describe('stream globals in native Vite output', () => {
       // 精确行为不强制 shim vendor：桥接由打包器自然分组，全局写入只覆盖声明/引用的目标。
       expect(files.has('weapp-vendors/shim.js')).toBe(false)
       const allCode = [...files.values()].join('\n')
-      expect(allCode).toMatch(/Reflect\.set\(\s*globalThis,\s*["']fetch["']/u)
+      expect(allCode).toMatch(/globalThis\[["']fetch["']\]\s*=/u)
       // 未声明且未引用的目标不安装。
-      expect(allCode).not.toMatch(/Reflect\.set\(\s*globalThis,\s*["']WebSocket["']/u)
+      expect(allCode).not.toMatch(/globalThis\[["']WebSocket["']\]\s*=/u)
       const { context, Page } = execute(files)
       expect(Page).toHaveBeenCalledWith({ data: { ready: true } })
       expect(context.__nativeFetchType).toBe('function')
@@ -122,7 +122,7 @@ describe('stream globals in native Vite output', () => {
       }))
       const allCode = [...files.values()].join('\n')
       // 声明的 WebSocket 不在 targets 绑定资格内，仍由根入口桥接安装（修复前被静默丢弃）。
-      expect(allCode).toMatch(/Reflect\.set\(\s*globalThis,\s*["']WebSocket["']/u)
+      expect(allCode).toMatch(/globalThis\[["']WebSocket["']\]\s*=/u)
       const { context, Page } = execute(files)
       expect(Page).toHaveBeenCalledWith({ data: { ready: true } })
       expect(typeof context.WebSocket).toBe('function')
@@ -143,7 +143,7 @@ describe('stream globals in native Vite output', () => {
       }))
       // 精确行为不强制拆分：点号全局访问由 inject 绑定，不生成全局桥接或 shim vendor。
       expect(files.has('weapp-vendors/shim.js')).toBe(false)
-      expect(files.get('pages/index/index.js') ?? '').not.toMatch(/Reflect\.set\(\s*globalThis/u)
+      expect(files.get('pages/index/index.js') ?? '').not.toMatch(/globalThis\[["'][^"']+["']\]\s*=/u)
       expect(hasNativeBindingDependency(chunks, 'pages/index/index.js')).toBe(true)
       const { context, Page } = execute(files)
       expect(context.__nativeFetchType).toBe('function')

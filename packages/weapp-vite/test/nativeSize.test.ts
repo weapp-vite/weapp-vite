@@ -69,27 +69,33 @@ describe('native Web Runtime size', () => {
     const fetchDottedGlobal = await measure(['fetch'], false, 'globalThis.__nativeSizeProbe = typeof globalThis.fetch')
     const fetchGlobal = await measure(['fetch'], false, 'globalThis.__nativeSizeProbe = typeof globalThis["fetch"]')
     const fetchForcedGlobal = await measure(['fetch'], false, 'globalThis.__nativeSizeProbe = true', ['fetch'])
+    const performanceFree = await measure(['performance'], false, 'globalThis.__nativeSizeProbe = typeof performance')
+    const performanceForcedGlobal = await measure(['performance'], false, 'globalThis.__nativeSizeProbe = true', ['performance'])
     const full = await measure([...WEB_RUNTIME_GLOBAL_TARGETS], false, 'globalThis.__nativeSizeProbe = typeof fetch')
     const fullMinified = await measure([...WEB_RUNTIME_GLOBAL_TARGETS], true, 'globalThis.__nativeSizeProbe = typeof fetch')
 
-    for (const measurement of [atobFree, fetchFree, fetchDottedGlobal, fetchGlobal, fetchForcedGlobal, full, fullMinified]) {
+    for (const measurement of [atobFree, fetchFree, fetchDottedGlobal, fetchGlobal, fetchForcedGlobal, performanceFree, performanceForcedGlobal, full, fullMinified]) {
       expect(measurement.runtimeCode).not.toMatch(/installWebRuntime|installRequestGlobals|installRequestGlobalBinding|createWebRuntimeInstallContext|finalizeWebRuntimeInstall|axiosEnv|eagerBindings|__wvAXFE__/u)
     }
     expect(atobFree.runtimeCode).not.toContain('XMLHttpRequestPolyfill')
     expect(atobFree.runtimeCode).not.toContain('EventSourcePolyfill')
     expect(atobFree.runtimeModuleIds.some(id => /[\\/]xhr\.ts$/.test(id))).toBe(false)
     expect(atobFree.runtimeModuleIds.some(id => /[\\/]eventsource\.ts$/.test(id))).toBe(false)
-    expect(fetchFree.runtimeCode).not.toContain('Reflect.set(globalThis, "fetch"')
+    expect(fetchFree.runtimeCode).not.toContain('globalThis["fetch"] =')
     expect(fetchFree.runtimeModuleIds).not.toContain(getWebRuntimeGlobalResolvedId('fetch'))
-    expect(fetchDottedGlobal.runtimeCode).not.toContain('Reflect.set(globalThis, "fetch"')
+    expect(fetchDottedGlobal.runtimeCode).not.toContain('globalThis["fetch"] =')
     expect(fetchDottedGlobal.runtimeModuleIds).not.toContain(getWebRuntimeGlobalResolvedId('fetch'))
     expect(fetchGlobal.runtimeModuleIds).toContain(getWebRuntimeGlobalResolvedId('fetch'))
     expect(fetchForcedGlobal.runtimeModuleIds).toContain(getWebRuntimeGlobalResolvedId('fetch'))
     expect(fetchGlobal.runtimeCode).not.toContain('XMLHttpRequestPolyfill')
     expect(fetchGlobal.runtimeCode).not.toContain('EventSourcePolyfill')
-    // 共享写入判定来自运行时模块，单目标显式全局变体会多带一个 helper 模块（约 1KB）；
-    // 无关 API 不泄漏的意图由上面两条 not.toContain 断言保证，这里只放宽字节预算。
-    expect(fetchGlobal.startupClosureBytes).toBeLessThan(fetchFree.startupClosureBytes + 2_000)
+    expect(performanceForcedGlobal.runtimeModuleIds).toContain(getWebRuntimeGlobalResolvedId('performance'))
+    expect(performanceForcedGlobal.runtimeCode).not.toContain('getSetCookie')
+    expect(performanceForcedGlobal.runtimeCode).not.toContain('ResponsePolyfill')
+    expect(performanceForcedGlobal.runtimeCode).not.toContain('XMLHttpRequestPolyfill')
+    expect(performanceForcedGlobal.runtimeCode).not.toContain('Reflect.get')
+    // 显式全局桥接只在同目标纯绑定基础上增加安装、能力修补与 HMR 所有权逻辑。
+    expect(performanceForcedGlobal.startupClosureBytes).toBeLessThan(performanceFree.startupClosureBytes + 3_000)
     expect(full.startupClosureBytes).toBeLessThan(fetchFree.startupClosureBytes + 5_000)
     expect(full.totalBytes).toBeLessThan(fetchFree.totalBytes + 5_000)
     expect(fullMinified.startupClosureBytes).toBeLessThan(full.startupClosureBytes * 0.7)

@@ -7,6 +7,8 @@ export default defineConfig({
     'index': './src/index.ts',
     'web-apis': './src/webApis.ts',
     'web-apis-runtime': './src/webApisRuntime.ts',
+    'web-apis-runtime-global': './src/webApisRuntimeGlobal.ts',
+    'web-apis-runtime-ensure': './src/webApisRuntimeEnsure.ts',
     'web-apis-installers': './src/webApisInstallers.ts',
     'cli': './src/cli.ts',
     'cli-acceptance': './src/cli-acceptance.ts',

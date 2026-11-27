@@ -82,6 +82,14 @@
       "types": "./dist/web-apis-runtime.d.mts",
       "import": "./dist/web-apis-runtime.mjs"
     },
+    "./web-apis/runtime-global": {
+      "types": "./dist/web-apis-runtime-global.d.mts",
+      "import": "./dist/web-apis-runtime-global.mjs"
+    },
+    "./web-apis/runtime-ensure": {
+      "types": "./dist/web-apis-runtime-ensure.d.mts",
+      "import": "./dist/web-apis-runtime-ensure.mjs"
+    },
     "./web-apis/installers": {
       "types": "./dist/web-apis-installers.d.mts",
       "import": "./dist/web-apis-installers.mjs"

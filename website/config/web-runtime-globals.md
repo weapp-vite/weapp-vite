@@ -22,7 +22,7 @@ keywords:
 - **类型**：`WeappInjectWebRuntimeGlobalsTarget[]`
 - **仅适用于**：`weapp.appPrelude.mode: 'native'`
 
-声明需要安装到 `globalThis` 的目标，用于第三方库内部无法静态推断的动态索引或间接全局访问；除基础目标外，也可以写依赖展开目标（`URL`、`URLSearchParams`、`Blob`、`File`、`FormData`）。构建器为每个目标生成最小普通桥接模块：宿主已有可用实现时保留，缺失或带安装器占位标记时幂等写入精确绑定。未声明的目标不会因为该选项被安装；`prelude: true` 已安装全部目标时再声明，每个构建作用域会得到一次告警。
+声明需要安装到 `globalThis` 的目标，用于第三方库内部无法静态推断的动态索引或间接全局访问；除基础目标外，也可以写依赖展开目标（`URL`、`URLSearchParams`、`Blob`、`File`、`FormData`）。构建器为每个目标生成最小普通桥接模块：完整宿主实现优先保留，缺失、占位或上一轮 native 安装的值可替换；已有但不完整的宿主实现按目标修补能力并保留构造器身份。未声明的目标不会因为该选项被安装；`prelude: true` 已安装全部目标时再声明，每个构建作用域会得到一次告警。
 
 ```ts
 export default defineConfig({
@@ -49,7 +49,7 @@ export default defineConfig({
 native 的行为固定为精确最优解，**无策略开关**：
 
 - **自由标识符与点号全局访问**：由 Rolldown `transform.inject` 精确绑定到实现模块，按需导入、可 tree-shake，不写全局；局部同名遮蔽由 Rolldown 保留。
-- **不可点号注入的显式全局访问**：`globalThis['fetch']` 等字符串计算属性、全局解构与别名按目标生成宿主优先的幂等桥接；`globalTargets` 声明的目标同样桥接。
+- **不可点号注入的显式全局访问**：`globalThis['fetch']` 等字符串计算属性、全局解构与别名按目标生成幂等桥接；`globalTargets` 声明的目标同样桥接。桥接使用 `globalThis[key]` 受保护读写，不依赖 `Reflect.get/set`。
 - **产物拆分**：绑定、桥接与实现的分包交给打包器自然分组，不强制额外 vendor；自定义 App Prelude 独立成 `weapp-vendors/web-runtime-app-prelude.js`。独立分包保留自己构建根内的实现，不跨包引用主包 vendor。
 - **不全量安装**：未使用的目标不会被安装，避免破坏精确性。无法静态推断的隐藏访问用 `globalTargets` 精确补充。
 
@@ -69,7 +69,7 @@ export default defineConfig({
 })
 ```
 
-`native` 的求值顺序始终由普通模块依赖决定，不需要 Prelude 启动协调，安装时机不可配置。宿主已具备的真实实现仍由桥接保留，不会被覆盖；只有缺失或带占位标记的目标会被写入。真正不可枚举的动态访问（如 `globalThis[任意key]`）不在 native 覆盖范围，需要这类整体安装语义时使用 `require` 模式。
+`native` 的求值顺序始终由普通模块依赖决定，不需要 Prelude 启动协调，安装时机不可配置。桥接保留完整宿主实现，替换缺失、占位或自身上一轮安装的值；对已有但不完整的宿主实现，按目标修复已知能力缺口。真正不可枚举的动态访问（如 `globalThis[任意key]`）不在 native 覆盖范围，需要这类整体安装语义时使用 `require` 模式。
 
 ## `weapp.appPrelude.webRuntime.prelude`（旧模式） {#weapp-appprelude-webruntime-prelude-legacy}
 
@@ -151,7 +151,7 @@ export default defineConfig({
 - **类型**：`WeappInjectWebRuntimeDeclaredGlobalTarget[]`（基础目标与依赖展开目标 `URL`/`URLSearchParams`/`Blob`/`File`/`FormData`）
 - **仅适用于**：`mode: 'native'`
 
-为无法静态推断的全局访问安装指定目标。每个目标独立桥接、按需加载，宿主已有能力优先。自由标识符注入不会受该选项影响；该选项也独立于 `targets` 绑定资格，收窄 `targets` 不会裁剪声明的目标。安装范围是**声明目标 + 其必要依赖闭包**（如声明 `fetch` 会一并装上它依赖的 `URL`/`TextEncoder` 等），不会全量安装与声明无关的未用实现。声明的目标由根入口（含各分包根）静态依赖桥接，在启动期完成安装。
+为无法静态推断的全局访问安装指定目标。每个目标独立桥接、按需加载，完整宿主能力优先，已有但不完整的实现按目标修补。自由标识符注入不会受该选项影响；该选项也独立于 `targets` 绑定资格，收窄 `targets` 不会裁剪声明的目标。安装范围是**声明目标 + 其必要依赖闭包**（如声明 `fetch` 会一并装上它依赖的 `URL`/`TextEncoder` 等），不会全量安装与声明无关的未用实现。声明的目标由根入口（含各分包根）静态依赖桥接，在启动期完成安装。
 
 ### `dependencies`
 
