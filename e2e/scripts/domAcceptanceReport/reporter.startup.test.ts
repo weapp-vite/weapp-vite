@@ -27,7 +27,7 @@ it('preserves a global setup exception while strict DOM acceptance remains faile
       test: {
         fsModuleCache: true,
         fsModuleCachePath: moduleCacheDir,
-        include: [test.replaceAll('\\', '/')],
+        include: [path.relative(root, test).replaceAll('\\', '/')],
         globals: true,
         globalSetup: [setup],
         reporters: ['default', path.resolve(import.meta.dirname, 'reporter.ts')],

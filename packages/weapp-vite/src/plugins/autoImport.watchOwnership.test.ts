@@ -80,7 +80,7 @@ describe('auto import topology ownership', () => {
         watchChange(id) { changes.push(path.relative(root, id)) },
       }],
     }, { format: 'esm' }, {
-      watch: { skipWrite: true, usePolling: true, pollInterval: 20, compareContentsForPolling: true },
+      watch: { skipWrite: true, watcher: { usePolling: true, pollInterval: 20, compareContentsForPolling: true } },
       onHmrUpdates(result) {
         if (result instanceof Error) {
           throw result
@@ -151,7 +151,7 @@ describe('auto import topology ownership', () => {
         },
       }],
     }, { format: 'esm' }, {
-      watch: { skipWrite: true, usePolling: true, pollInterval: 20 },
+      watch: { skipWrite: true, watcher: { usePolling: true, pollInterval: 20 } },
       onOutput(result) {
         if (result instanceof Error) {
           errors.push(result)

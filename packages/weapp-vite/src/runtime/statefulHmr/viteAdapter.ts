@@ -66,8 +66,8 @@ type StatefulHmrDevEngine = DevEngine & {
   registerModules?: (clientId: string, modules: string[]) => Promise<void> | void
 }
 
-type StatefulHmrDevWatchOptions = Pick<
-  NonNullable<DevOptions['watch']>,
+export type StatefulHmrDevWatcherOptions = Pick<
+  NonNullable<NonNullable<DevOptions['watch']>['watcher']>,
   'compareContentsForPolling' | 'pollInterval' | 'usePolling'
 >
 
@@ -141,7 +141,7 @@ export class StatefulHmrViteAdapter {
       onPatch: (files: string[], output: StatefulHmrDevEngineUpdate) => boolean
       waitForInitialBundle: () => Promise<void>
     },
-    private readonly watchOptions: StatefulHmrDevWatchOptions = {},
+    private readonly watchOptions: StatefulHmrDevWatcherOptions = {},
     private readonly createDevEngine: typeof dev = createViteDevEngine,
     private readonly initialBuildTimeout = initialBuildTimeoutMs,
   ) {
@@ -593,7 +593,7 @@ export class StatefulHmrViteAdapter {
           exclude: this.config.build.outDir
             ? [path.resolve(this.config.root, this.config.build.outDir), `${path.resolve(this.config.root, this.config.build.outDir)}/**`]
             : [],
-          ...this.watchOptions,
+          watcher: this.watchOptions,
         },
       }) as StatefulHmrDevEngine
       this.engine = engine

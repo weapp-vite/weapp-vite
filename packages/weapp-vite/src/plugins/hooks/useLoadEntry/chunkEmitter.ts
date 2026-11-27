@@ -15,6 +15,10 @@ export interface ChunkEmitStats {
 
 export type ChunkEmitTask = Promise<ChunkEmitStats>
 
+function isBuildStartLoadUnsupported(error: unknown) {
+  return error instanceof Error && error.message.includes('`this.load` is not supported in the `buildStart` hook')
+}
+
 export function createChunkEmitter(
   configService: CompilerContext['configService'],
   loadedEntrySet: Set<string>,
@@ -66,9 +70,16 @@ export function createChunkEmitter(
           if ((!shouldEmitChunk || isWatching) && preloadAssetOnlyEntry) {
             await preloadAssetOnlyEntry.call(this, resolvedId, normalizedId)
           }
-          // Rolldown watch 重建的 buildStart 不支持 load；入口预加载元数据后，由引擎加载已登记的脚本。
+          // Rolldown 的 buildStart 不支持 load；入口预加载元数据后，由引擎加载已登记的脚本。
           if ((shouldEmitChunk || !preloadAssetOnlyEntry) && !isWatching) {
-            await this.load({ id: entryChunkId })
+            try {
+              await this.load({ id: entryChunkId })
+            }
+            catch (error) {
+              if (!isBuildStartLoadUnsupported(error)) {
+                throw error
+              }
+            }
           }
           stats.loadCount += 1
           stats.loadMs += performance.now() - loadStartedAt

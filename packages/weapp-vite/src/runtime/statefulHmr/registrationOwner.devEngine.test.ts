@@ -67,7 +67,7 @@ describe('registration owners in actual DevEngine output', () => {
       }, createStatefulHmrHostFormatPlugin()],
     }, { format: 'esm', entryFileNames: 'component.js' }, {
       // 连续恢复等长源码时比较内容，避免宿主文件事件合并或时间戳精度影响回归结果。
-      watch: { skipWrite: true, usePolling: true, pollInterval: 20, compareContentsForPolling: true },
+      watch: { skipWrite: true, watcher: { usePolling: true, pollInterval: 20, compareContentsForPolling: true } },
       onHmrUpdates(result) {
         if (result instanceof Error) {
           nextUpdate.reject(result)

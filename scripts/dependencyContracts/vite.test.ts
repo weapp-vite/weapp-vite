@@ -21,8 +21,8 @@ it('verifies the required Vite lifecycle and explicitly reports version-bound ac
     const report = JSON.parse(await readFile(reportFile, 'utf8')) as { suite: string, status: string, assessment: string, vite: string, rolldown: string, planned: string[], completed: string[], fullInventory: string[], notExecuted: string[], waived: { name: string }[], cleanup?: { status: string } }
     expect(report.suite).toBe('product-lifecycle')
     expect(report.status).toBe('passed')
-    expect(report.vite).toBe('8.3.5')
-    expect(report.rolldown).toBe('1.2.16')
+    expect(report.vite).toBe('8.4.0')
+    expect(report.rolldown).toBe('1.3.4')
     expect(report.assessment).toBe('accepted-with-waivers')
     expect(report.planned).toEqual(viteRequiredContractNames)
     expect(report.completed).toEqual(viteRequiredContractNames)

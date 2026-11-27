@@ -95,10 +95,12 @@ describe('stateful HMR Vite adapter', () => {
     expect(bundledDev._devEngine).toBe(engine)
     expect(devOptions.watch).toEqual({
       exclude: [],
-      compareContentsForPolling: true,
-      pollInterval: 120,
       skipWrite: true,
-      usePolling: true,
+      watcher: {
+        compareContentsForPolling: true,
+        pollInterval: 120,
+        usePolling: true,
+      },
     })
   })
 

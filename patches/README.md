@@ -6,12 +6,11 @@
 | --- | --- | --- |
 | `chokidar@6.0.0` | 修正文件监听的异步提交、目录恢复和资源关闭边界 | `weapp-vite` 通过 `alwaysBundle` 将修补代码打入 `dist`，普通 npm 消费者也使用该实现 |
 | `@vitejs/plugin-vue@6.0.11` | 向 Oxc 转换补传当前 Vite 配置和 watcher | 仓库 Web UI、文档及相关测试的开发和构建，不修补消费者安装的 Vue 插件 |
-| `vite@8.3.5` | 修正内置 Chokidar 对不存在路径重复发送 ready 的计数 | 工作区官方 Vite 的开发、构建及产品契约；不修改 Vite+ 的独立内置引擎 |
+| `vite@8.4.0` | 修正内置 Chokidar 对不存在路径重复发送 ready 的计数 | 工作区官方 Vite 的开发、构建及产品契约；不修改 Vite+ 的独立内置引擎 |
 
 工作区的 pnpm 补丁登记不会随 npm 依赖安装自动传播；已打入发布产物的修改代码会交付给消费者。
-当前使用官方 Vite `8.3.5` 和 Rolldown `1.2.16`，其中 Vite 保留上述 ready 补丁，Rolldown 没有补丁。Vite+ `1.5.0` launcher/core
-使用其配对发行的内置 Vite `8.3.5` / Rolldown `1.2.16`，Vitest 为 `5.1.0`；
-内置引擎与工作区独立依赖仍须分别核对实际解析入口和版本。
+当前使用官方 Vite `8.4.0` 和 Rolldown `1.3.4`，其中 Vite 保留上述 ready 补丁，Rolldown 没有补丁。Vite+ `1.8.0` 使用独立的
+`@voidzero-dev/vite-plus-core@8.3.8001` 和 Vitest `5.1.2`；内置引擎与工作区依赖仍须分别核对实际解析入口和版本。
 
 ## 发布重试与恢复
 
@@ -153,7 +152,7 @@ node --import tsx e2e/scripts/run-e2e-commands.ts node --import tsx packages/wea
 
 ## 官方 Vite/Rolldown 与产品监听
 
-当前保留 `vite@8.3.5.patch`，修正内置 Chokidar 对不存在路径重复发送 ready 的计数；
+当前保留 `vite@8.4.0.patch`，修正内置 Chokidar 对不存在路径重复发送 ready 的计数；
 Rolldown 没有补丁。该补丁不覆盖 Web optimizer 临时缓存或连续构建引用增长问题。
 自有插件钩子容器、package imports 兼容及会话释放由 `weapp-vite` 自身代码负责；这不表示上游
 全部引用生命周期问题已修复。
@@ -164,7 +163,8 @@ Rolldown 没有补丁。该补丁不覆盖 Web optimizer 临时缓存或连续�
 登记完成只证明该观察面，首个保存是否交付仍须实际文件编辑和产物验证。
 
 PR #1294 按用户授权接受 Web optimizer 关闭残留与连续构建资源增长两项验收例外；两项均未修复。
-例外对固定官方 Vite `8.3.5` / Rolldown `1.2.16` 持续适用至显式移除，不在合并后自动结束，
+Web optimizer 例外仅对固定官方 Vite `8.4.0` / Rolldown `1.3.4` 配对适用，
+后续版本必须重新评审或移除例外，不在合并后自动结束，
 版本不符时必需入口失败并要求重新评审或移除；Vite+ 使用独立打包的引擎，仍须单独验证，
 不能因其报告相同版本就自动继承工作区的验收记录。
 Web 扫描期间关闭或重启可能留下临时缓存；同一 Node 进程连续构建可能持续保留旧代编译引用、增加内存。
@@ -194,4 +194,4 @@ Vitest `5.1.0` 的官方 ServerModuleRunner 已以 UTF-8 读取磁盘缓存代�
 让 Vue 中的 TypeScript 转换使用当前 Vite 配置及其监听上下文，避免遗漏显式 tsconfig 后转而扫描无关项目引用。
 仓库 Web 构建的既有 tsconfig guard 继续保留；补丁不作为 `weapp-vite` 对外 Vue 编译器的运行时依赖交付。
 
-本轮升级核对：plugin-vue 6.0.11 仍缺少上述 Oxc 上下文，补丁原样迁移；Chokidar 6.0.0 的监听生命周期补丁和 Vite 8.3.5 的 ready 补丁继续保留。Vite 8.3.8 / Rolldown 1.2.19 与 Vite+ 1.6.0 均未通过 Web optimizer 关闭清理契约，未迁移既有验收例外，详见[本轮升级记录](../docs/plans/2026-11-13-dependency-upgrade.md)。
+本轮升级核对：plugin-vue 6.0.11 仍缺少上述 Oxc 上下文，补丁原样迁移；Chokidar 6.0.0 的监听生命周期补丁和 Vite 8.4.0 的 ready 补丁继续保留。Vite 8.3.8 / Rolldown 1.2.19 与 Vite+ 1.6.0 的历史检查结果详见[此前升级记录](../docs/plans/2026-11-13-dependency-upgrade.md)。
