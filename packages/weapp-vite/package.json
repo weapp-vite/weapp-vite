@@ -78,6 +78,14 @@
       "types": "./dist/web-apis.d.mts",
       "import": "./dist/web-apis.mjs"
     },
+    "./web-apis/runtime": {
+      "types": "./dist/web-apis-runtime.d.mts",
+      "import": "./dist/web-apis-runtime.mjs"
+    },
+    "./web-apis/installers": {
+      "types": "./dist/web-apis-installers.d.mts",
+      "import": "./dist/web-apis-installers.mjs"
+    },
     "./mcp": {
       "types": "./dist/mcp.d.mts",
       "import": "./dist/mcp.mjs"

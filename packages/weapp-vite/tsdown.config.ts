@@ -6,6 +6,8 @@ export default defineConfig({
     'vite': './src/vite/index.ts',
     'index': './src/index.ts',
     'web-apis': './src/webApis.ts',
+    'web-apis-runtime': './src/webApisRuntime.ts',
+    'web-apis-installers': './src/webApisInstallers.ts',
     'cli': './src/cli.ts',
     'cli-acceptance': './src/cli-acceptance.ts',
     'upload-worker': './src/cli/upload/worker.ts',

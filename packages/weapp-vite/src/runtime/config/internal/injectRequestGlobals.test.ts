@@ -16,6 +16,7 @@ import {
   resolveAutoRequestGlobalsTargets,
   resolveInjectRequestGlobalsOptions,
   resolveManualRequestGlobalsTargets,
+  resolveNativeGlobalTargets,
   resolveRequestRuntimeOptions,
 } from './injectRequestGlobals'
 import { REQUEST_GLOBAL_BASE64_HELPER } from './injectRequestGlobals/base64'
@@ -64,6 +65,29 @@ describe('injectRequestGlobals helpers', () => {
     'WritableStream',
     'TransformStream',
   ] as const
+
+  it.each([
+    ['globalThis.fetch', []],
+    ['globalThis?.fetch', []],
+    ['globalThis[\'Request\']', ['Request']],
+    ['globalThis?.[\'Request\']', ['Request']],
+    ['globalThis?.Response', []],
+    ['self.fetch; window.URL; global.FormData', []],
+    ['const host = globalThis; host.fetch', ['fetch']],
+    ['const { fetch, URL: url } = globalThis', ['fetch', 'URL']],
+    ['const { fetch } = globalThis; const fetchLocal = () => fetch', ['fetch']],
+    ['function run(globalThis) { return globalThis.fetch }', []],
+    ['const host = { fetch: true }; host.fetch', []],
+    ['fetch(); new URL("https://example.com")', []],
+    ['const host = globalThis; host[key]', []],
+  ] as const)('classifies native global usage requiring a bridge in %s', (source, expected) => {
+    expect(resolveNativeGlobalTargets(source, ['fetch', 'Request', 'Response', 'URL', 'FormData'])).toEqual(expected)
+  })
+
+  it('classifies global usage in Vue script and scriptSetup blocks', () => {
+    const source = `<script>globalThis.fetch()</script><script setup>const { Request } = window</script><template>{{ fetch }}</template>`
+    expect(resolveNativeGlobalTargets(source, ['fetch', 'Request'])).toEqual(['Request'])
+  })
 
   it('enables auto injection when matching dependencies are present', () => {
     expect(resolveInjectRequestGlobalsOptions(undefined, {
@@ -200,6 +224,157 @@ describe('injectRequestGlobals helpers', () => {
       prelude: true,
       targets: [...fullWebRuntimeTargets],
       eagerTargets: [...requestRuntimeTargets],
+    })
+  })
+
+  it('opts into precise native injection without dependency matching or prelude coordination', () => {
+    expect(resolveRequestRuntimeOptions({
+      appPrelude: {
+        mode: 'native',
+        webRuntime: {},
+      },
+    }, {
+      dependencies: {},
+    })).toEqual({
+      mode: 'explicit',
+      native: true,
+      targets: [...fullWebRuntimeTargets],
+    })
+  })
+
+  it('enables every native target through the top-level Web Runtime alias without dependencies', () => {
+    expect(resolveRequestRuntimeOptions({
+      appPrelude: { mode: 'native' },
+      webRuntime: {},
+    }, {
+      dependencies: {},
+    })).toMatchObject({
+      mode: 'explicit',
+      native: true,
+      targets: [...fullWebRuntimeTargets],
+    })
+  })
+
+  it('keeps native mode disabled when appPrelude is disabled', () => {
+    const options = resolveRequestRuntimeOptions({
+      appPrelude: { mode: 'native', enabled: false, webRuntime: true },
+    }, {
+      dependencies: {},
+    })
+
+    expect(options).toMatchObject({
+      mode: 'explicit',
+      prelude: true,
+      targets: [...fullWebRuntimeTargets],
+    })
+    expect(options).not.toHaveProperty('native')
+  })
+
+  it('lets native appPrelude.webRuntime false disable Web Runtime injection', () => {
+    expect(resolveRequestRuntimeOptions({
+      appPrelude: { mode: 'native', webRuntime: false },
+      webRuntime: true,
+    }, {
+      dependencies: {
+        axios: '^1.0.0',
+      },
+    })).toBeNull()
+  })
+
+  it('keeps native globalTargets precise (only declared targets, deduped)', () => {
+    expect(resolveRequestRuntimeOptions({
+      appPrelude: {
+        mode: 'native',
+        webRuntime: {
+          enabled: true,
+          targets: ['fetch'],
+          globalTargets: ['Request', 'fetch'],
+        },
+      },
+    }, {
+      dependencies: {},
+    })).toEqual({
+      mode: 'explicit',
+      native: true,
+      // globalTargets 精确补充隐藏访问，去重后保持声明顺序；不会全量安装未用目标。
+      globalTargets: ['Request', 'fetch'],
+      targets: ['fetch'],
+    })
+  })
+
+  it('does not install unused targets in native (precise, no install-all)', () => {
+    const options = resolveRequestRuntimeOptions({
+      appPrelude: {
+        mode: 'native',
+        webRuntime: {
+          targets: ['fetch', 'XMLHttpRequest'],
+        },
+      },
+    }, {
+      dependencies: {},
+    })
+
+    // 未声明 globalTargets 时不安装任何额外全局；自由标识符仍精确绑定，依赖展开由注入计划按需补齐。
+    // native 无入口前置安装时机，不返回 prelude 字段。
+    expect(options?.prelude).toBeUndefined()
+    expect(options).not.toHaveProperty('globalTargets')
+    expect(options?.targets).toEqual(['fetch', 'XMLHttpRequest'])
+  })
+
+  it('keeps native global targets explicit (declared only)', () => {
+    expect(resolveRequestRuntimeOptions({
+      appPrelude: {
+        mode: 'native',
+        webRuntime: {
+          targets: ['fetch'],
+          globalTargets: ['Request'],
+        },
+      },
+    }, {
+      dependencies: {},
+    })).toEqual({
+      mode: 'explicit',
+      native: true,
+      globalTargets: ['Request'],
+      targets: ['fetch'],
+    })
+  })
+
+  it('accepts dependency-expanded targets declared in native global targets', () => {
+    expect(resolveRequestRuntimeOptions({
+      appPrelude: {
+        mode: 'native',
+        webRuntime: {
+          targets: ['fetch'],
+          globalTargets: ['File'],
+        },
+      },
+    }, {
+      dependencies: {},
+    })).toEqual({
+      mode: 'explicit',
+      native: true,
+      globalTargets: ['File'],
+      targets: ['fetch'],
+    })
+  })
+
+  it('keeps native precise without globalTargets when none are declared', () => {
+    expect(resolveRequestRuntimeOptions({
+      appPrelude: {
+        mode: 'native',
+        webRuntime: {
+          targets: ['fetch'],
+        },
+      },
+    }, {
+      dependencies: {
+        axios: '^1.0.0',
+      },
+    })).toEqual({
+      mode: 'explicit',
+      native: true,
+      targets: ['fetch'],
     })
   })
 
