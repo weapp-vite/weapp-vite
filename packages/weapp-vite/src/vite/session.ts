@@ -16,6 +16,8 @@ import { prepareStatefulClassicHandoff } from '../runtime/statefulHmr/session'
 import { buildStatefulHmrSnapshot, prepareStatefulHmrSnapshot } from '../runtime/statefulHmr/snapshotBuild'
 import { clearStatefulHmrSnapshot, offerStatefulHmrSnapshot, StatefulHmrSnapshotHandoff } from '../runtime/statefulHmr/snapshotHandoff'
 import { syncManagedTsconfigFiles } from '../runtime/tsconfigSupport'
+import { createBuildWatchFilter } from '../runtime/watch/buildWatch'
+import { createDevConfigWatchFiles } from '../runtime/watch/options'
 import { createViteInputRegistration } from '../runtime/watch/viteRegistration'
 import { resolveRealpath } from '../utils/realpathScope'
 
@@ -198,7 +200,18 @@ export class WeappBuildSession extends CompilerSession {
     if (this.isClosing) {
       throw new Error('[weapp-vite] 已关闭的会话不能启动开发宿主。')
     }
-    const registration = createViteInputRegistration(server, [this.isWeb ? server.config.root : this.context.configService.absoluteSrcRoot])
+    const configService = this.context.configService
+    const buildWatchFilter = createBuildWatchFilter({
+      ...configService.inlineConfig.build?.watch,
+      preserveSymlinks: configService.inlineConfig.resolve?.preserveSymlinks,
+    }, configService.cwd, () => createDevConfigWatchFiles(configService))
+    if (buildWatchFilter.targets.length) {
+      server.watcher.add(buildWatchFilter.targets)
+    }
+    const registration = createViteInputRegistration(server, [
+      this.isWeb ? server.config.root : configService.absoluteSrcRoot,
+      ...buildWatchFilter.targets,
+    ])
     this.inputRegistration = registration
     this.onClose(() => {
       if (this.inputRegistration === registration) {

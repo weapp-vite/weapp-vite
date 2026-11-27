@@ -171,6 +171,11 @@ export function resolveMiniprogramWatchInclude(options: {
   configFileDependencies?: string[]
 }) {
   const srcRoot = path.join(options.cwd, options.srcRoot)
+  const userInclude = Array.isArray(options.userInclude)
+    ? options.userInclude
+    : options.userInclude
+      ? [options.userInclude]
+      : []
   const startupWatchInclude: WatchIncludePattern[] = options.buildScope?.enabled
     ? [
         ...options.buildScope.includeMainPackage ? [path.join(srcRoot, 'pages', '**')] : [],
@@ -179,14 +184,16 @@ export function resolveMiniprogramWatchInclude(options: {
     : [
         path.join(srcRoot, '**'),
       ]
-  const watchInclude: WatchIncludePattern[] = [
-    // Rolldown 的 include 会过滤已发现的依赖图模块。保留一个全量兜底，
-    // 避免 link / monorepo 中 srcRoot 外部模块通过 addWatchFile 进入图后被过滤。
-    '**',
-    ...startupWatchInclude,
-  ]
+  const watchInclude: WatchIncludePattern[] = userInclude.length
+    ? []
+    : [
+        // Rolldown 的 include 会过滤已发现的依赖图模块。保留一个全量兜底，
+        // 避免 link / monorepo 中 srcRoot 外部模块通过 addWatchFile 进入图后被过滤。
+        '**',
+        ...startupWatchInclude,
+      ]
 
-  if (options.pluginRoot) {
+  if (!userInclude.length && options.pluginRoot) {
     const absolutePluginRoot = path.resolve(options.cwd, options.pluginRoot)
     const relativeToSrc = path.relative(
       path.resolve(options.cwd, options.srcRoot),
@@ -203,11 +210,6 @@ export function resolveMiniprogramWatchInclude(options: {
     watchInclude.push(dependency)
   }
 
-  const userInclude = Array.isArray(options.userInclude)
-    ? options.userInclude
-    : options.userInclude
-      ? [options.userInclude]
-      : []
   const include = [...userInclude, ...watchInclude]
   const seen = new Set<string>()
   return include.filter((item) => {
@@ -290,7 +292,12 @@ export function mergeMiniprogram(options: MergeMiniprogramOptions, ...configs: P
 
   if (isDev) {
     const hmrWatchBuildDelay = 10
-    const userBuildWatch = config.build?.watch
+    const userBuildWatch = config.build?.watch ?? configs.find(config => config?.build?.watch)?.build?.watch
+    const userExclude = Array.isArray(userBuildWatch?.exclude)
+      ? userBuildWatch.exclude
+      : userBuildWatch?.exclude
+        ? [userBuildWatch.exclude]
+        : []
     const watchInclude = resolveMiniprogramWatchInclude({
       cwd,
       srcRoot,
@@ -315,6 +322,7 @@ export function mergeMiniprogram(options: MergeMiniprogramOptions, ...configs: P
               ? userBuildWatch
               : {}),
             exclude: [
+              ...userExclude,
               ...defaultExcluded,
               path.join(path.resolve(cwd, mpDistRoot || 'dist'), '**'),
             ],
@@ -335,7 +343,7 @@ export function mergeMiniprogram(options: MergeMiniprogramOptions, ...configs: P
       srcRoot,
       pluginRoot: config.weapp?.pluginRoot,
       buildScope: resolveBuildScope(config.weapp?.buildScope),
-      userInclude: inline.build?.watch?.include,
+      userInclude: userBuildWatch?.include,
       configFileDependencies,
     })
     normalizeInlineConfigAfterDefu(inline, {

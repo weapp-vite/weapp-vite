@@ -1,4 +1,5 @@
 import type { Plugin } from 'vite'
+import path from 'node:path'
 import { mergeConfig } from 'vite'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createRuntimeState } from '../runtime/runtimeState'
@@ -95,6 +96,67 @@ describe('dev module graph provider', () => {
     await provider.close()
     expect(watcher.off).not.toHaveBeenCalled()
     expect(close).toHaveBeenCalled()
+  })
+
+  it('registers external build watch roots and applies their filters to the standalone host', async () => {
+    const configFileDependencies: string[] = []
+    const ctx = {
+      runtimeState: createRuntimeState(),
+      configService: {
+        cwd: '/project',
+        outDir: '/project/dist',
+        inlineConfig: {
+          build: { watch: { include: ['../shared/**'], exclude: ['**/ignored/**'] } },
+        },
+        configFileDependencies,
+      },
+      moduleGraphService: createModuleGraphService(),
+    } as any
+    const provider = await createDevModuleGraphProvider(ctx, {}, vi.fn())
+    try {
+      expect(watcher.add).toHaveBeenCalledWith([path.resolve('/shared').replaceAll('\\', '/')])
+      const config = createServerMock.mock.calls[0]![0]
+      const matchers = config.server.watch.ignored as Array<(file: string) => boolean>
+      const isIgnored = (file: string) => matchers.some(match => match(file))
+      expect(isIgnored('/shared/message.ts')).toBe(false)
+      expect(isIgnored('/shared/ignored/message.ts')).toBe(true)
+      expect(isIgnored('/project/src/page.ts')).toBe(true)
+
+      const dependency = '/project/config/value.mjs'
+      expect(isIgnored(dependency)).toBe(true)
+      configFileDependencies.push(dependency)
+      expect(isIgnored(dependency)).toBe(false)
+    }
+    finally {
+      await provider.close()
+    }
+  })
+
+  it('does not fall back to merged build watch when the user configured none', async () => {
+    const ctx = {
+      runtimeState: createRuntimeState(),
+      configService: {
+        cwd: '/project',
+        outDir: '/project/dist',
+        inlineConfig: {},
+        configFileDependencies: [],
+      },
+      moduleGraphService: createModuleGraphService(),
+    } as any
+    const provider = await createDevModuleGraphProvider(ctx, {
+      build: { watch: { include: ['src/**'] } },
+    }, vi.fn())
+    try {
+      expect(watcher.add).not.toHaveBeenCalled()
+      const config = createServerMock.mock.calls[0]![0]
+      const matchers = config.server.watch.ignored as Array<(file: string) => boolean>
+      const isIgnored = (file: string) => matchers.some(match => match(file))
+      expect(isIgnored('/project/src/page.ts')).toBe(false)
+      expect(isIgnored('/shared/message.ts')).toBe(false)
+    }
+    finally {
+      await provider.close()
+    }
   })
 
   it('merges exact profile ownership with user ignores and rejects late profile events before reading', async () => {

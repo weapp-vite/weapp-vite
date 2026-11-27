@@ -1,7 +1,7 @@
 import type { InlineConfig, Plugin, ViteDevServer } from 'vite'
 import { Buffer } from 'node:buffer'
 import { realpathSync } from 'node:fs'
-import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, readFile, rm, symlink, writeFile } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import process from 'node:process'
@@ -240,13 +240,42 @@ import { message } from './config-value.mjs'
 appendFileSync(new URL('./config-calls.txt', import.meta.url), 'loaded\\n')
 export default { define: { CONFIG_MESSAGE: JSON.stringify(message) } }
 `)
-    return { configFile }
+    return { configFile, build: { watch: { include: ['src/**'] } } }
   })
   expect(await read('pages/home/index.js')).toContain('first-config')
   expect(await readFile(path.join(root, 'config-calls.txt'), 'utf8')).toBe('loaded\n')
   await writeFile(path.join(root, 'config-value.mjs'), 'export const message = "second-config"')
   await expect.poll(() => read('pages/home/index.js'), { timeout: 10_000 }).toContain('second-config')
   expect(await readFile(path.join(root, 'config-calls.txt'), 'utf8')).toBe('loaded\nloaded\n')
+}, 30_000)
+
+it.each([false, true])('rebuilds linked workspace sources selected by build.watch.include with preserveSymlinks=%s', async (preserveSymlinks) => {
+  const workspace = await mkdtemp(path.join(os.tmpdir(), 'weapp-vite-dev-workspace-'))
+  roots.push(workspace)
+  await mkdir(path.join(workspace, 'src'), { recursive: true })
+  await writeFile(path.join(workspace, 'package.json'), '{"name":"@scope/dev-workspace","type":"module","exports":"./src/message.js"}')
+  await writeFile(path.join(workspace, 'src/message.js'), 'export const message = "linked-initial"')
+  const { read } = await fixture([], 'import { message } from "@scope/dev-workspace"; Page({ data: { message } })', async (projectRoot) => {
+    await mkdir(path.join(projectRoot, 'node_modules/@scope'), { recursive: true })
+    await symlink(workspace, path.join(projectRoot, 'node_modules/@scope/dev-workspace'), 'junction')
+    return {
+      resolve: { preserveSymlinks },
+      build: { watch: { include: [path.join(workspace, '**')] } },
+    }
+  })
+  expect(await read('pages/home/index.js')).toContain('linked-initial')
+  await writeFile(path.join(workspace, 'src/message.js'), 'export const message = "linked-updated"')
+  await expect.poll(() => read('pages/home/index.js'), { timeout: 10_000 }).toContain('linked-updated')
+}, 30_000)
+
+it('reloads env files while a restrictive build watch include is active', async () => {
+  const { root, read } = await fixture([], 'Page({ data: { message: import.meta.env.VITE_MESSAGE } })', async (projectRoot) => {
+    await writeFile(path.join(projectRoot, '.env'), 'VITE_MESSAGE="env-initial"')
+    return { build: { watch: { include: ['src/**'] } } }
+  })
+  expect(await read('pages/home/index.js')).toContain('env-initial')
+  await writeFile(path.join(root, '.env'), 'VITE_MESSAGE="env-updated"')
+  await expect.poll(() => read('pages/home/index.js'), { timeout: 10_000 }).toContain('env-updated')
 }, 30_000)
 
 it('waits for an in-flight snapshot before closing the middleware host', async () => {

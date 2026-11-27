@@ -154,16 +154,15 @@ describe('runtime config merge miniprogram', () => {
     ])
   })
 
-  it('keeps dependency graph files outside srcRoot eligible for dev watch', () => {
+  it('keeps a user include as a whitelist while retaining config dependencies', () => {
     expect(resolveMiniprogramWatchInclude({
       cwd: '/project',
       srcRoot: 'src',
+      pluginRoot: '../plugin-root',
       userInclude: ['/workspace/packages/ui/**'],
       configFileDependencies: ['/project/vite.config.mts'],
     })).toEqual([
       '/workspace/packages/ui/**',
-      '**',
-      '/project/src/**',
       '/project/vite.config.mts',
     ])
   })
@@ -184,6 +183,12 @@ describe('runtime config merge miniprogram', () => {
         config: {
           weapp: {
             pluginRoot: '../plugin-root',
+          },
+          build: {
+            watch: {
+              include: ['../shared/**'],
+              exclude: ['**/ignored/**'],
+            },
           },
         } as any,
         cwd: '/project',
@@ -231,13 +236,10 @@ describe('runtime config merge miniprogram', () => {
     expect(result.build?.modulePreload).toBe(false)
     expect(result.build?.sourcemap).toBe(false)
     expect((result.build as any).rollupOptions).toBeUndefined()
-    expect(result.build?.watch?.include).toEqual([
-      '**',
-      '/project/src/**',
-      '/plugin-root/**',
-    ])
+    expect(result.build?.watch?.include).toEqual(['../shared/**'])
     expect(result.build?.watch?.buildDelay).toBe(10)
     expect(result.build?.watch?.watcher).toBeUndefined()
+    expect(result.build?.watch?.exclude).toContain('**/ignored/**')
     expect(result.build?.watch?.exclude).toContain('/project/custom-dist/**')
     expect((result.build as any).rolldownOptions.tsconfig).toBe(false)
     expect(injectBuiltinAliases).toHaveBeenCalledWith(result)
@@ -450,8 +452,6 @@ describe('runtime config merge miniprogram', () => {
     expect(result.build?.watch?.watcher?.useDebounce).toBe(false)
     expect(result.build?.watch?.include).toEqual([
       '/workspace/packages/ui/**',
-      '**',
-      '/project/src/**',
       '/project/vite.config.mts',
     ])
   })

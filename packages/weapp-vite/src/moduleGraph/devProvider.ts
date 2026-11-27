@@ -1,6 +1,7 @@
 import type { HotUpdateOptions, InlineConfig, Plugin, ResolvedConfig, ViteDevServer } from 'vite'
 import type { CompilerContext, MutableCompilerContext } from '../context'
 import type { HmrProfileSourceEvent } from '../utils/hmrProfile/provenance'
+import process from 'node:process'
 import { createLogger, createServer, transformWithOxc } from 'vite'
 import { readAndParseSfc } from 'wevu/compiler'
 import {
@@ -13,7 +14,8 @@ import {
 } from '../plugins/autoRoutes.shared'
 import { createPackageImportsQueryPlugin } from '../plugins/packageImports'
 import { resolveNpmBuildCandidateDependenciesSync } from '../runtime/npmPlugin/service/dependencies'
-import { createViteWatchIgnored, resolvePollingWatchOptions } from '../runtime/watch/options'
+import { createBuildWatchFilter } from '../runtime/watch/buildWatch'
+import { createDevConfigWatchFiles, createDevWatchIgnored, resolvePollingWatchOptions } from '../runtime/watch/options'
 import { deduplicateCleanupErrors } from '../runtime/watcher/cleanupErrors'
 import { isCSSRequest } from '../utils/regexp'
 import { bindWxmlDependencyWatch, ownsExternalWxmlWatch } from '../wxml/processing/watch'
@@ -252,18 +254,27 @@ export async function createDevModuleGraphProvider(
     return host
   }
   const configService = ctx.configService
+  const root = buildConfig.root ?? configService?.cwd ?? process.cwd()
   const userWatch = buildConfig.server?.watch
+  const userBuildWatch = configService
+    ? configService.inlineConfig?.build?.watch
+    : buildConfig.build?.watch
+  const preserveSymlinks = configService
+    ? configService.inlineConfig?.resolve?.preserveSymlinks
+    : buildConfig.resolve?.preserveSymlinks
+  const buildWatch = { ...userBuildWatch, preserveSymlinks }
+  const alwaysWatch = () => configService ? createDevConfigWatchFiles(configService, root) : []
   const pollingWatchOptions = resolvePollingWatchOptions({ inlineConfig: configService?.inlineConfig ?? {} })
-  const ignored = configService?.outDir
-    ? createViteWatchIgnored(
-        buildConfig.root ?? configService.cwd,
-        configService.outDir,
-        userWatch?.ignored,
-      )
-    : userWatch?.ignored
+  const ignored = createDevWatchIgnored(
+    root,
+    configService?.outDir,
+    userWatch?.ignored,
+    buildWatch,
+    alwaysWatch,
+  )
   const server: ViteDevServer = await createServer({
     ...buildConfig,
-    root: buildConfig.root ?? configService?.cwd,
+    root,
     appType: 'custom',
     configFile: false,
     customLogger: createLogger('silent'),
@@ -310,6 +321,10 @@ export async function createDevModuleGraphProvider(
     }
   }
   try {
+    const buildWatchFilter = createBuildWatchFilter(buildWatch, root, alwaysWatch)
+    if (buildWatchFilter.targets.length) {
+      server.watcher.add(buildWatchFilter.targets)
+    }
     unobserveWxml = bindWxmlDependencyWatch(ctx, server, onChange)
     await unobserveWxml.ready
   }

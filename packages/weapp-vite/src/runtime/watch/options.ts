@@ -1,12 +1,24 @@
 import type chokidar from 'chokidar'
 import type { Matcher } from 'vite'
 import type { ConfigService } from '../config/types'
+import type { BuildWatchFilterOptions } from './buildWatch'
 import process from 'node:process'
 import path from 'pathe'
 import { isPathInside } from '../../utils/path'
 import { normalizeFsResolvedId } from '../../utils/resolvedId'
+import { createBuildWatchFilter } from './buildWatch'
 
 type ChokidarWatchOptions = NonNullable<Parameters<typeof chokidar.watch>[1]>
+type MatcherPattern = Exclude<Matcher, unknown[]>
+
+function normalizeMatchers(matcher: Matcher | undefined): MatcherPattern[] {
+  if (matcher === undefined) {
+    return []
+  }
+  return Array.isArray(matcher)
+    ? matcher.flatMap(item => normalizeMatchers(item))
+    : [matcher]
+}
 
 interface SidecarWatchOptionsInput {
   persistent?: boolean
@@ -92,12 +104,12 @@ export function createViteWatchIgnored(
   root: string,
   outDir: string,
   ignored?: Matcher,
-): Matcher {
+): MatcherPattern[] {
   const normalizedRoot = normalizeFsResolvedId(root)
   const normalizedOutDir = normalizeFsResolvedId(
     path.isAbsolute(outDir) ? outDir : path.resolve(root, outDir),
   )
-  const patterns = ignored === undefined ? [] : Array.isArray(ignored) ? ignored : [ignored]
+  const patterns = normalizeMatchers(ignored)
 
   return [
     ...patterns,
@@ -108,4 +120,55 @@ export function createViteWatchIgnored(
       return isPathInside(normalizedOutDir, normalizedId)
     },
   ]
+}
+
+type DevConfigWatchService = Pick<ConfigService, 'cwd' | 'inlineConfig' | 'configFileDependencies' | 'configFilePath'>
+
+export function createDevConfigDependencyFiles(configService: DevConfigWatchService) {
+  const files = [...(configService.configFileDependencies ?? [])]
+  if (configService.configFilePath) {
+    files.push(configService.configFilePath)
+  }
+  return files
+}
+
+export function createDevEnvWatchFiles(configService: DevConfigWatchService, root = configService.cwd) {
+  const envDir = configService.inlineConfig?.envDir
+  if (envDir === false) {
+    return []
+  }
+  const resolvedEnvDir = envDir ? path.resolve(root, envDir) : root
+  const mode = configService.inlineConfig?.mode ?? 'development'
+  return ['.env', '.env.local', `.env.${mode}`, `.env.${mode}.local`]
+    .map(file => path.join(resolvedEnvDir, file))
+}
+
+export function createDevConfigWatchFiles(configService: DevConfigWatchService, root = configService.cwd) {
+  return [
+    ...createDevConfigDependencyFiles(configService),
+    ...createDevEnvWatchFiles(configService, root),
+  ]
+}
+
+export function isDevConfigWatchFile(configService: DevConfigWatchService, file: string, root = configService.cwd) {
+  const normalizedFile = normalizeFsResolvedId(file)
+  return createDevConfigWatchFiles(configService, root)
+    .some(dependency => normalizeFsResolvedId(dependency) === normalizedFile)
+}
+
+export function createDevWatchIgnored(
+  root: string,
+  outDir: string | undefined,
+  ignored: Matcher | undefined,
+  buildWatch: BuildWatchFilterOptions | null | undefined,
+  alwaysWatch: Iterable<string> | (() => Iterable<string>) = [],
+): MatcherPattern[] {
+  const matchers = outDir
+    ? createViteWatchIgnored(root, outDir, ignored)
+    : normalizeMatchers(ignored)
+  const filter = createBuildWatchFilter(buildWatch, root, alwaysWatch)
+  if (!buildWatch?.include && !buildWatch?.exclude) {
+    return matchers
+  }
+  return [...matchers, filter.ignored]
 }
