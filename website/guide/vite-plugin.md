@@ -42,25 +42,13 @@ vite dev
 
 ## Vite+
 
-配置中的 `defineConfig` 改为从 `vite-plus` 导入，然后使用 `vp build` / `vp dev`。Vite+ 消费项目须按官方迁移规则把 `vite` 指向配套 core，并确保 weapp-vite 的依赖也解析到同一宿主。例如 npm 项目：
+**用脚手架新建独立项目时**，运行 `pnpm create weapp-vite my-app wevu --toolchain=vite-plus`。脚手架会自动写入 `package.json` 和 `pnpm-workspace.yaml` 的 `overrides`，并接入 `@weapp-vite/oxlint` 与 `@weapp-vite/oxfmt`。生成后可直接安装依赖。
 
-```json
-{
-  "type": "module",
-  "devDependencies": {
-    "vite-plus": "1.2.0",
-    "vite": "npm:@voidzero-dev/vite-plus-core@1.2.0"
-  },
-  "overrides": {
-    "vite": "npm:@voidzero-dev/vite-plus-core@1.2.0",
-    "vitest": "5.0.4"
-  }
-}
-```
+**往已有 pnpm workspace 添加成员时**，先在工作区外用同一版本的脚手架和 `--toolchain=vite-plus` 生成一个独立项目。以生成项目的 `pnpm-workspace.yaml` 为准，把 Vite+ 相关的 `overrides` 和 `peerDependencyRules.allowedVersions` 条目按需合并到已有工作区的根配置，保留其他设置。脚手架会在复制模板前校验根配置。
 
-pnpm 使用项目级 `pnpm-workspace.yaml` 的 `overrides` 完成同样的 alias；不要只修改顶层依赖而留下 weapp-vite 内嵌的另一套 Vite。该组合固定配套 `vitest@5.0.4`，避免测试包与 `vp test` 使用不同 runner。脚手架生成的 Vite+ 项目要求 Node `^24.22.1 || >=26.12.1`。
+**手动接入 Vite+ 时**，将 `defineConfig` 改为从 `vite-plus` 导入，然后使用 `vp build` / `vp dev`。参考脚手架生成的独立 Vite+ 项目，从 `package.json` 核对依赖版本和 `engines.node`，并按包管理器合并生成的 npm 或 pnpm 配置。Vite override 让 weapp-vite 解析到与宿主配套的 core，Vitest override 让项目里的测试依赖与 `vp test` 使用同一版本。
 
-使用 `create-weapp-vite ... --toolchain=vite-plus` 可以直接生成上述配对配置，并接入 `@weapp-vite/oxlint` 与 `@weapp-vite/oxfmt`。`vp check` 使用 workspace 根已有的 lint/fmt 配置；成员配置不会覆盖根策略。
+`vp check` 使用 workspace 根已有的 lint/fmt 配置；成员配置不会覆盖根策略。
 
 ## 当前命令边界
 
