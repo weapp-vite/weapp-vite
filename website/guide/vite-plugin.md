@@ -71,7 +71,7 @@ peerDependencyRules:
 
 `peerDependencyRules.allowedVersions.vite` 也接受覆盖 `1.5.0` 的 semver 范围。Vitest override 让测试包与 `vp test` 使用同一版本。脚手架生成的 Vite+ 项目要求 Node `^24.22.1 || >=26.12.1`。
 
-运行 `pnpm dlx create-weapp-vite@3.7.2 my-app wevu --toolchain=vite-plus` 可生成上述配对，并接入 `@weapp-vite/oxlint` 与 `@weapp-vite/oxfmt`。使用其他脚手架版本时，请按对应发布模板中的配对配置。`vp check` 使用 workspace 根已有的 lint/fmt 配置；成员配置不会覆盖根策略。
+运行 `pnpm create weapp-vite my-app wevu --toolchain=vite-plus` 可创建 Wevu 项目，并接入 `@weapp-vite/oxlint` 与 `@weapp-vite/oxfmt`。使用其他脚手架版本时，请按对应发布模板中的配对配置。`vp check` 使用 workspace 根已有的 lint/fmt 配置；成员配置不会覆盖根策略。
 
 ## 当前命令边界
 

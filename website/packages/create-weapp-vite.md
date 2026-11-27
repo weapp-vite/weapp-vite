@@ -76,8 +76,8 @@ pnpm create weapp-vite my-app wevu --dependency-versions=bundled
 
 ```bash
 pnpm create weapp-vite my-app wevu --toolchain=vite
-pnpm dlx create-weapp-vite@3.7.2 my-app wevu --toolchain=vite-plus
-pnpm dlx create-weapp-vite@3.7.2 my-native-app default --toolchain=vite-plus
+pnpm create weapp-vite my-app wevu --toolchain=vite-plus
+pnpm create weapp-vite my-native-app default --toolchain=vite-plus
 ```
 
 Vite / Vite+ 项目的 `dev`、`build` 脚本分别使用 `vite` / `vp`，`vite*.config.ts` 显式导入共享的 `weapp-vite.config.ts`；多平台和 lib 脚本使用各自的配置文件，不传递 `wv` 专属参数。`prepare`、打开 IDE、Dashboard、上传、MCP 等小程序命令继续由 `wv` 提供。`wv` / Vite 项目保留原有 ESLint 配置；Vite+ 接入 Oxlint / Oxfmt，Wevu 项目保留 Vue 模板专项 ESLint。Stylelint 和受管 TypeScript 流程继续保留。

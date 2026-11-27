@@ -87,8 +87,8 @@ await createProject('my-app', TemplateName.wevu, {
 工具链与业务模板独立，已有模板名与非交互默认值保持兼容：
 
 ```bash
-pnpm dlx create-weapp-vite@3.7.2 my-app wevu --toolchain=vite-plus
-pnpm dlx create-weapp-vite@3.7.2 my-native-app default --toolchain=vite-plus
+pnpm create weapp-vite my-app wevu --toolchain=vite-plus
+pnpm create weapp-vite my-native-app default --toolchain=vite-plus
 pnpm create weapp-vite my-vite-app wevu --toolchain=vite
 ```
 
