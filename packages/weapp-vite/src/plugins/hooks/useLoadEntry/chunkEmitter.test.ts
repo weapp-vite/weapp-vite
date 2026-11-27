@@ -216,6 +216,31 @@ describe('createChunkEmitter', () => {
     }))
   })
 
+  it('defers entry loading when the engine rejects buildStart load', async () => {
+    const emitEntriesChunks = createChunkEmitter(
+      {
+        relativeOutputPath(input: string) {
+          return input.replace('/project/src/', '')
+        },
+      } as any,
+      new Set<string>(),
+    )
+    const pluginCtx = {
+      emitFile: vi.fn(),
+      load: vi.fn(async () => {
+        throw new Error('`this.load` is not supported in the `buildStart` hook.')
+      }),
+    }
+
+    const [stats] = await Promise.all(emitEntriesChunks.call(pluginCtx as any, [{ id: '/project/src/pages/index.ts' } as any]))
+
+    expect(stats).toMatchObject({ chunkEmitCount: 1, loadCount: 1 })
+    expect(pluginCtx.emitFile).toHaveBeenCalledWith(expect.objectContaining({
+      id: '/project/src/pages/index.ts',
+      fileName: 'pages/index.js',
+    }))
+  })
+
   it('tracks skipped preloads for entries already loaded', async () => {
     const id = '/project/src/pages/index/index.ts'
     const loadedEntrySet = new Set<string>([id])
