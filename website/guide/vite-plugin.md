@@ -42,7 +42,9 @@ vite dev
 
 ## Vite+
 
-配置中的 `defineConfig` 改为从 `vite-plus` 导入，然后使用 `vp build` / `vp dev`。Vite+ 消费项目须按官方迁移规则把 `vite` 指向配套 core，并确保 weapp-vite 的依赖也解析到同一宿主。下面的 npm `package.json` 示例采用 `create-weapp-vite@3.7.2` 发布包中的版本配对。
+**用脚手架新建独立项目时**，选择 `--toolchain=vite-plus` 后，脚手架会自动写入 `package.json` 和 `pnpm-workspace.yaml` 的 `overrides`，生成后可直接安装依赖。
+
+手动接入 Vite+ 时，配置中的 `defineConfig` 改为从 `vite-plus` 导入，然后使用 `vp build` / `vp dev`。Vite+ 消费项目须按官方迁移规则把 `vite` 指向配套 core，并确保 weapp-vite 的依赖也解析到同一宿主。下面的 npm `package.json` 示例采用 `create-weapp-vite@3.7.2` 发布包中的版本配对。
 
 ```json
 {
@@ -58,7 +60,7 @@ vite dev
 }
 ```
 
-使用 pnpm 时，将下列配置合并到根目录的 `pnpm-workspace.yaml`，并保留其他根配置。
+**往已有 pnpm workspace 添加成员时**，先检查根目录的 `pnpm-workspace.yaml`。如需补齐或更新，将下列配置合并到根文件，保留其他设置。脚手架会在复制模板前校验根配置。手动接入 Vite+ 的 pnpm 项目也可以使用此配置。
 
 ```yaml
 overrides:

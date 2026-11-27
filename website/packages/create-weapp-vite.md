@@ -100,7 +100,11 @@ Vite / Vite+ 项目的 `dev`、`build` 脚本分别使用 `vite` / `vp`，`vite*
 
 `wv prepare`、打开 IDE、Dashboard、上传与 MCP 命令继续由 `wv` 提供；`postinstall` 保持 `wv prepare`，格式化在模板准备阶段完成。Vue parser services 专项检查、Stylelint 和项目类型检查各自保留；语言工具不新增完整模板类型检查器。本轮验收覆盖 TS、CLI、VSCode 与构建，不代表真实小程序 IDE runtime 验收。
 
-`create-weapp-vite@3.7.2` 的 Vite+ 模板使用 `vite-plus@1.5.0`，将 `vite` 指向 `npm:@voidzero-dev/vite-plus-core@1.5.0`，并通过 overrides 固定 `vitest@5.1.0`。独立项目会生成 npm overrides 和 pnpm workspace 策略。向已有 pnpm workspace 添加成员时，将下列配置合并到根目录的 `pnpm-workspace.yaml`，并保留其他根配置。脚手架会在复制模板前校验这些设置。
+`create-weapp-vite@3.7.2` 的 Vite+ 模板使用 `vite-plus@1.5.0`，将 `vite` 指向 `npm:@voidzero-dev/vite-plus-core@1.5.0`，并通过 overrides 固定 `vitest@5.1.0`。
+
+**新建独立项目时**，脚手架会自动写入 `package.json` 和 `pnpm-workspace.yaml` 的 `overrides`，生成后可直接安装依赖。
+
+**往已有 pnpm workspace 添加成员时**，先检查根目录的 `pnpm-workspace.yaml`。如需补齐或更新，将下列配置合并到根文件，保留其他设置。脚手架会在复制模板前校验根配置。
 
 ```yaml
 overrides:
