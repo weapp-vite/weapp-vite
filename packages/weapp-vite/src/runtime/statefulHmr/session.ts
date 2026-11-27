@@ -183,8 +183,6 @@ export async function runStatefulHmrDev(
           root,
           configService.outDir,
           buildOptions.server?.watch?.ignored,
-          buildWatch,
-          alwaysWatch,
         ),
       },
     },

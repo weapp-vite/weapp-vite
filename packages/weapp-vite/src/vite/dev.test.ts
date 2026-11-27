@@ -43,16 +43,14 @@ it.each([false, true])('keeps the classic host and session root identical with p
   }
 })
 
-it('applies build watch filters to the stateful host without forwarding build watch', () => {
+it('does not apply build watch filters to the stateful host', () => {
   const userIgnored = (id: string) => id.endsWith('.user-ignored')
-  const configFileDependencies: string[] = []
   const session = {
     context: {
       configService: {
         cwd: '/project',
         outDir: '/project/dist',
         inlineConfig: {},
-        configFileDependencies,
       },
     },
     statefulController: { plugins: [] },
@@ -66,14 +64,9 @@ it('applies build watch filters to the stateful host without forwarding build wa
   const isIgnored = (file: string) => matchers.some(match => typeof match === 'function' && match(file))
 
   expect(isIgnored('/shared/message.ts')).toBe(false)
-  expect(isIgnored('/shared/ignored/message.ts')).toBe(true)
-  expect(isIgnored('/project/src/page.ts')).toBe(true)
+  expect(isIgnored('/shared/ignored/message.ts')).toBe(false)
+  expect(isIgnored('/project/src/page.ts')).toBe(false)
   expect(isIgnored('/project/src/page.user-ignored')).toBe(true)
   expect(isIgnored('/project/dist/app.js')).toBe(true)
   expect(host.config.build?.watch).toBeUndefined()
-
-  const dependency = '/project/config/value.mjs'
-  expect(isIgnored(dependency)).toBe(true)
-  configFileDependencies.push(dependency)
-  expect(isIgnored(dependency)).toBe(false)
 })

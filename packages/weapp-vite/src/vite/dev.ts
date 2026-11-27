@@ -4,16 +4,11 @@ import { WEAPP_VITE_STATEFUL_HMR_BRIDGE_KEY } from '@weapp-core/constants'
 import { createDevModuleGraphPlugin } from '../moduleGraph/devProvider'
 import { notifyDevModuleGraphHost } from '../moduleGraph/host'
 import { createPackageImportsQueryPlugin } from '../plugins/packageImports'
-import { createDevConfigWatchFiles, createDevWatchIgnored } from '../runtime/watch/options'
+import { createDevWatchIgnored } from '../runtime/watch/options'
 
 /** 宿主仅提供依赖图和服务生命周期；小程序快照沿用原生构建落盘。 */
 export function prepareDevHostConfig(session: WeappBuildSession, merged: InlineConfig, user: InlineConfig): { plugins: PluginOption[], config: InlineConfig } {
   const ctx = session.context
-  const buildWatch = {
-    ...user.build?.watch,
-    preserveSymlinks: user.resolve?.preserveSymlinks,
-  }
-  const alwaysWatch = () => createDevConfigWatchFiles(ctx.configService)
   if (session.statefulController) {
     const { plugins: _plugins, configFile: _configFile, ...normalized } = merged
     return {
@@ -37,7 +32,7 @@ export function prepareDevHostConfig(session: WeappBuildSession, merged: InlineC
           hmr: user.server?.hmr,
           watch: {
             ...user.server?.watch,
-            ignored: createDevWatchIgnored(ctx.configService.cwd, ctx.configService.outDir, user.server?.watch?.ignored, buildWatch, alwaysWatch),
+            ignored: createDevWatchIgnored(ctx.configService.cwd, ctx.configService.outDir, user.server?.watch?.ignored),
           },
         },
         build: { ...merged.build, watch: undefined, write: false },
@@ -56,7 +51,7 @@ export function prepareDevHostConfig(session: WeappBuildSession, merged: InlineC
       optimizeDeps: { noDiscovery: true, include: [], entries: [] },
       server: {
         watch: {
-          ignored: createDevWatchIgnored(ctx.configService.cwd, ctx.configService.outDir, user.server?.watch?.ignored, buildWatch, alwaysWatch),
+          ignored: createDevWatchIgnored(ctx.configService.cwd, ctx.configService.outDir, user.server?.watch?.ignored),
         },
       },
     } satisfies InlineConfig,

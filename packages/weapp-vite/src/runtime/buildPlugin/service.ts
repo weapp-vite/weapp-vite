@@ -279,6 +279,7 @@ interface HmrPhaseRegressionCandidate {
 }
 
 interface SnapshotBuildReason {
+  bypassBuildWatchFilter?: boolean
   verifyInitialInput?: boolean
   verifyInitialSidecarCreation?: () => boolean
   initialSidecarSource?: string
@@ -2138,7 +2139,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
               }
               // 漂移交回下一代重新分析；保留既有结构性全量原因，不能把纯脚本保存升级为全量发布。
               // eslint-disable-next-line ts/no-use-before-define -- 漂移回调执行时批次调度函数已完成初始化。
-              scheduleSnapshotBuild(change, performance.now())
+              scheduleSnapshotBuild({ ...change, bypassBuildWatchFilter: true }, performance.now())
             }
           },
           snapshotAppShell || compilerContentInputs.length
@@ -2206,7 +2207,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
     }
 
     function scheduleSnapshotBuild(reason: SnapshotBuildReason, startedAt: number) {
-      if (devWatcherClosed || snapshotConfigRestartRequested || (reason.file && !buildWatchFilter.accepts(reason.file))) {
+      if (devWatcherClosed || snapshotConfigRestartRequested || (reason.file && !reason.bypassBuildWatchFilter && !buildWatchFilter.accepts(reason.file))) {
         return
       }
       reason.sourceEvent ??= { eventId: createHmrProfileEventId(), event: reason.event, file: reason.file, receivedAtMs: startedAt }
@@ -2238,6 +2239,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
         scheduleSnapshotBuild({
           event,
           file: id,
+          bypassBuildWatchFilter: true,
           sourceEvent,
           forceFullRescan: true,
           verifyInitialInput: true,
@@ -2251,6 +2253,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
         scheduleSnapshotBuild({
           event,
           file: id,
+          bypassBuildWatchFilter: true,
           sourceEvent,
           forceFullRescan: true,
           independentRoots: [...scanService.independentSubPackageMap.keys()],
@@ -2260,7 +2263,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       if (!hasModule && !ownsCompilerContentSource(configService, id) && !initialBuildFailed) {
         return
       }
-      scheduleSnapshotBuild({ event, file: id, sourceEvent, verifyInitialInput: true, initialRoute }, receivedAtMs)
+      scheduleSnapshotBuild({ event, file: id, sourceEvent, bypassBuildWatchFilter: true, verifyInitialInput: true, initialRoute }, receivedAtMs)
     }
 
     const settlement = target === 'app'
@@ -2573,7 +2576,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
             const forceFullRescan = topologyChanged || routeSignature !== emittedAutoRoutesSignature
             for (const { file, event, receivedAtMs = performance.now() } of sourceChanges) {
               if (forceFullRescan) {
-                scheduleSnapshotBuild({ event, file, forceFullRescan: true, verifyInitialInput: true, initialRoute: { signature: routeSignature } }, receivedAtMs)
+                scheduleSnapshotBuild({ event, file, bypassBuildWatchFilter: true, forceFullRescan: true, verifyInitialInput: true, initialRoute: { signature: routeSignature } }, receivedAtMs)
               }
               else {
               // 非页面脚本或原子恢复可能不改变路由，但已有依赖仍须处理原始源事件。
@@ -2638,7 +2641,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
               emittedAppShellSnapshot = await captureAppShellSnapshot(ctx)
             }, (changes) => {
               for (const change of changes) {
-                scheduleSnapshotBuild({ ...change, forceFullRescan: true }, performance.now())
+                scheduleSnapshotBuild({ ...change, bypassBuildWatchFilter: true, forceFullRescan: true }, performance.now())
               }
             }))
             if (skippedInitialConfigPublication) {

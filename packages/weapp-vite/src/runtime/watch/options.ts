@@ -1,12 +1,10 @@
 import type chokidar from 'chokidar'
 import type { Matcher } from 'vite'
 import type { ConfigService } from '../config/types'
-import type { BuildWatchFilterOptions } from './buildWatch'
 import process from 'node:process'
 import path from 'pathe'
 import { isPathInside } from '../../utils/path'
 import { normalizeFsResolvedId } from '../../utils/resolvedId'
-import { createBuildWatchFilter } from './buildWatch'
 
 type ChokidarWatchOptions = NonNullable<Parameters<typeof chokidar.watch>[1]>
 type MatcherPattern = Exclude<Matcher, unknown[]>
@@ -160,15 +158,8 @@ export function createDevWatchIgnored(
   root: string,
   outDir: string | undefined,
   ignored: Matcher | undefined,
-  buildWatch: BuildWatchFilterOptions | null | undefined,
-  alwaysWatch: Iterable<string> | (() => Iterable<string>) = [],
 ): MatcherPattern[] {
-  const matchers = outDir
+  return outDir
     ? createViteWatchIgnored(root, outDir, ignored)
     : normalizeMatchers(ignored)
-  const filter = createBuildWatchFilter(buildWatch, root, alwaysWatch)
-  if (!buildWatch?.include && !buildWatch?.exclude) {
-    return matchers
-  }
-  return [...matchers, filter.ignored]
 }

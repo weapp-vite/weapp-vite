@@ -269,8 +269,6 @@ export async function createDevModuleGraphProvider(
     root,
     configService?.outDir,
     userWatch?.ignored,
-    buildWatch,
-    alwaysWatch,
   )
   const server: ViteDevServer = await createServer({
     ...buildConfig,

@@ -98,7 +98,7 @@ describe('dev module graph provider', () => {
     expect(close).toHaveBeenCalled()
   })
 
-  it('registers external build watch roots and applies their filters to the standalone host', async () => {
+  it('registers external build watch roots without filtering the standalone host', async () => {
     const configFileDependencies: string[] = []
     const ctx = {
       runtimeState: createRuntimeState(),
@@ -119,11 +119,11 @@ describe('dev module graph provider', () => {
       const matchers = config.server.watch.ignored as Array<(file: string) => boolean>
       const isIgnored = (file: string) => matchers.some(match => match(file))
       expect(isIgnored('/shared/message.ts')).toBe(false)
-      expect(isIgnored('/shared/ignored/message.ts')).toBe(true)
-      expect(isIgnored('/project/src/page.ts')).toBe(true)
+      expect(isIgnored('/shared/ignored/message.ts')).toBe(false)
+      expect(isIgnored('/project/src/page.ts')).toBe(false)
 
       const dependency = '/project/config/value.mjs'
-      expect(isIgnored(dependency)).toBe(true)
+      expect(isIgnored(dependency)).toBe(false)
       configFileDependencies.push(dependency)
       expect(isIgnored(dependency)).toBe(false)
     }
@@ -132,7 +132,7 @@ describe('dev module graph provider', () => {
     }
   })
 
-  it('does not fall back to merged build watch when the user configured none', async () => {
+  it('does not apply build watch from the host config to the Vite watcher', async () => {
     const ctx = {
       runtimeState: createRuntimeState(),
       configService: {
