@@ -11,8 +11,6 @@ import { recommendedSkillsInstallation } from './skills'
 import { TEMPLATE_DEFINITIONS } from './templates'
 import { validateToolchain } from './toolchain'
 
-const cwd = process.cwd()
-
 const MORE_TEMPLATES = 'more-templates'
 const TEMPLATE_CHOICES: Array<{ name: string, value: TemplateName | typeof MORE_TEMPLATES }> = [
   ...TEMPLATE_DEFINITIONS
@@ -114,6 +112,7 @@ export async function run() {
   // Support non-interactive usage: node cli.mjs <targetDir> <templateName>
   // Example: node dist/cli.js my-app default
   const parsedArgs = parseCliArgs(process.argv.slice(2))
+  const cwd = process.cwd()
   if (parsedArgs.command === 'init') {
     await initConfig({
       command: 'weapp-vite',

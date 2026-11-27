@@ -52,6 +52,21 @@ describe('templates', () => {
     expect(await fs.pathExists(restoredFile)).toBe(true)
   })
 
+  it('preserves managed TypeScript support when templates are resynced', async () => {
+    const options = await isolatedTemplateSync()
+    const defaultTemplateRoot = path.join(options.targetRoot, TemplateName.default)
+    const managedFile = path.join(defaultTemplateRoot, '.weapp-vite', 'tsconfig.app.json')
+    const restoredFile = path.join(defaultTemplateRoot, 'project.config.json')
+
+    await fs.outputFile(managedFile, 'managed by the TypeScript preparation stage\n')
+    await fs.remove(restoredFile)
+
+    await syncTemplates(options)
+
+    expect(await fs.readFile(managedFile, 'utf8')).toBe('managed by the TypeScript preparation stage\n')
+    expect(await fs.pathExists(restoredFile)).toBe(true)
+  })
+
   it('preserves derived templates owned by another preparation stage', async () => {
     const options = await isolatedTemplateSync()
     const preparedFile = path.join(options.targetRoot, 'vite-plus', 'manifest.json')
@@ -62,5 +77,29 @@ describe('templates', () => {
     await syncTemplates(options)
 
     expect(await fs.readFile(preparedFile, 'utf8')).toBe(preparedContent)
+  })
+
+  it('prepares managed TypeScript support before template tests are collected', async () => {
+    const templatesRoot = path.resolve(import.meta.dirname, '../templates')
+    const entries = await fs.readdir(templatesRoot, { withFileTypes: true })
+    for (const entry of entries.filter(entry => entry.isDirectory())) {
+      const root = path.join(templatesRoot, entry.name)
+      const tsconfig = await fs.readFile(path.join(root, 'tsconfig.json'), 'utf8').catch(() => '')
+      if (!tsconfig.includes('.weapp-vite/tsconfig.')) {
+        continue
+      }
+      expect(await fs.pathExists(path.join(root, '.weapp-vite', 'tsconfig.app.json')), entry.name).toBe(true)
+    }
+  })
+
+  it('prepares managed TypeScript support for nested template test projects', async () => {
+    const nestedTestRoots = [
+      path.resolve(import.meta.dirname, '../templates/default/test'),
+      path.resolve(import.meta.dirname, '../templates/vite-plus/default/test'),
+    ]
+
+    for (const root of nestedTestRoots) {
+      expect(await fs.pathExists(path.join(root, '.weapp-vite', 'tsconfig.app.json')), root).toBe(true)
+    }
   })
 })

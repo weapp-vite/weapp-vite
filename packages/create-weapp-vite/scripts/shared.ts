@@ -158,6 +158,14 @@ async function isTemplateDirSynced(sourceRoot: string, destRoot: string) {
   return true
 }
 
+async function clearTemplateOutput(directory: string) {
+  await fs.ensureDir(directory)
+  const entries = await fs.readdir(directory, { withFileTypes: true })
+  await Promise.all(entries
+    .filter(entry => entry.name !== '.weapp-vite')
+    .map(entry => fs.remove(path.join(directory, entry.name))))
+}
+
 async function getTemplateSyncSignature() {
   const hasher = crypto.createHash('sha256')
 
@@ -230,7 +238,7 @@ export async function main(options: TemplateSyncOptions = {}) {
     for (const { dest, target } of Templates) {
       const absDest = path.resolve(targetRoot, dest)
       const absTarget = path.resolve(templateSourceRoot, target)
-      await fs.emptyDir(absDest)
+      await clearTemplateOutput(absDest)
       await fs.copy(
         absTarget,
         absDest,

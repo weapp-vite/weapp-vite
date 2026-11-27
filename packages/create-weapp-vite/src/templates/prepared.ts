@@ -9,6 +9,9 @@ export async function digestDirectory(root: string): Promise<string> {
     const entries = await fs.readdir(directory, { withFileTypes: true })
     entries.sort((left, right) => left.name.localeCompare(right.name))
     for (const entry of entries) {
+      if (entry.isDirectory() && entry.name === '.weapp-vite') {
+        continue
+      }
       const file = path.join(directory, entry.name)
       if (entry.isDirectory()) {
         await walk(file)

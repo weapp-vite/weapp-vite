@@ -90,7 +90,7 @@ async function listAll(root: string) {
   return out.sort()
 }
 
-const tmpRoot = path.join(os.tmpdir(), 'weapp-vite-create-cli-tests')
+let tmpRoot = ''
 let originalArgv: string[] = []
 let originalExitCode: typeof process.exitCode
 const initialCwd = process.cwd()
@@ -99,10 +99,9 @@ beforeEach(async () => {
   originalExitCode = process.exitCode
   originalArgv = [...process.argv]
   process.argv = process.argv.slice(0, 2)
+  tmpRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-vite-create-cli-tests-'))
   initConfigMock.mockReset()
   createProjectMock.mockClear()
-  await fs.remove(tmpRoot)
-  await fs.ensureDir(tmpRoot)
   answers.installSkills = false
   const npm = await import('@/npm')
   vi.spyOn(npm, 'getPackageVersionsFromNpm').mockResolvedValue([])
@@ -112,6 +111,7 @@ afterEach(async () => {
   process.chdir(initialCwd)
   // keep artifacts for debugging if needed; comment next line to inspect
   await fs.remove(tmpRoot)
+  tmpRoot = ''
   lastSelectChoices = undefined
   vi.resetModules()
   process.argv = originalArgv

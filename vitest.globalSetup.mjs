@@ -15,6 +15,14 @@ const FIXTURE_BUILD_DIR_NAMES = new Set([
   '.weapp-vite',
 ])
 const MANAGED_TSCONFIG_DIRNAME = '.weapp-vite'
+const WORKSPACE_SCAN_SKIP_NAMES = new Set([
+  '.git',
+  '.turbo',
+  '.weapp-vite',
+  'coverage',
+  'dist',
+  'node_modules',
+])
 const MANAGED_TSCONFIG_FILES = {
   'tsconfig.shared.empty.d.ts': 'export {}\n',
   'tsconfig.shared.json': `${JSON.stringify({
@@ -174,25 +182,36 @@ export async function syncManagedTsconfigBootstrapFiles(projectRoot) {
   }))
 }
 
-async function findWorkspaceProjectRoots() {
+async function findWorkspaceProjectRoots(rootDir) {
   const roots = []
 
-  await Promise.all(WORKSPACE_PROJECT_DIRS.map(async (relativeDir) => {
-    const dir = path.resolve(ROOT_DIR, relativeDir)
-    const entries = await fs.readdir(dir, { withFileTypes: true }).catch(() => [])
-    for (const entry of entries) {
-      if (entry.isDirectory() && !entry.name.startsWith('.tmp-')) {
-        roots.push(path.join(dir, entry.name))
-      }
+  async function visit(dir) {
+    if (await hasManagedTsconfigReference(dir)) {
+      roots.push(dir)
     }
-  }))
+
+    const entries = await fs.readdir(dir, { withFileTypes: true }).catch(() => [])
+    await Promise.all(entries
+      .filter(entry => entry.isDirectory())
+      .filter(entry => !WORKSPACE_SCAN_SKIP_NAMES.has(entry.name))
+      .filter(entry => !entry.name.startsWith('.tmp-'))
+      .map(entry => visit(path.join(dir, entry.name))))
+  }
+
+  await visit(rootDir)
 
   return roots
 }
 
-async function syncWorkspaceManagedTsconfigBootstrapFiles() {
-  const roots = await findWorkspaceProjectRoots()
+export async function syncManagedTsconfigBootstrapFilesRecursively(projectRoot) {
+  const roots = await findWorkspaceProjectRoots(projectRoot)
   await Promise.all(roots.map(root => syncManagedTsconfigBootstrapFiles(root)))
+}
+
+async function syncWorkspaceManagedTsconfigBootstrapFiles() {
+  await Promise.all(WORKSPACE_PROJECT_DIRS.map((relativeDir) => {
+    return syncManagedTsconfigBootstrapFilesRecursively(path.resolve(ROOT_DIR, relativeDir))
+  }))
 }
 
 export default async function setup() {
