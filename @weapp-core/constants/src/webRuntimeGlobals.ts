@@ -32,6 +32,20 @@ export const WEB_RUNTIME_GLOBAL_TARGETS = [
 
 export type WebRuntimeGlobalTarget = typeof WEB_RUNTIME_GLOBAL_TARGETS[number]
 
+/** 只能由依赖展开或显式声明安装的实现目标；不在基础目标列表内。 */
+export const WEB_RUNTIME_DERIVED_GLOBAL_TARGETS = [
+  'URL',
+  'URLSearchParams',
+  'Blob',
+  'File',
+  'FormData',
+] as const
+
+export type WebRuntimeDerivedGlobalTarget = typeof WEB_RUNTIME_DERIVED_GLOBAL_TARGETS[number]
+
+/** 原生全局桥接调用的共享写入判定函数名；生成代码与 web-apis 运行时导出必须一致。 */
+export const WEB_RUNTIME_GLOBAL_INSTALL_PREDICATE = 'shouldInstallWebRuntimeGlobal'
+
 /** 将全局构造器的依赖展开为同一套流实现，供 prelude 和 chunk 绑定共同使用。 */
 export function resolveWebRuntimeGlobalTargetDependencies(targets: readonly WebRuntimeGlobalTarget[]) {
   const resolved = new Set(targets)

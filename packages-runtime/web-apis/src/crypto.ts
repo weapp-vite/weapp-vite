@@ -1,3 +1,5 @@
+import { resolveGlobalValue } from './globalValue'
+
 const MAX_RANDOM_VALUES_BYTE_LENGTH = 65536
 
 type IntegerTypedArray
@@ -24,9 +26,9 @@ function isIntegerTypedArray(value: unknown): value is IntegerTypedArray {
 }
 
 function getNativeCrypto() {
-  const candidate = (globalThis as Record<string, any>).crypto
+  const candidate = resolveGlobalValue<Crypto>('crypto')
   if (candidate && typeof candidate.getRandomValues === 'function') {
-    return candidate as Crypto
+    return candidate
   }
   return undefined
 }

@@ -1,6 +1,7 @@
 import type { RequestGlobalsMiniProgramOptions } from './networkDefaults'
 import { AbortControllerPolyfill } from './abort'
 import { fetch as requestGlobalsFetch } from './fetch'
+import { resolveGlobalValue } from './globalValue'
 import { HeadersPolyfill, headersToObject } from './http'
 import { RequestGlobalsEventTarget, resolveRequestGlobalsHost } from './shared'
 
@@ -119,7 +120,8 @@ export class XMLHttpRequestPolyfill extends RequestGlobalsEventTarget {
     this.dispatchEvent({ type: 'loadstart' })
     this.upload.dispatchEvent(createProgressEvent('loadstart'))
 
-    const Controller = typeof AbortController === 'function' ? AbortController : AbortControllerPolyfill
+    const HostAbortController = resolveGlobalValue<typeof AbortController>('AbortController')
+    const Controller = typeof HostAbortController === 'function' ? HostAbortController : AbortControllerPolyfill
     const controller = new Controller()
     this.requestController = controller
 
@@ -138,7 +140,8 @@ export class XMLHttpRequestPolyfill extends RequestGlobalsEventTarget {
         signal: controller.signal,
       }) as Response
 
-      this.responseHeaders = typeof Headers === 'function' && response.headers instanceof Headers
+      const HostHeaders = resolveGlobalValue<typeof Headers>('Headers')
+      this.responseHeaders = typeof HostHeaders === 'function' && response.headers instanceof HostHeaders
         ? response.headers as unknown as HeadersPolyfill
         : new HeadersPolyfill(response.headers)
       this.status = response.status

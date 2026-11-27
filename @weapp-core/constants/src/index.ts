@@ -1,5 +1,5 @@
-export { resolveWebRuntimeGlobalTargetDependencies, WEB_RUNTIME_GLOBAL_TARGETS, WEB_RUNTIME_STREAM_TARGETS } from './webRuntimeGlobals'
-export type { WebRuntimeGlobalTarget } from './webRuntimeGlobals'
+export { resolveWebRuntimeGlobalTargetDependencies, WEB_RUNTIME_DERIVED_GLOBAL_TARGETS, WEB_RUNTIME_GLOBAL_INSTALL_PREDICATE, WEB_RUNTIME_GLOBAL_TARGETS, WEB_RUNTIME_STREAM_TARGETS } from './webRuntimeGlobals'
+export type { WebRuntimeDerivedGlobalTarget, WebRuntimeGlobalTarget } from './webRuntimeGlobals'
 
 export const APP_PRELUDE_CHUNK_MARKER = '__wvAPR__'
 export const APP_PRELUDE_GUARD_KEY = '__ai'
