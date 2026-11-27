@@ -12,7 +12,7 @@ keywords:
 
 # Web Runtime 全局对象注入
 
-`weapp.appPrelude.webRuntime` 会在前置时机把 Web Runtime 提供的兼容对象安装到小程序运行环境，并在 chunk 作用域内保留局部绑定兜底。
+`weapp.appPrelude.webRuntime` 为 Web Runtime 兼容对象提供注入能力。原有 `inline`、`entry`、`require` 模式会把兼容对象安装到小程序全局环境；显式设置 `weapp.appPrelude.mode: 'native'` 后，自由标识符和 `globalThis.<target>` 等全局对象点号访问通过 Rolldown 的原生 `transform.inject` 精确导入，只有不可点号注入的显式全局语义才写入对应的 `globalThis` 目标。
 
 它关注的是“第三方依赖运行环境假设”：有些依赖会在模块初始化阶段直接读取 `fetch`、`XMLHttpRequest`、`URL`、`AbortController` 这类自由变量，小程序宿主默认不一定提供这些对象。
 
@@ -45,7 +45,7 @@ keywords:
 - `TextDecoderStream`
 - `EventSource`
 
-启用后，构建器会在前置时机安装 Web Runtime 提供的兼容对象，并在 chunk 作用域内保留局部绑定兜底。这个兜底很重要，因为部分第三方库会在模块初始化阶段直接执行 `typeof XMLHttpRequest`、`new URL()` 或缓存 `fetch` 引用。
+启用后，旧模式会安装 Web Runtime 提供的兼容对象。`native` 模式为 `fetch`、`XMLHttpRequest`、`URL` 等自由标识符，以及 `globalThis.fetch()` 等全局对象点号访问生成模块级绑定；只有 `globalThis['fetch']` 等不可点号注入的访问才生成目标级桥接。这样第三方库在模块初始化阶段读取能力时也能获得正确实现，同时避免无关全局污染。
 
 ```ts
 import { defineConfig } from 'weapp-vite/config'
@@ -53,7 +53,7 @@ import { defineConfig } from 'weapp-vite/config'
 export default defineConfig({
   weapp: {
     appPrelude: {
-      mode: 'require',
+      mode: 'native',
       webRuntime: true,
     },
   },
@@ -66,7 +66,7 @@ export default defineConfig({
 export default defineConfig({
   weapp: {
     appPrelude: {
-      mode: 'require',
+      mode: 'native',
       webRuntime: {
         enabled: true,
         targets: [
@@ -78,12 +78,46 @@ export default defineConfig({
           'AbortSignal',
           'XMLHttpRequest',
         ],
-        dependencies: [/^axios$/, /^graphql-request$/],
       },
     },
   },
 })
 ```
+
+## `native` 模式如何绑定
+
+`native` 是 `appPrelude.mode` 的第四种模式，必须显式选择，行为固定为精确优先，不提供策略选项：只写 `mode: 'native'` 就启用全部允许目标，不需要再配置 `webRuntime`，也不读取项目依赖；未被代码引用的实现由 tree-shaking 去除。
+
+| 使用方式 | 处理 | 全局写入 |
+| --- | --- | --- |
+| 自由标识符 | Rolldown `transform.inject` 精确绑定 | 无 |
+| 全局对象点号访问 | Rolldown `transform.inject` 按固定 dotted 键精确绑定 | 无 |
+| 不可点号注入的显式全局访问 | 静态依赖目标级桥接 | 仅涉及目标 |
+| `globalTargets` | 在相关入口静态依赖目标级桥接 | 仅声明目标 |
+
+binding 模块类似 transform-runtime，只精确导入并重导出目标。全局桥接从 binding 或用户 override 导入目标，检查宿主能力后仅在缺失时幂等写入 `globalThis`。模块缓存保证同一目标只安装一次；主包、普通分包、独立分包、共享 chunk、Vue 和动态导入都遵循普通模块依赖，不依赖固定 chunk 名或优先级。
+
+自由标识符与点号全局访问的局部绑定和词法遮蔽交给 Rolldown。桥接分析只处理无法按固定 dotted 键注入的形式，包括字符串中括号、可选计算访问、全局对象解构和别名，并排除局部遮蔽。第三方库内部的动态 key、间接别名或动态求值无法可靠静态推断；需要这些访问时配置 `globalTargets`，不需要配置库名：
+
+```ts
+export default defineConfig({
+  weapp: {
+    appPrelude: {
+      mode: 'native',
+      webRuntime: {
+        targets: ['fetch', 'Request', 'Response'],
+        globalTargets: ['fetch', 'Request', 'Response'],
+      },
+    },
+  },
+})
+```
+
+`native` 不读取 `dependencies`，不生成 `installWebRuntimeXXX`、eager installer context、finalizer 或 axios 环境模块，也不执行 `__wvAXFE__` bundle patch。axios 与其他库没有特殊分支：自由标识符和点号全局访问直接注入，计算属性等不可点号注入的读取由目标桥接提供。宿主已有能力优先，因此桥接不会覆盖宿主实现。
+
+用户在 `build.rolldownOptions.transform.inject` 中的映射始终优先。自由标识符覆盖会同步到对应的 `globalThis.<target>`、`window.<target>` 等点号注入键；显式 dotted 覆盖最高，并供仍走桥接的访问使用。基础 binding 不反向导入用户 override，避免覆盖模块读取其他目标时形成循环。
+
+自定义 `app.prelude` 是普通静态模块，自身引用使用相同规则，binding 不会反向依赖 Prelude。旧 `inline`、`entry`、`require` 模式及默认 `require` 保持不变，旧模式仍可使用 `weapp.injectWebRuntimeGlobals.prelude`。
 
 ## 复用 Web SSE 写法
 
@@ -160,20 +194,20 @@ Wevu 页面应在同步 setup 阶段注册 `onUnload`，由它调用 `source.clo
 | 配置                          | 作用位置             | 主要用途                            |
 | ----------------------------- | -------------------- | ----------------------------------- |
 | `weapp.web`                   | 浏览器侧附加运行链路 | 页面预览、兼容验证、截图联调        |
-| `weapp.appPrelude.webRuntime` | 小程序构建产物       | 在小程序运行时安装 Web 风格全局对象 |
+| `weapp.appPrelude.webRuntime` | 小程序构建产物 | 旧模式安装全局对象；`native` 精确绑定并按全局语义桥接 |
 
 如果你要在浏览器中预览小程序页面，配置 `weapp.web`。
-如果你要让小程序产物兼容 Web 风格请求库，配置 `weapp.appPrelude.webRuntime`。
+如果你要让小程序产物兼容 Web 风格请求库，配置 `weapp.appPrelude.webRuntime`。需要精确注入时显式选择 `mode: 'native'`。
 
 ## 推荐做法
 
-新项目优先使用：
+需要 Rolldown 原生模块绑定时，显式选择：
 
 ```ts
 export default defineConfig({
   weapp: {
     appPrelude: {
-      mode: 'require',
+      mode: 'native',
       webRuntime: {
         enabled: true,
       },
@@ -186,11 +220,17 @@ export default defineConfig({
 
 ## 验证方式
 
-构建后可以检查产物中是否出现这些内容：
+构建后重点检查使用 Web 全局对象的模块是否通过 `import` 或 `require` 依赖 Web Runtime 绑定。`native` 模式可额外检查：
 
-- `app.prelude.js`
-- `weapp-vendors/request-globals-web-apis-shared.js`
-- 入口 JS 顶部的 `require("./app.prelude.js")` 或等价相对路径
+- 仅使用自由标识符或全局对象点号访问时不写全局，也没有 installer、eager 状态或 axios patch。
+- 不可点号注入的显式全局访问和 `globalTargets` 只依赖涉及的目标桥接，宿主已有能力保持不变。
+- 自定义 Prelude 作为普通模块执行，引用目标时建立正常依赖，binding 不反向依赖 Prelude。
+- 主包、普通分包、独立分包和动态导入都使用可解析的构建图依赖。
+- 所有 emitted JS 均无 `installWebRuntime*`、`axiosEnv`、`eagerBindings` 或 `__wvAXFE__`。
+
+绑定和桥接可能被 tree-shake、合并或改名，因此不要固定要求某个 vendor 文件名，应按实际模块依赖和运行时语义判断。
+
+`app.prelude.js` 只在自定义前置脚本使用旧版 `require` 模式时生成，用于承载 Web Runtime installer 与自定义前置脚本；`inline` 和 `entry` 模式把代码内联到目标 chunk，`native` 模式使用独立 Prelude vendor chunk。chunk 文件名可能随共享策略和压缩配置变化，不宜按固定文件名判断注入是否生效。
 
 ```bash
 pnpm build

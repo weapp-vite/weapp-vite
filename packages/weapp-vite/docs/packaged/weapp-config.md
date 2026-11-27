@@ -577,12 +577,15 @@ export default defineConfig({
 
 小程序中的 Web API 兼容对象通过 `weapp.appPrelude.webRuntime` 注入；它与浏览器预览使用的 `weapp.web` 分别配置。`targets` 支持 Fetch、三个 Web Streams 构造器、`TextDecoderStream` 和 `EventSource` 等目标，并自动补齐相关依赖。Streams 构造器作为一组选择，保留可用的原生实现，否则使用 `web-streams-polyfill@4.3.0` ponyfill。
 
+原有 `inline`、`entry`、`require` 模式保留旧版注入路径和默认安装时机。显式选择新增的 `appPrelude.mode: 'native'` 后，Web Runtime 行为固定为精确最优解，无策略开关：自由标识符与 `globalThis.<target>` 等全局对象点号访问通过 Rolldown 原生 `transform.inject` 精确绑定且不写全局（按需导入、可 tree-shake），字符串计算属性、全局解构与别名等不可点号注入的访问通过按目标的幂等桥接安装（目标缺失或带安装器占位标记时写入，真实宿主实现保留）；无法静态推断的访问可声明 `globalTargets`（也接受依赖展开目标 `URL`、`URLSearchParams`、`Blob`、`File`、`FormData`），独立于 `targets` 绑定资格（收窄 `targets` 不裁剪声明目标），安装范围是声明目标及其必要依赖闭包，由根入口（含各分包根）静态依赖桥接在启动期安装，不全量安装与声明无关的未用实现。用户只用 `targets` 选择绑定资格（opt-out 作用域，实际进包量由 tree-shake 裁剪）、`globalTargets` 精确补充隐藏访问。该模式类似 transform-runtime，不读取依赖包名，不生成 installer、eager 状态、axios 环境模块或 bundle patch。绑定、桥接与实现的分包交给打包器自然分组；`native` 下自定义 App Prelude 是普通静态模块，通过正常模块依赖执行，只保留一条把它拆成独立 vendor（`weapp-vendors/web-runtime-app-prelude.js`）的 Rolldown 分组规则，不再生成 `app.prelude.js`。完整边界见 [Web Runtime 全局对象注入配置](https://vite.weapp.dev/config/web-runtime-globals.html)。
+
 Fetch 网络增量交付需要项目级启用分块；普通缓冲请求继续可用：
 
 ```ts
 export default defineConfig({
   weapp: {
     appPrelude: {
+      mode: 'native',
       webRuntime: {
         enabled: true,
         networkDefaults: { request: { enableChunked: true } },
@@ -592,7 +595,7 @@ export default defineConfig({
 })
 ```
 
-业务可使用 `response.body.pipeThrough(new TextDecoderStream()).getReader()`，也可单独安装 `eventsource-parser` 接入其 `/stream` 解析器。构建器识别该依赖，并在第三方模块求值前提供构造器及 chunk 内局部绑定；不能等依赖初始化后才安装 `TransformStream`。
+业务可使用 `response.body.pipeThrough(new TextDecoderStream()).getReader()`，也可单独安装 `eventsource-parser` 接入其 `/stream` 解析器。`native` 模式按第三方模块的真实标识符引用提供构造器绑定，不识别具体包名，也不等依赖初始化后才求值 `TransformStream`。
 
 全局 `EventSource` 自动开启分块，使用标准 GET 接口、事件监听和重连；POST、自定义鉴权头通过 Fetch，Fetch 本身不自动重试。`wevu/fetch` 复用 `@wevu/web-apis` 的同一实现；独立消费可使用 `@wevu/web-apis/streams` 和 `@wevu/web-apis/eventsource` 子入口。
 
