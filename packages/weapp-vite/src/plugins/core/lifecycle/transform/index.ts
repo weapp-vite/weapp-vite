@@ -12,8 +12,14 @@ import {
   mayContainRequestGlobalsUsageByText,
   resolveAutoRequestGlobalsTargets,
   resolveManualRequestGlobalsTargets,
+  resolveNativeGlobalTargets,
   resolveRequestRuntimeOptions,
 } from '../../../../runtime/config/internal/injectRequestGlobals'
+import {
+  createNativeWebRuntimeModuleMatcher,
+  createWebRuntimeNativeGlobalImports,
+  createWebRuntimeNativeInject,
+} from '../../../../runtime/config/internal/injectRequestGlobals/nativeInject'
 import { recordHmrProfileDuration } from '../../../../utils/hmrProfile'
 import { normalizeFsResolvedId } from '../../../../utils/resolvedId'
 import { REQUEST_GLOBAL_PASSIVE_BINDINGS_MARKER } from '../emit/constants'
@@ -30,7 +36,10 @@ function mayContainManualRequestGlobalsInstall(code: string) {
     )
 }
 
-export function createTransformHook(state: CorePluginState) {
+export function createTransformHook(
+  state: CorePluginState,
+  isNativeWebRuntimeInjectModuleId = createNativeWebRuntimeModuleMatcher(),
+) {
   const { configService } = state.ctx
   const astEngine = resolveAstEngine(configService.weappViteConfig)
   const injectOptions = resolveInjectWeapiOptions(configService)
@@ -39,8 +48,19 @@ export function createTransformHook(state: CorePluginState) {
     webRuntime: configService.weappViteConfig?.injectWebRuntimeGlobals,
     injectRequestGlobals: configService.weappViteConfig?.injectRequestGlobals,
   }, configService.packageJson, message => logger.warn(message))
+  const nativeWebRuntimeInject = injectRequestGlobalsOptions?.native === true
+    ? createWebRuntimeNativeInject(
+        injectRequestGlobalsOptions.targets,
+        injectRequestGlobalsOptions.networkDefaults,
+      )
+    : null
+  const usesNativeWebRuntimeInject = () => state.nativeWebRuntimeInjectEnabled === true && Boolean(nativeWebRuntimeInject)
 
   function resolveRequestGlobalsTransformCode(id: string, code: string) {
+    if (usesNativeWebRuntimeInject()) {
+      return null
+    }
+
     const requestGlobalsTargets = injectRequestGlobalsOptions?.targets?.length
       ? injectRequestGlobalsOptions.mode === 'auto'
         ? resolveAutoRequestGlobalsTargets(code, injectRequestGlobalsOptions.targets)
@@ -91,11 +111,32 @@ export function createTransformHook(state: CorePluginState) {
     })}${code}`
   }
 
-  function mayNeedTransformWork(code: string) {
+  function resolveNativeGlobalBridgeImports(id: string, code: string) {
+    if (!usesNativeWebRuntimeInject() || isNativeWebRuntimeInjectModuleId(id)) {
+      return ''
+    }
+    const plan = state.nativeWebRuntimeInjectPlan
+    if (!plan) {
+      return ''
+    }
+    const overrideModuleIds = new Set(Object.values(plan.userInject ?? {}).flatMap((mapping) => {
+      return [typeof mapping === 'string' ? mapping : mapping[0]]
+    }))
+    if (overrideModuleIds.has(id)) {
+      return ''
+    }
+    const targets = resolveNativeGlobalTargets(code, plan.bindingTargets)
+    return targets.length > 0 ? `${createWebRuntimeNativeGlobalImports(targets)}\n` : ''
+  }
+
+  function mayNeedTransformWork(code: string, nativeGlobalImports = '') {
     const mayNeedRequestGlobals = injectRequestGlobalsOptions
-      ? injectRequestGlobalsOptions.mode === 'auto'
-        ? mayContainRequestGlobalsUsageByText(code, injectRequestGlobalsOptions.targets as any)
-        : true
+      ? usesNativeWebRuntimeInject()
+        // native 不走旧安装路径，只有真实需要全局桥接时才有额外工作。
+        ? nativeGlobalImports !== ''
+        : injectRequestGlobalsOptions.mode === 'auto'
+          ? mayContainRequestGlobalsUsageByText(code, injectRequestGlobalsOptions.targets as any)
+          : true
       : false
 
     return code.includes('import.meta')
@@ -109,14 +150,17 @@ export function createTransformHook(state: CorePluginState) {
       return null
     }
     observeBundlerSourceInput(state, code, id)
+    const nativeGlobalImports = resolveNativeGlobalBridgeImports(id, code)
     if (!shouldTransformId(id, {
       absoluteSrcRoot: configService.absoluteSrcRoot,
       isEntry: sourceId => state.loadedEntrySet?.has(sourceId) === true
         || state.resolvedEntryMap?.has(sourceId) === true,
     })) {
-      return null
+      return nativeGlobalImports
+        ? { code: `${nativeGlobalImports}${code}`, map: null }
+        : null
     }
-    if (!mayNeedTransformWork(code)) {
+    if (!mayNeedTransformWork(code, nativeGlobalImports)) {
       return null
     }
     const startedAt = performance.now()
@@ -143,7 +187,7 @@ export function createTransformHook(state: CorePluginState) {
               : replaceImportMetaAccess(code, importMetaTransformOptions)
           )
         : code
-      const nextCode = resolveRequestGlobalsTransformCode(id, importMetaCode) ?? importMetaCode
+      const nextCode = `${nativeGlobalImports}${resolveRequestGlobalsTransformCode(id, importMetaCode) ?? importMetaCode}`
 
       if (!injectOptions) {
         return nextCode === code

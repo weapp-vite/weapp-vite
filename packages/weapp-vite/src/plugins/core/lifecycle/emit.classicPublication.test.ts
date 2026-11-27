@@ -198,7 +198,13 @@ describe('classic native root publication during incremental generation', () => 
     const state = fixture()
     Object.assign(state.ctx.configService.weappViteConfig, {
       injectWeapi: false,
-      appPrelude: { webRuntime: { enabled: true, targets: ['AbortController'] } },
+      appPrelude: {
+        webRuntime: {
+          enabled: true,
+          targets: ['AbortController'],
+          prelude: true,
+        },
+      },
     })
     Object.assign(state.ctx.scanService, { appEntry: { path: 'app.ts' } })
     state.ctx.scanService.subPackageMap.set('subpackages/perf', { subPackage: { root: 'subpackages/perf' } } as SubPackageMetaValue)

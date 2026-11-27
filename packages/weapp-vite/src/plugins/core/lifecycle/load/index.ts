@@ -6,6 +6,11 @@ import { normalizeSourceId } from '../../../../moduleGraph/traversal'
 import {
   resolveRequestRuntimeOptions,
 } from '../../../../runtime/config/internal/injectRequestGlobals'
+import {
+  createWebRuntimeNativeInject,
+  getWebRuntimeGlobalVirtualId,
+  WEB_RUNTIME_APP_PRELUDE_STARTUP_VIRTUAL_ID,
+} from '../../../../runtime/config/internal/injectRequestGlobals/nativeInject'
 import { isCSSRequest } from '../../../../utils'
 import { getPathExistsTtlMs } from '../../../../utils/cachePolicy'
 import { createCachedEntryResolveOptions, resolveEntryPath } from '../../../../utils/entryResolve'
@@ -41,6 +46,26 @@ export function createLoadHook(state: CorePluginState) {
     webRuntime: configService.weappViteConfig?.injectWebRuntimeGlobals,
     injectRequestGlobals: configService.weappViteConfig?.injectRequestGlobals,
   }, configService.packageJson, message => logger.warn(message))
+  const nativeWebRuntimeInject = injectRequestGlobalsOptions?.native === true
+    ? createWebRuntimeNativeInject(
+        injectRequestGlobalsOptions.targets,
+        injectRequestGlobalsOptions.networkDefaults,
+      )
+    : null
+  const usesNativeWebRuntimeInject = () => state.nativeWebRuntimeInjectEnabled === true && Boolean(nativeWebRuntimeInject)
+  const getNativeWebRuntimeModuleIds = (isRootSource = false) => {
+    if (!usesNativeWebRuntimeInject()) {
+      return []
+    }
+    const moduleIds: string[] = []
+    if (isRootSource) {
+      moduleIds.push(...(state.nativeWebRuntimeInjectPlan?.globalTargets ?? []).map(getWebRuntimeGlobalVirtualId))
+      if (state.nativeAppPreludeEnabled) {
+        moduleIds.push(WEB_RUNTIME_APP_PRELUDE_STARTUP_VIRTUAL_ID)
+      }
+    }
+    return moduleIds
+  }
 
   function recordLoadDuration(key: 'coreLoadMs' | 'entryLoadMs' | 'requestGlobalsMs' | 'weapiResolveMs', startedAt: number) {
     recordHmrProfileDuration(ctx.runtimeState?.build?.hmr?.profile, key, performance.now() - startedAt)
@@ -65,6 +90,9 @@ export function createLoadHook(state: CorePluginState) {
   }
 
   function resolveRequestGlobalsTargets(result: unknown, sourceId: string) {
+    if (usesNativeWebRuntimeInject()) {
+      return []
+    }
     const startedAt = performance.now()
     try {
       return result && typeof result === 'object' && 'code' in result
@@ -77,6 +105,9 @@ export function createLoadHook(state: CorePluginState) {
   }
 
   function resolvePassiveTargets(result: unknown, requestGlobalsTargets: unknown[]) {
+    if (usesNativeWebRuntimeInject()) {
+      return []
+    }
     const startedAt = performance.now()
     try {
       return result && typeof result === 'object' && 'code' in result
@@ -93,11 +124,13 @@ export function createLoadHook(state: CorePluginState) {
     sourceId: string,
     requestGlobalsTargets: unknown[],
     options: Parameters<typeof injectRequestGlobalsIntoLoadResult>[3],
+    isRootSource = false,
   ) {
     const startedAt = performance.now()
     try {
-      return injectRequestGlobalsIntoLoadResult(result, sourceId, requestGlobalsTargets as any, {
+      return injectRequestGlobalsIntoLoadResult(result, sourceId, usesNativeWebRuntimeInject() ? [] : requestGlobalsTargets as any, {
         ...options,
+        nativeModuleIds: getNativeWebRuntimeModuleIds(isRootSource),
         sourceMap: Boolean(configService.inlineConfig?.build?.sourcemap),
       })
     }
@@ -162,7 +195,7 @@ export function createLoadHook(state: CorePluginState) {
         // @ts-ignore Rolldown 的 PluginContext 类型不完整
         const result = await loadProfiledEntry(this, sourceId, 'component')
         const requestGlobalsTargets = resolveRequestGlobalsTargets(result, sourceId)
-        if (requestGlobalsTargets.length === 0) {
+        if (requestGlobalsTargets.length === 0 && !usesNativeWebRuntimeInject()) {
           return result
         }
         return injectRequestGlobalsProfiled(result, sourceId, requestGlobalsTargets, {
@@ -225,7 +258,7 @@ export function createLoadHook(state: CorePluginState) {
         }
         const requestGlobalsTargets = resolveRequestGlobalsTargets(result, sourceId)
         const passiveRequestGlobalsTargets = resolvePassiveTargets(result, requestGlobalsTargets)
-        if (requestGlobalsTargets.length === 0 && passiveRequestGlobalsTargets.length > 0) {
+        if (!usesNativeWebRuntimeInject() && requestGlobalsTargets.length === 0 && passiveRequestGlobalsTargets.length > 0) {
           return injectRequestGlobalsProfiled(result, sourceId, passiveRequestGlobalsTargets, {
             networkDefaults: injectRequestGlobalsOptions?.networkDefaults,
             passiveLocalBindings: true,
@@ -235,20 +268,20 @@ export function createLoadHook(state: CorePluginState) {
           return injectRequestGlobalsProfiled(result, sourceId, requestGlobalsTargets, {
             localBindings: true,
             networkDefaults: injectRequestGlobalsOptions?.networkDefaults,
-          })
+          }, true)
         }
         const available = await ensureWeapiAvailable(this, sourceId)
         if (!available) {
           return injectRequestGlobalsProfiled(result, sourceId, requestGlobalsTargets, {
             localBindings: true,
             networkDefaults: injectRequestGlobalsOptions?.networkDefaults,
-          })
+          }, true)
         }
         if (result && typeof result === 'object' && 'code' in result) {
           const requestGlobalsInjectedResult = injectRequestGlobalsProfiled(result, sourceId, requestGlobalsTargets, {
             localBindings: true,
             networkDefaults: injectRequestGlobalsOptions?.networkDefaults,
-          })
+          }, true)
           const platform = getMiniProgramPlatformGlobalKey(configService.platform) ?? ''
           const injectedCode = createWeapiInjectionCode({
             globalName: injectOptions.globalName,
@@ -265,28 +298,29 @@ export function createLoadHook(state: CorePluginState) {
 
       if (loadedEntrySet.has(sourceId) || isDeclaredEntry || (isDeclaredSource && subPackageMeta?.entries.includes(relativeBasename))) {
         const loadType = declaredEntryType === 'page' ? 'page' : 'component'
+        const isSubPackagePreludeRoot = Boolean(subPackageMeta) && usesNativeWebRuntimeInject()
         // @ts-ignore Rolldown 的 PluginContext 类型不完整
         const result = await loadProfiledEntry(this, sourceId, loadType)
         const requestGlobalsTargets = resolveRequestGlobalsTargets(result, sourceId)
         const passiveRequestGlobalsTargets = resolvePassiveTargets(result, requestGlobalsTargets)
-        if (requestGlobalsTargets.length === 0 && passiveRequestGlobalsTargets.length > 0) {
+        if (!usesNativeWebRuntimeInject() && requestGlobalsTargets.length === 0 && passiveRequestGlobalsTargets.length > 0) {
           return injectRequestGlobalsProfiled(result, sourceId, passiveRequestGlobalsTargets, {
             networkDefaults: injectRequestGlobalsOptions?.networkDefaults,
             passiveLocalBindings: true,
-          })
+          }, isSubPackagePreludeRoot)
         }
         if (!injectOptions || !injectOptions.replaceWx || configService.weappLibConfig?.enabled) {
           return injectRequestGlobalsProfiled(result, sourceId, requestGlobalsTargets, {
             localBindings: true,
             networkDefaults: injectRequestGlobalsOptions?.networkDefaults,
-          })
+          }, isSubPackagePreludeRoot)
         }
         const available = await ensureWeapiAvailable(this, sourceId)
         if (!available) {
           return injectRequestGlobalsProfiled(result, sourceId, requestGlobalsTargets, {
             localBindings: true,
             networkDefaults: injectRequestGlobalsOptions?.networkDefaults,
-          })
+          }, isSubPackagePreludeRoot)
         }
         return injectRequestGlobalsProfiled(
           replacePlatformApiInLoadResult(result, injectOptions, astEngine, this),
@@ -296,6 +330,7 @@ export function createLoadHook(state: CorePluginState) {
             localBindings: true,
             networkDefaults: injectRequestGlobalsOptions?.networkDefaults,
           },
+          isSubPackagePreludeRoot,
         )
       }
     }

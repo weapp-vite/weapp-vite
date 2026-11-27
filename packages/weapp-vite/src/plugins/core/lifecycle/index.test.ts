@@ -3,6 +3,7 @@ import type { CorePluginState } from '../helpers'
 import { describe, expect, it, vi } from 'vitest'
 import { createLogicalEntryId } from '../../../moduleGraph/protocol'
 import { createModuleGraphService } from '../../../moduleGraph/service'
+import { createWebRuntimeNativeInject, getWebRuntimeGlobalResolvedId, getWebRuntimeGlobalVirtualId, WEB_RUNTIME_APP_PRELUDE_RESOLVED_ID, WEB_RUNTIME_APP_PRELUDE_STARTUP_RESOLVED_ID, WEB_RUNTIME_INJECT_RESOLVED_ID } from '../../../runtime/config/internal/injectRequestGlobals/nativeInject'
 import { beginHmrStyleUpdatePlan, createHmrStyleUpdatePlan, getHmrStyleUpdatePlan, recordHmrStyleUpdate, settleHmrStyleUpdatePlan, withHmrStyleUpdatePlan } from '../../../runtime/hmrStyleUpdate'
 import { EntryChunkLifecycle } from '../../hooks/useLoadEntry/entryChunkLifecycle'
 import { readEntryChunkLifecycle } from '../../hooks/useLoadEntry/entryChunkLifecycleRegistry'
@@ -45,6 +46,52 @@ describe('createCoreLifecyclePlugin', () => {
     const context = { meta: { watchMode: true }, getModuleIds: () => [] }
     return { configService, plugin, context, state }
   }
+
+  it('loads native startup and per-target global bridges from the plan containing user overrides', async () => {
+    const nativePlan = createWebRuntimeNativeInject(['fetch'], undefined, {
+      'fetch': ['virtual:user-fetch', 'default'],
+      'globalThis.fetch': ['virtual:user-dotted-fetch', 'default'],
+      'unrelated': 'virtual:unrelated-user-global',
+    }, ['fetch'])!
+    const state = {
+      ctx: {
+        configService: {
+          packageJson: {},
+          weappViteConfig: {
+            appPrelude: { mode: 'native' },
+            injectWebRuntimeGlobals: { enabled: true, targets: ['fetch'], prelude: true },
+          },
+        },
+        moduleGraphService: createModuleGraphService(),
+        scanService: { appEntry: { preludePath: '/project/src/app.prelude.ts' } },
+        runtimeState: { build: { hmr: {} } },
+      },
+      nativeAppPreludeEnabled: true,
+      nativeWebRuntimeInjectPlan: nativePlan,
+    } as unknown as CorePluginState
+    const plugin = createCoreLifecyclePlugin(state)
+    const addWatchFile = vi.fn()
+
+    const loaded = await (plugin.load as (this: { addWatchFile: typeof addWatchFile }, id: string) => Promise<{ code: string }>)
+      .call({ addWatchFile }, WEB_RUNTIME_APP_PRELUDE_STARTUP_RESOLVED_ID)
+
+    expect(addWatchFile).toHaveBeenCalledWith('/project/src/app.prelude.ts')
+    expect(loaded.code).toContain('runAppPrelude();')
+    expect(loaded.code).not.toContain('eager')
+
+    const binding = await (plugin.load as (this: { addWatchFile: typeof addWatchFile }, id: string) => Promise<{ code: string }>)
+      .call({ addWatchFile }, WEB_RUNTIME_INJECT_RESOLVED_ID)
+    expect(binding.code).toBe(nativePlan.code)
+
+    const globalBridge = await (plugin.load as (this: { addWatchFile: typeof addWatchFile }, id: string) => Promise<{ code: string }>)
+      .call({ addWatchFile }, getWebRuntimeGlobalResolvedId('fetch'))
+    expect(globalBridge.code).toContain('virtual:user-dotted-fetch')
+    expect(globalBridge.code).not.toContain('virtual:unrelated-user-global')
+    expect(globalBridge.code).not.toContain('installWebRuntime')
+
+    const resolved = await (plugin.resolveId as (id: string) => Promise<{ id: string }>)(getWebRuntimeGlobalVirtualId('fetch'))
+    expect(resolved.id).toBe(getWebRuntimeGlobalResolvedId('fetch'))
+  })
 
   it('clears native ownership before an early build failure and releases each completed generation', async () => {
     const { plugin, context, state } = createStyleLifecycle()
@@ -168,6 +215,7 @@ describe('createCoreLifecyclePlugin', () => {
     expect((plugin.transform as any).filter.id.test('/project/src/pages/home.ts')).toBe(true)
     expect((plugin.transform as any).filter.id.test('/project/src/pages/home.vue')).toBe(true)
     expect((plugin.transform as any).filter.id.test('/project/src/pages/home.wxss')).toBe(false)
+    expect((plugin.transform as any).filter.id.test(WEB_RUNTIME_APP_PRELUDE_RESOLVED_ID)).toBe(true)
   })
 
   it('retains watch graphs between bundles and releases only the closing scope', async () => {

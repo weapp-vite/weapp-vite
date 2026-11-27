@@ -983,26 +983,33 @@ export function createRequestGlobalsPreludeAssetCode(
 }
 
 export function injectAxiosFetchAdapterEnv(bundle: OutputBundle) {
-  const axiosEnvPatchCode = [
-    '/* __wvAXFE__ */',
-    'let __wvAX__ = null',
-    'for (const __wvAXK__ in exports) {',
-    '  const __wvAXC__ = exports[__wvAXK__]',
-    '  if (__wvAXC__ && typeof __wvAXC__ === "function" && __wvAXC__.Axios && __wvAXC__.defaults) {',
-    '    __wvAX__ = __wvAXC__',
-    '    break',
-    '  }',
-    '}',
-    'if (__wvAX__) {',
-    '  __wvAX__.defaults.env = {',
-    '    ...(__wvAX__.defaults.env ?? {}),',
-    '    Request,',
-    '    Response,',
-    '    fetch,',
-    '  }',
-    '}',
-    '',
-  ].join('\n')
+  const createAxiosEnvPatchCode = (axiosIdentifier?: string) => {
+    const resolveAxiosCode = axiosIdentifier
+      ? [`const __wvAX__ = ${axiosIdentifier}`]
+      : [
+          'let __wvAX__ = null',
+          'for (const __wvAXK__ in exports) {',
+          '  const __wvAXC__ = exports[__wvAXK__]',
+          '  if (__wvAXC__ && typeof __wvAXC__ === "function" && __wvAXC__.Axios && __wvAXC__.defaults) {',
+          '    __wvAX__ = __wvAXC__',
+          '    break',
+          '  }',
+          '}',
+        ]
+    return [
+      '/* __wvAXFE__ */',
+      ...resolveAxiosCode,
+      'if (__wvAX__ && __wvAX__.Axios && __wvAX__.defaults) {',
+      '  __wvAX__.defaults.env = {',
+      '    ...(__wvAX__.defaults.env ?? {}),',
+      '    Request,',
+      '    Response,',
+      '    fetch,',
+      '  }',
+      '}',
+      '',
+    ].join('\n')
+  }
 
   for (const output of Object.values(bundle)) {
     if (output?.type !== 'chunk') {
@@ -1020,6 +1027,18 @@ export function injectAxiosFetchAdapterEnv(bundle: OutputBundle) {
     if (!isAxiosChunk) {
       continue
     }
-    appendOutputChunkCode(chunk, `\n${axiosEnvPatchCode}`)
+    // axios 可能被内联进页面 chunk；同时识别打包后的局部实例，避免仅依赖模块导出。
+    const defaultsIdentifier = [...chunk.code.matchAll(/([A-Za-z_$][\w$]*)\.defaults\s*=/gu)]
+      .map(match => match[1])
+      .find(identifier => identifier
+        && identifier !== 'this'
+        && new RegExp(`\\b${identifier}\\.Axios\\b`, 'u').test(chunk.code))
+    const axiosConstructorMatch = chunk.code.match(/([A-Za-z_$][\w$]*)\.Axios\s*=/u)
+    const axiosConstructorIdentifier = axiosConstructorMatch?.[1]
+      && new RegExp(`(?:^|[;\\n])\\s*(?:(?:var|let|const)\\s+)?${axiosConstructorMatch[1]}\\s*=`, 'u').test(chunk.code)
+      ? axiosConstructorMatch[1]
+      : undefined
+    const axiosIdentifier = defaultsIdentifier ?? axiosConstructorIdentifier
+    appendOutputChunkCode(chunk, `\n${createAxiosEnvPatchCode(axiosIdentifier)}`)
   }
 }

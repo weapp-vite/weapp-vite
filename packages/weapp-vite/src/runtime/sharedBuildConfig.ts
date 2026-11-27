@@ -13,6 +13,7 @@ import { isRegexp } from '../utils/regexp'
 import { normalizeViteId } from '../utils/viteId'
 import { createAdvancedChunkNameResolver } from './advancedChunks'
 import { DEFAULT_SHARED_CHUNK_STRATEGY } from './chunkStrategy'
+import { NATIVE_APP_PRELUDE_CHUNK_PRIORITY, WEB_RUNTIME_APP_PRELUDE_CHUNK_FILE_BASENAME, WEB_RUNTIME_APP_PRELUDE_RESOLVED_ID } from './config/internal/injectRequestGlobals/nativeInject'
 import { createPreserveModulesGroup } from './preserveModules'
 import { resolveVirtualChunkFileName } from './sharedBuildConfig/virtualChunk'
 import { isWevuOwnedModuleId, isWevuStableVendorFileName, resolveWevuStableVendorFileName } from './wevuModules'
@@ -186,6 +187,21 @@ function resolveSharedBuildChunksOptions(configService: ConfigService) {
     sharedOverrides: chunksConfig?.sharedOverrides,
     sharedPathRoot: chunksConfig?.sharedPathRoot,
   }
+}
+
+/**
+ * @description 判断当前构建是否需要把自定义 App Prelude 拆成独立 vendor chunk。
+ * @description 只有 native 模式才会生成 `weapp-vite:web-runtime:app-prelude.js` 模块，旧 inline/entry/require 模式沿用 `app.prelude.js`；
+ *              因此规则只在该模块可能存在时注册，避免给无关构建注入一条永不命中的分组。
+ * @param configService - 配置服务实例。
+ * @returns 选中 native App Prelude 模式且未关闭时返回 `true`。
+ */
+function isNativeAppPreludeChunkEnabled(configService: ConfigService) {
+  const appPrelude = configService.weappViteConfig?.appPrelude
+
+  return typeof appPrelude === 'object'
+    && appPrelude.enabled !== false
+    && appPrelude.mode === 'native'
 }
 
 function isRequestGlobalsRuntimeChunk(chunk: { name: string, moduleIds?: string[] | readonly string[], facadeModuleId?: string | null }) {
@@ -432,6 +448,7 @@ export function createSharedBuildOutput(
   options: { runtime?: 'miniprogram' | 'web' } = {},
 ) {
   const preserveModulesGroup = createPreserveModulesGroup(configService, getSubPackageRoots)
+  const nativeAppPreludeChunkEnabled = options.runtime !== 'web' && isNativeAppPreludeChunkEnabled(configService)
   const { resolveAdvancedChunkName } = createSharedBuildResolver(
     configService,
     getSubPackageRoots,
@@ -455,6 +472,17 @@ export function createSharedBuildOutput(
               },
             ]
           : [],
+        ...(nativeAppPreludeChunkEnabled
+          ? [{
+              debugName: 'weapp-vite:web-runtime-app-prelude',
+              priority: NATIVE_APP_PRELUDE_CHUNK_PRIORITY,
+              test: (id: string) => id === WEB_RUNTIME_APP_PRELUDE_RESOLVED_ID,
+              minShareCount: 1,
+              minSize: 0,
+              minModuleSize: 0,
+              name: WEB_RUNTIME_APP_PRELUDE_CHUNK_FILE_BASENAME.replace(/\.js$/, ''),
+            }]
+          : []),
         {
           debugName: 'weapp-vite:advanced-chunk',
           name: (
@@ -466,6 +494,9 @@ export function createSharedBuildOutput(
     },
     minifyInternalExports: false,
     chunkFileNames: (chunk: { name: string, moduleIds?: string[] | readonly string[], facadeModuleId?: string | null }) => {
+      if (nativeAppPreludeChunkEnabled && chunk.name === WEB_RUNTIME_APP_PRELUDE_CHUNK_FILE_BASENAME.replace(/\.js$/, '')) {
+        return WEB_RUNTIME_APP_PRELUDE_CHUNK_FILE_BASENAME
+      }
       if (isRequestGlobalsRuntimeChunk(chunk)) {
         return REQUEST_GLOBAL_RUNTIME_CHUNK_FILE_BASENAME
       }
