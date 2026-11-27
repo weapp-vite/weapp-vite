@@ -43,10 +43,7 @@ export function createAliasManager(
 
     for (const builtin of builtinAliases) {
       const exists = aliasArray.some((entry) => {
-        if (typeof entry.find === 'string' || typeof builtin.find === 'string') {
-          return typeof entry.find === 'string' && entry.find === builtin.find
-        }
-        return entry.find.source === builtin.find.source && entry.find.flags === builtin.find.flags
+        return typeof entry.find === 'string' && entry.find === builtin.find
       })
       if (!exists) {
         aliasArray.unshift(builtin)

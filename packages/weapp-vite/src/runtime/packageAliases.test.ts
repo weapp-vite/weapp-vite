@@ -243,7 +243,7 @@ describe('runtime package aliases', () => {
 
     const aliases = resolveBuiltinPackageAliases()
 
-    expect(aliases).toHaveLength(15)
+    expect(aliases).toHaveLength(16)
     expect(aliases).toEqual(expect.arrayContaining([
       {
         find: '@weapp-core/shared/platforms',
@@ -252,6 +252,10 @@ describe('runtime package aliases', () => {
       {
         find: '@weapp-core/shared/platforms/runtime',
         replacement: '/project/node_modules/@weapp-core/shared/dist/platforms/runtime/index.js',
+      },
+      {
+        find: '@weapp-core/shared/platforms/runtime/global-keys',
+        replacement: '/project/node_modules/@weapp-core/shared/dist/platforms/runtime/globalKeys.js',
       },
       {
         find: 'class-variance-authority',

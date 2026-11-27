@@ -314,26 +314,6 @@ describe('createConfigService', () => {
     expect(injectBuiltinAliasesMock).toHaveBeenCalledTimes(2)
   })
 
-  it('matches builtin package entries exactly without capturing deeper subpaths', async () => {
-    resolveBuiltinPackageAliasesMock.mockReturnValue([{
-      find: '@weapp-core/shared/platforms/runtime',
-      replacement: '/packages/shared/dist/platforms/runtime/index.js',
-    }])
-    const config = { weapp: {} }
-    loadConfigImplMock.mockImplementationOnce(async (input) => {
-      loadConfigFactoryOptionsMock.value.injectBuiltinAliases(config)
-      return createBaseOptions({ cwd: input.cwd, isDev: input.isDev, config })
-    })
-    const service = createConfigService(createCtx())
-
-    await service.load({ cwd: '/project', isDev: false })
-
-    const aliases = injectBuiltinAliasesMock.mock.calls[0]![1] as Array<{ find: RegExp, replacement: string }>
-    expect(aliases[0]!.replacement).toBe('/packages/shared/dist/platforms/runtime/index.js')
-    expect(aliases[0]!.find.test('@weapp-core/shared/platforms/runtime')).toBe(true)
-    expect(aliases[0]!.find.test('@weapp-core/shared/platforms/runtime/global-keys')).toBe(false)
-  })
-
   it('refreshes aliases on each load and project change while separating runtime modes', async () => {
     const root = path.resolve('fixtures/alias-reload')
     const otherRoot = path.resolve('fixtures/alias-other')

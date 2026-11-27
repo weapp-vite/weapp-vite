@@ -49,6 +49,13 @@ const PACKAGE_ALIASES: PackageAliasTarget[] = [
     fallbackWorkspacePackagePath: SHARED_WORKSPACE_PACKAGE_PATH,
   },
   {
+    // 更具体的子路径必须单独成项，避免被父入口的字符串别名按前缀截获。
+    find: '@weapp-core/shared/platforms/runtime/global-keys',
+    packageName: '@weapp-core/shared',
+    distEntry: 'dist/platforms/runtime/globalKeys.js',
+    fallbackWorkspacePackagePath: SHARED_WORKSPACE_PACKAGE_PATH,
+  },
+  {
     find: 'class-variance-authority',
     packageName: 'class-variance-authority',
     distEntry: 'dist/index.js',

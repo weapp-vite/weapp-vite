@@ -48,18 +48,4 @@ describe('runtime config alias', () => {
       { find: '#', replacement: '/project/hash' },
     ])
   })
-
-  it('injects regex builtin aliases idempotently across repeated config injection', () => {
-    const manager = createAliasManager(
-      { find: /^~oxc\//, replacement: '/project/.oxc' },
-      [],
-    )
-    const builtin = { find: /^@weapp-core\/shared$/u, replacement: '/shared/index.js' }
-    const config: any = { resolve: { alias: [] } }
-
-    manager.injectBuiltinAliases(config, [builtin])
-    manager.injectBuiltinAliases(config, [builtin])
-
-    expect(config.resolve.alias.filter((entry: { find: string | RegExp }) => entry.find instanceof RegExp && entry.find.source === builtin.find.source)).toHaveLength(1)
-  })
 })
