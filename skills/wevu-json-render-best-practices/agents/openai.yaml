@@ -1,0 +1,7 @@
+interface:
+  display_name: 'Wevu json-render Best Practices'
+  short_description: 'json-render 目录、状态动作、SpecStream 与预编译组件接入实践'
+  default_prompt: 'Use $wevu-json-render-best-practices to implement and diagnose @wevu/json-render catalogs, specs, state bindings, actions, SpecStream updates, custom nodes, and precompiled renderer integration in WeChat mini-programs.'
+
+policy:
+  allow_implicit_invocation: true

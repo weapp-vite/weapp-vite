@@ -62,6 +62,8 @@ const directSkills = [
   'weapp-vite-best-practices',
   'weapp-vite-vue-sfc-best-practices',
   'wevu-best-practices',
+  'wevu-json-render-best-practices',
+  'wevu-a2ui-best-practices',
   'weapp-vite-react-best-practices',
 ]
 const localProjectSkills = [

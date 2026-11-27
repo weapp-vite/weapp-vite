@@ -27,4 +27,4 @@ export default defineConfig({
 
 ## AI 选择提示
 
-消费项目必须把两个包都声明在 dependencies 中，让小程序 npm 构建识别原生组件；不要直接从本包实现 renderer 状态管理。
+消费项目必须把两个包都声明在 dependencies 中，让小程序 npm 构建识别原生组件；不要直接从本包实现 renderer 状态管理。使用指南随主包分发在 `wevu-json-render-best-practices` 中，不单独发布重复技能。

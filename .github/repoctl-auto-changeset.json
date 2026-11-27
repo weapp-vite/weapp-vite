@@ -12,7 +12,9 @@
     { "patterns": ["skills/weapp-vite-best-practices/**", "skills/weapp-vite-vue-sfc-best-practices/**"], "packages": ["weapp-vite"] },
     { "patterns": ["skills/wevu-best-practices/**"], "packages": ["wevu"] },
     { "patterns": ["skills/weapp-vite-react-best-practices/**"], "packages": ["@weapp-vite/react"] },
-    { "patterns": ["skills/distribution.json", "skills/scripts/distribution.mjs", "skills/scripts/sync-package-skills.mjs"], "packages": ["weapp-vite", "wevu", "@weapp-vite/react"] }
+    { "patterns": ["skills/wevu-json-render-best-practices/**"], "packages": ["@wevu/json-render"] },
+    { "patterns": ["skills/wevu-a2ui-best-practices/**"], "packages": ["@wevu/a2ui"] },
+    { "patterns": ["skills/distribution.json", "skills/scripts/distribution.mjs", "skills/scripts/sync-package-skills.mjs"], "packages": ["weapp-vite", "wevu", "@weapp-vite/react", "@wevu/json-render", "@wevu/a2ui"] }
   ],
   "links": [
     { "from": ["weapp-vite", "wevu"], "to": ["create-weapp-vite"], "level": "same" },

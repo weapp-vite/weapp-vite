@@ -27,6 +27,8 @@ date: 2026-05-03
 | 排查 Vue SFC 编译或模板           | `$weapp-vite-vue-sfc-best-practices`    | `.vue`、JSON 宏、`.weapp-vite` 类型支持文件                 | `wv prepare` 后类型与产物一致            |
 | 接入或排查 React 19 小程序        | `$weapp-vite-react-best-practices`      | React 配置、TSX、runtime、bridge、构建与 IDE e2e            | owner、产物和真实 runtime 行为一致       |
 | 排查 wevu 运行时行为              | `$wevu-best-practices`                  | 生命周期、事件、store、router、运行时日志                   | 单测或 DevTools runtime 信号稳定         |
+| 接入或排查 json-render            | `$wevu-json-render-best-practices`      | catalog/spec、状态动作、SpecStream、renderer 与自定义节点    | 输入、事件、流更新与真实显示一致       |
+| 接入或排查 A2UI 1.0              | `$wevu-a2ui-best-practices`            | surface 消息、数据模型、投影交互、函数与递归宿主            | 输入写回、动作投递与实际节点一致       |
 | 新增 DevTools e2e                 | `$weapp-devtools-e2e-best-practices`    | `e2e/ide/**`、automator 会话、项目配置                      | suite 复用 automator，`reLaunch` 串场景  |
 | 原生迁移到 Weapp-vite / Wevu      | `$native-to-weapp-vite-wevu-migration`  | 原生页面、路线选择、迁移映射、回滚点、截图日志              | 分波次迁移，每波有可回滚验收             |
 | stateful HMR / 插件 / Web runtime | `$weapp-vite-best-practices`            | 配置类型、产物结构、平台前提和 profile                      | classic 基线或 host/plugin 双产物通过    |

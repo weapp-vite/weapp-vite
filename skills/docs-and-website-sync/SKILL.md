@@ -1,6 +1,6 @@
 ---
 name: docs-and-website-sync
-description: 面向 weapp-vite monorepo 的文档、website 与公开 skills 同步工作流。适用于源码能力变化后同步配置、CLI、React/Wevu/Vue SFC、多平台、mpcore、README、packaged docs、脚手架 `AGENTS.md`、AI skills 元数据和触发回归入口。
+description: 面向 weapp-vite monorepo 的文档、website 与公开 skills 同步工作流。适用于源码能力变化后同步配置、CLI、React/Wevu/Vue SFC、json-render/A2UI、多平台、mpcore、README、packaged docs、脚手架 `AGENTS.md`、AI skills 元数据和触发回归入口。
 ---
 
 # docs-and-website-sync
@@ -12,7 +12,7 @@ description: 面向 weapp-vite monorepo 的文档、website 与公开 skills 同
 ## 何时使用
 
 - 用户要求“根据现有代码更新 website/docs/skills”。
-- `weapp-vite`、`wevu`、`weapp-ide-cli` 或脚手架新增了配置、CLI 命令、AI 工作流。
+- `weapp-vite`、`wevu`、`weapp-ide-cli`、`@wevu/json-render`、`@wevu/a2ui` 或脚手架新增了配置、CLI 命令、AI 工作流。
 - 网站配置页、AI 指南、包说明和 skills 之间出现漂移。
 - 新增或调整这些公开能力：
   - `weapp.autoRoutes` / `routeRules` / layout
@@ -22,6 +22,7 @@ description: 面向 weapp-vite monorepo 的文档、website 与公开 skills 同
   - `wv analyze --markdown|--report pr|--budget-check|--hmr-profile` 与 `weapp.analyze`
   - `web` runtime / `lib` mode / 多平台 / npm / 分包 / worker
   - React 19 / JSX/TSX / mpcore headless parity
+  - json-render / A2UI 包、随包 skills 与渲染边界
   - `create-weapp-vite` 的 AI skills 安装与 `AGENTS.md`
 
 ## 不适用场景
@@ -33,6 +34,7 @@ description: 面向 weapp-vite monorepo 的文档、website 与公开 skills 同
 - `wevu` 运行时语义：使用 `wevu-best-practices`。
 - DevTools runtime e2e：使用 `weapp-devtools-e2e-best-practices`。
 - React runtime、render mode 和组件 bridge：使用 `weapp-vite-react-best-practices`。
+- json-render catalog/spec 或 A2UI surface 的实现语义：分别使用 `wevu-json-render-best-practices`、`wevu-a2ui-best-practices`；本 skill 只负责同步其文档与分发入口。
 
 ## 核心流程
 
@@ -41,6 +43,8 @@ description: 面向 weapp-vite monorepo 的文档、website 与公开 skills 同
    - `packages/weapp-vite/src/cli/**`
    - `packages/weapp-ide-cli/src/cli/**`
    - `packages-runtime/react/src/**`
+   - `packages-runtime/json-render/src/**`、`packages-runtime/json-render-components/**`
+   - `packages-runtime/a2ui/src/**`
    - `packages-runtime/wevu/src/**`
    - `mpcore/packages/**`
    - `packages/weapp-vite/docs/README.md`
@@ -58,6 +62,7 @@ description: 面向 weapp-vite monorepo 的文档、website 与公开 skills 同
    - 脚手架与 AI 约束：`website/packages/create-weapp-vite.md`、`packages/create-weapp-vite/src/agents.ts`
    - 运行时与框架：`website/config/vue.md`、`website/config/wevu.md`、`website/packages/web.md`
    - React：`website/config/react.md`、`docs/integration/react.md`、React 模板与 `@weapp-vite/react` README
+   - json-render / A2UI：`website/packages/wevu-json-render*.md`、`website/packages/wevu-a2ui.md`、`docs/integration/json-render.md`、`docs/integration/a2ui.md` 与两个包 README
    - 多平台与 headless：`website/guide/multi-platform.md`、mpcore package docs、provider-compatible e2e
 3. 同步 AI 合约口径：
    - 先读根 `AGENTS.md`

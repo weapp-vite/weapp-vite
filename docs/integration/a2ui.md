@@ -5,6 +5,7 @@
 - 包源码与完整使用说明：`packages-runtime/a2ui/README.md`。
 - 应用示例：`apps/wevu-a2ui-demo`，宿主递归组件、售后目录与假 agent 回包保留在应用中。
 - 站点入口：`website/packages/wevu-a2ui.md`。
+- Agent Skill：`wevu-a2ui-best-practices`，覆盖 surface 消息、数据模型、投影交互、catalog 函数与静态递归宿主。
 - 运行时入口：`createA2uiSession`，通过 `A2uiSurfaceView`、`A2uiNode`、`A2uiInteraction`、`A2uiActionMessage` 与 `A2uiErrorMessage` 连接宿主 SFC。
 
 预编译的通用宿主组件包尚未提供，消费项目当前自带递归组件并按 `A2uiNode.type` 静态分支；接入不需要构建期 resolver。
@@ -49,10 +50,10 @@ catalog 中声明的函数保留签名并参与校验。宿主可通过 `functio
 
 实现接收已校验的参数字典，不接收 Core `DataContext` 或 `AbortSignal`；`dispose()` 只停止后续消息投递，不会强制取消已经启动的异步实现。直接 `functionCall` 动作在本地执行，不进入 `onAction`。
 
-本包不支持 checks、`callRendererFunction`、`agentFunctionResponse` 或 agent 函数响应协议。运行时不生成模板、不执行模型返回的代码，也不引入 lit。
+本包支持 Core 的 `@checks` / `Checkable` 校验投影，通过 `isValid` 与 `validationErrors` 提供给宿主展示；不会自动阻止动作。不支持 `callRendererFunction`、`agentFunctionResponse` 或 agent 函数响应协议。运行时不生成模板、不执行模型返回的代码，也不引入 lit。
 
 ## 验证
 
 先重建 `@wevu/a2ui`，再验证下游应用。真实微信 DevTools 和 headless 复用 `e2e/ide/wevu-a2ui.runtime.test.ts`，测试命令必须全局串行；基础目录页同时验证 `Tabs.tabs[].child` 的嵌套渲染。应用的 noEval 测试从公共入口打包，并在禁用 `Function` / `eval` 的 VM 中执行。
 
-包未执行 npm 发布，不承诺完整 Basic Catalog、checks/RPC 或其他平台支持。
+包未执行 npm 发布，不承诺完整 Basic Catalog、RPC 或其他平台支持。

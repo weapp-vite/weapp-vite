@@ -67,6 +67,8 @@ dist-plugin
 /packages/weapp-vite/skills/
 /packages-runtime/wevu/skills/
 /packages-runtime/react/skills/
+/packages-runtime/json-render/skills/
+/packages-runtime/a2ui/skills/
 packages/ast-native/target/
 packages/ast-native/*.node
 packages/ast-native-*/**/*.node

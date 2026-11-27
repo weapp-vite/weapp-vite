@@ -167,8 +167,10 @@ Avoid cross-package edits unless the change is truly shared.
   - `weapp-vite-vue-sfc-best-practices`
   - `weapp-vite-react-best-practices`
   - `wevu-best-practices`
+  - `wevu-json-render-best-practices`
+  - `wevu-a2ui-best-practices`
   - `native-to-weapp-vite-wevu-migration`
-- `skills/distribution.json` selects four consumer skills for `weapp-vite`, `wevu` and `@weapp-vite/react`, published at `skills/<name>/SKILL.md`.
+- `skills/distribution.json` selects package-owned consumer skills for `weapp-vite`, `wevu`, `@weapp-vite/react`, `@wevu/json-render` and `@wevu/a2ui`, published at `skills/<name>/SKILL.md`.
 
 ### Consumer projects
 

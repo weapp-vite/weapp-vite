@@ -2,7 +2,7 @@
 
 ## 目标
 
-验证以下 9 个主 skills 在隐式触发（不显式写 `$skill-name`）时是否命中正确：
+验证以下 11 个主 skills 在隐式触发（不显式写 `$skill-name`）时是否命中正确：
 
 - `weapp-vite-best-practices`
 - `weapp-acceptance`
@@ -12,6 +12,8 @@
 - `weapp-vite-vue-sfc-best-practices`
 - `weapp-vite-react-best-practices`
 - `wevu-best-practices`
+- `wevu-json-render-best-practices`
+- `wevu-a2ui-best-practices`
 - `native-to-weapp-vite-wevu-migration`
 
 ## 执行方式
@@ -265,6 +267,40 @@ pnpm skills:score:json
 5. 边界提问：这是纯 Wevu TSX 页面，没有启用 `weapp.react`，组件标签和响应式更新应该怎么处理？
    预期 skill：`wevu-best-practices`
 
+### N. wevu-json-render-best-practices
+
+1. 提问：项目同时装了 `@wevu/json-render` 和 `@wevu/json-render-components`，但 `<json-renderer>` 一直提示组件不存在，`JsonRendererResolver()` 和构建顺序应该怎么检查？
+   预期 skill：`wevu-json-render-best-practices`
+
+2. 提问：请定义一个自定义 Counter catalog，让 props 从 `$state` 读取、输入通过 `$bindState` 写回，并用 schema 校验动作参数。
+   预期 skill：`wevu-json-render-best-practices`
+
+3. 提问：模型返回的 JSONL Patch 要增量更新界面，但 Input 里用户已经输入的值不能丢，半行 Patch 和暂缺节点引用应该怎么处理？
+   预期 skill：`wevu-json-render-best-practices`
+
+4. 提问：`useJsonRenderer` 的异步动作在 `load` 或页面卸载后又把结果写进新界面，应该怎样用 `isActive` 和 `onCleanup` 收尾？
+   预期 skill：`wevu-json-render-best-practices`
+
+5. 边界提问：这里没有 json-render spec，只是 `setup()` 里的 Wevu 生命周期注册不触发，应该先看哪个 skill？
+   预期 skill：`wevu-best-practices`
+
+### O. wevu-a2ui-best-practices
+
+1. 提问：agent 一次返回多个 A2UI 1.0 surface 消息，其中 `updateDataModel` 失败；怎样保证整批只提交一次且失败消息不会留下半成品？
+   预期 skill：`wevu-a2ui-best-practices`
+
+2. 提问：A2UI 的 Tabs 子节点藏在 props 数组里，同一个节点还有两个输入绑定和一个动作，投影和交互选择该怎么写？
+   预期 skill：`wevu-a2ui-best-practices`
+
+3. 提问：A2UI 输入没有写回 surface，重复点击又可能重复发送动作；`bindingName`、`actionName` 和 `eventId` 应该怎么配合？
+   预期 skill：`wevu-a2ui-best-practices`
+
+4. 提问：小程序里调用 A2UI catalog 函数报缺少 `Object.hasOwn` 或 `AbortController`，`functionImplementations` 和兼容层该由谁提供？
+   预期 skill：`wevu-a2ui-best-practices`
+
+5. 边界提问：这里不是 A2UI surface，只是 Pinia store 解构后丢响应性，应该先看哪个 skill？
+   预期 skill：`wevu-best-practices`
+
 ## 冲突场景回归
 
 1. 提问：我这个页面 `v-model` 报错，同时首包也超了，而且 AI 还需要按当前模板约定继续改这个页面，先看哪个？
@@ -318,6 +354,22 @@ pnpm skills:score:json
 13. 提问：我既要调 `weapp.react` 的 render mode，又要处理分包和 buildScope，先看哪个？
     预期主 skill：`weapp-vite-react-best-practices`
     预期次 skill：`weapp-vite-best-practices`
+
+14. 提问：这个 json-render 页面的 Input 不回写，同时首包构建也偏慢，先按协议交互还是分包性能定位？
+    预期主 skill：`wevu-json-render-best-practices`
+    预期次 skill：`weapp-vite-best-practices`
+
+15. 提问：A2UI surface 的输入不回写，同时我怀疑 Wevu 自定义事件的 detail 解包也有问题，先沿哪条协议链定位？
+    预期主 skill：`wevu-a2ui-best-practices`
+    预期次 skill：`wevu-best-practices`
+
+16. 提问：服务端已经下发 A2UI 1.0 surface 消息，但页面也有 json-render 风格的 spec 代码；自定义组件到底该接到哪个渲染会话？
+    预期主 skill：`wevu-a2ui-best-practices`
+    预期次 skill：`wevu-json-render-best-practices`
+
+17. 提问：我要新增一个随 json-render 包分发的 skill，需要同步 website、AGENTS、触发评分和 tarball 验收，先按哪个工作流推进？
+    预期主 skill：`docs-and-website-sync`
+    预期次 skill：`wevu-json-render-best-practices`
 
 ## 通过标准
 
@@ -418,11 +470,26 @@ pnpm skills:score:json
 | L3   |      |            |            |           |      |
 | L4   |      |            |            |           |      |
 | L5   |      |            |            |           |      |
+| N1   |      |            |            |           |      |
+| N2   |      |            |            |           |      |
+| N3   |      |            |            |           |      |
+| N4   |      |            |            |           |      |
+| N5   |      |            |            |           |      |
+| O1   |      |            |            |           |      |
+| O2   |      |            |            |           |      |
+| O3   |      |            |            |           |      |
+| O4   |      |            |            |           |      |
+| O5   |      |            |            |           |      |
 | X9   |      |            |            |           |      |
 | X10  |      |            |            |           |      |
 | X11  |      |            |            |           |      |
 | X12  |      |            |            |           |      |
 | X13  |      |            |            |           |      |
+| X14  |      |            |            |           |      |
+| X15  |      |            |            |           |      |
+| X16  |      |            |            |           |      |
+| X17  |      |            |            |           |      |
+| X18  |      |            |            |           |      |
 | K1   |      |            |            |           |      |
 | K2   |      |            |            |           |      |
 | K3   |      |            |            |           |      |
@@ -441,3 +508,7 @@ pnpm skills:score:json
 | M2 | 页面改动完成后，说明如何用原生 Vitest 和 weapp-vite/test 模拟器做运行时验收 | weapp-acceptance | | |
 | M3 | 排查仓库的 automator 全局串行与 provider parity | weapp-devtools-e2e-best-practices | | 边界 |
 | X14 | Codex 写完页面后用模板 Vitest 测试验证，不创建 acceptance JSON 配置 | weapp-acceptance | | 冲突 |
+| X15 | json-render 输入不回写且首包慢，先定位协议交互 | wevu-json-render-best-practices | | 冲突 |
+| X16 | A2UI 输入不回写且怀疑 Wevu detail 解包，先定位 surface 协议 | wevu-a2ui-best-practices | | 冲突 |
+| X17 | 服务端已下发 A2UI 1.0 消息，同时存在 json-render 风格 spec | wevu-a2ui-best-practices | | 冲突 |
+| X18 | 新增随 json-render 包分发的 skill，先同步文档与发布入口 | docs-and-website-sync | | 冲突 |

@@ -10,7 +10,13 @@ keywords:
 
 # @wevu/json-render（实验）
 
-`@wevu/json-render` 提供 json-render 的 Wevu renderer 适配层，复用 `@json-render/core@0.21.0`。当前为仓库内的实验性 workspace 包，尚未发布到 npm。
+`@wevu/json-render` 提供 json-render 的 Wevu renderer 适配层，复用 `@json-render/core@0.23.2`。当前为仓库内的实验性 workspace 包，尚未发布到 npm。
+
+主包随 npm 包分发 `wevu-json-render-best-practices`，覆盖 catalog/spec、状态与动作、SpecStream、自定义节点及 `@wevu/json-render-components` 预编译组件接入。手动安装：
+
+```sh
+npx skills add sonofmagic/skills --skill wevu-json-render-best-practices
+```
 
 主包以 ESM 提供响应式 API，配套组件包只提供预编译原生组件，避免两份运行时分裂状态依赖。消费项目显式安装主包和配套组件依赖，业务代码通过主包和 resolver 接入。
 
