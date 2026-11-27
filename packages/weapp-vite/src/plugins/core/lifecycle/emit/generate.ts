@@ -43,6 +43,7 @@ import {
   injectRequestGlobalsLocalBindings,
   injectRequestGlobalsPassiveBindings,
   inlineRequestGlobalsAppRegisteredInstallerChunks,
+  resolveRequestGlobalsEagerTargets,
 } from './requestGlobals'
 import { getSessionRequestGlobalsAnalysisCache } from './requestGlobals/analysis'
 import {
@@ -823,8 +824,29 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
       rewriteBundleDynamicGlobalResolution(rewriteBundle)
       checkpointRewrite('generateRewritePlatformMs')
 
-      // prelude 与框架运行时块只安装依赖命中的提前集合，候选 targets 仍保留给各 chunk 按需识别。
-      const requestGlobalsEagerTargets = injectRequestGlobalsOptions?.eagerTargets ?? injectRequestGlobalsOptions?.targets ?? []
+      const appPreludePath = scanService.appEntry?.preludePath
+      const appPreludeOptions = resolveAppPreludeOptions(state)
+      const shouldRunAppPrelude = (appPreludeOptions.enabled && Boolean(appPreludePath))
+        || shouldInjectRequestGlobalsPrelude
+      const appPreludeCode = shouldRunAppPrelude
+        ? await resolveAppPreludeCode(appPreludePath, {
+            importMetaDefineRegistry: configService.importMetaDefineRegistry,
+            relativePath: appPreludePath
+              ? configService.relativeAbsoluteSrcRoot(appPreludePath)
+              : undefined,
+          })
+        : undefined
+      // auto 模式下，依赖规则提供基础 eager 集合，业务 chunk 与用户 prelude 的实际引用补充启动期目标。
+      const requestGlobalsEagerTargets = injectRequestGlobalsOptions?.targets?.length
+        ? resolveRequestGlobalsEagerTargets(
+            rolldownBundle,
+            injectRequestGlobalsOptions.targets,
+            injectRequestGlobalsOptions.mode,
+            injectRequestGlobalsOptions.eagerTargets ?? injectRequestGlobalsOptions.targets,
+            appPreludeCode,
+            requestGlobalsAnalysis,
+          )
+        : []
       const installerChunks = injectRequestGlobalsOptions?.targets?.length
         ? injectRequestGlobalsBundleRuntime(
             rolldownBundle,
@@ -855,19 +877,10 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
       }
 
       checkpointRewrite('generateRewriteRequestGlobalsMs')
-      const appPreludePath = scanService.appEntry?.preludePath
-      const appPreludeOptions = resolveAppPreludeOptions(state)
-      const shouldRunAppPrelude = (appPreludeOptions.enabled && Boolean(appPreludePath))
-        || shouldInjectRequestGlobalsPrelude
       const preservedRequestGlobalsInstallerChunks = shouldRunAppPrelude
         ? injectAppPreludeCode(
             rolldownBundle,
-            await resolveAppPreludeCode(appPreludePath, {
-              importMetaDefineRegistry: configService.importMetaDefineRegistry,
-              relativePath: appPreludePath
-                ? configService.relativeAbsoluteSrcRoot(appPreludePath)
-                : undefined,
-            }),
+            appPreludeCode,
             {
               ...appPreludeOptions,
               enabled: appPreludeOptions.enabled || shouldInjectRequestGlobalsPrelude,

@@ -80,6 +80,41 @@ function isRequestGlobalsFrameworkChunkFileName(fileName: string) {
     || baseName === 'web-apis-shared.js'
 }
 
+export function resolveRequestGlobalsEagerTargets(
+  bundle: OutputBundle,
+  targets: WeappInjectRequestGlobalsTarget[],
+  mode: 'auto' | 'explicit',
+  eagerTargets: WeappInjectRequestGlobalsTarget[],
+  appPreludeCode?: string,
+  analysis?: RequestGlobalsAnalysisOptions,
+) {
+  if (mode !== 'auto') {
+    return eagerTargets
+  }
+
+  const resolvedTargets = new Set(eagerTargets)
+  for (const output of Object.values(bundle)) {
+    if (output?.type !== 'chunk') {
+      continue
+    }
+    const chunk = output as OutputChunk
+    if (isRequestGlobalsFrameworkChunkFileName(chunk.fileName)) {
+      continue
+    }
+    for (const target of resolveChunkRequestGlobalsTargets(chunk.code, targets, mode, analysis, chunk.fileName)) {
+      resolvedTargets.add(target)
+    }
+  }
+
+  if (appPreludeCode) {
+    for (const target of resolveAutoRequestGlobalsTargets(appPreludeCode, targets)) {
+      resolvedTargets.add(target)
+    }
+  }
+
+  return [...resolvedTargets]
+}
+
 export function resolveRequestGlobalsInstallerName(code: string, analysis?: RequestGlobalsAnalysisOptions, filename = '') {
   const facts = getRequestGlobalsContentFacts(code, filename, analysis)
   return facts ? facts.installerName : findRequestGlobalsInstaller(code)
