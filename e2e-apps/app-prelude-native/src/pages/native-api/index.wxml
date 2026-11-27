@@ -1,0 +1,7 @@
+<view id="route" data-e2e-route="{{route}}">{{route}}</view>
+<view id="native-status">{{status}}</view>
+<view id="native-fetch">{{fetchTransport}}</view>
+<view id="native-axios">{{axiosTransport}}</view>
+<view id="native-websocket">{{websocketStage}}</view>
+<view id="native-api-summary">{{apiSummary}}</view>
+<view id="native-error">{{error}}</view>

@@ -1,9 +1,9 @@
-import { sharedRouteLabel } from './shared/runtime'
+import { appSharedRouteLabel } from './shared/appRuntime'
 
 App({
   globalData: {
     booted: true,
-    sharedRouteLabel,
+    sharedRouteLabel: appSharedRouteLabel,
   },
 
   getPreludeLog() {

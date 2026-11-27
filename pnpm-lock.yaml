@@ -1998,9 +1998,15 @@ importers:
       '@weapp-vite/dashboard':
         specifier: workspace:*
         version: link:../../packages/dashboard
+      axios:
+        specifier: 'catalog:'
+        version: 1.21.1(debug@4.4.3(supports-color@10.2.2))(supports-color@10.2.2)
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
+      wevu:
+        specifier: workspace:*
+        version: link:../../packages-runtime/wevu
 
   e2e-apps/app-vue-hmr-alias:
     devDependencies:
