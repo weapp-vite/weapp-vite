@@ -76,13 +76,13 @@ pnpm create weapp-vite my-app wevu --dependency-versions=bundled
 
 ```bash
 pnpm create weapp-vite my-app wevu --toolchain=vite
-pnpm create weapp-vite my-app wevu --toolchain=vite-plus
-pnpm create weapp-vite my-native-app default --toolchain=vite-plus
+pnpm create weapp-vite@3.7.2 my-app wevu --toolchain=vite-plus
+pnpm create weapp-vite@3.7.2 my-native-app default --toolchain=vite-plus
 ```
 
 Vite / Vite+ 项目的 `dev`、`build` 脚本分别使用 `vite` / `vp`，`vite*.config.ts` 显式导入共享的 `weapp-vite.config.ts`；多平台和 lib 脚本使用各自的配置文件，不传递 `wv` 专属参数。`prepare`、打开 IDE、Dashboard、上传、MCP 等小程序命令继续由 `wv` 提供。`wv` / Vite 项目保留原有 ESLint 配置；Vite+ 接入 Oxlint / Oxfmt，Wevu 项目保留 Vue 模板专项 ESLint。Stylelint 和受管 TypeScript 流程继续保留。
 
-直接使用上述 `pnpm create ... --toolchain=vite-plus` 命令即可生成完整规则配置，无需再运行工具迁移。`vite.config.ts` 的 `lint` 块按框架使用 [@weapp-vite/oxlint](/packages/oxlint) 的 `miniProgramRecommended`、`wevuRecommended` 或 `reactRecommended`，`fmt` 块使用 [@weapp-vite/oxfmt](/packages/oxfmt) 的 `recommended`。
+直接使用上述带 `--toolchain=vite-plus` 的命令即可生成完整规则配置，无需再运行工具迁移。`vite.config.ts` 的 `lint` 块按框架使用 [@weapp-vite/oxlint](/packages/oxlint) 的 `miniProgramRecommended`、`wevuRecommended` 或 `reactRecommended`，`fmt` 块使用 [@weapp-vite/oxfmt](/packages/oxfmt) 的 `recommended`。
 
 | 脚本 | 用途 |
 | --- | --- |
@@ -100,7 +100,18 @@ Vite / Vite+ 项目的 `dev`、`build` 脚本分别使用 `vite` / `vp`，`vite*
 
 `wv prepare`、打开 IDE、Dashboard、上传与 MCP 命令继续由 `wv` 提供；`postinstall` 保持 `wv prepare`，格式化在模板准备阶段完成。Vue parser services 专项检查、Stylelint 和项目类型检查各自保留；语言工具不新增完整模板类型检查器。本轮验收覆盖 TS、CLI、VSCode 与构建，不代表真实小程序 IDE runtime 验收。
 
-Vite+ 使用固定配对 `vite-plus@1.2.0`、`vite` → `@voidzero-dev/vite-plus-core@1.2.0` 与 `vitest@5.0.4`。独立项目同时生成 npm overrides 与 pnpm workspace 策略。已有 pnpm workspace 须先配置相同的 `overrides.vite`、`overrides.vitest`，以及包含 `1.2.0` 的 `peerDependencyRules.allowedVersions.vite`；脚手架会在生成前校验，保留父工作区文件。
+`create-weapp-vite@3.7.2` 的 Vite+ 模板使用 `vite-plus@1.5.0`，将 `vite` 指向 `npm:@voidzero-dev/vite-plus-core@1.5.0`，并通过 overrides 固定 `vitest@5.1.0`。独立项目会生成 npm overrides 和 pnpm workspace 策略。向已有 pnpm workspace 添加成员时，将下列配置合并到根目录的 `pnpm-workspace.yaml`，并保留其他根配置。脚手架会在复制模板前校验这些设置。
+
+```yaml
+overrides:
+  vite: npm:@voidzero-dev/vite-plus-core@1.5.0
+  vitest: 5.1.0
+peerDependencyRules:
+  allowedVersions:
+    vite: 1.5.0
+```
+
+`peerDependencyRules.allowedVersions.vite` 也接受覆盖 `1.5.0` 的 semver 范围。使用其他脚手架版本时，请按对应发布模板中的配对配置。
 
 在已有 workspace 中，`pnpm check` 的标准检查与原生语言适配器优先使用根 `vite.config.ts` 的配置；成员预设不会覆盖根策略。团队应在根配置接入相应预设，并将文件匹配范围定位到成员目录。普通 `weapp-vite-format --write` / `--check` 使用最近的项目格式配置，支持显式 `--config` 和文件范围；`--check-all` 与 `vp check` 不提供该参数。详细配置见 [平台语言配置](https://vite.weapp.dev/config/language)、[Oxlint 文档](https://vite.weapp.dev/packages/oxlint) 与 [Oxfmt 文档](https://vite.weapp.dev/packages/oxfmt)。
 
