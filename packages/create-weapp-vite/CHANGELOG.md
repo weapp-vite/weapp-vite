@@ -1,5 +1,50 @@
 # create-weapp-vite
 
+## 3.8.0
+
+### Minor Changes
+
+- feat(create-weapp-vite): 新增 Wevu + Varo 微信电商模板，包含商品、购物车和模拟下单流程。
+
+### Patch Changes
+
+- feat(mpcore): 按职责分开 headless 测试与 IDE E2E 入口，模板改用 Vitest 原生 API。
+
+- fix(create-weapp-vite): 修复 CLI 重复调用时工作目录缓存和模板摘要受生成目录影响的问题。
+
+- chore(deps): 基于 pnpm-workspace.yaml 中 catalog 版本变更，自动补充发布记录。
+  默认 catalog 变更键：vite-plus, vitest。命名 catalog 变更键：tilde(vitest)。
+
+- chore(deps): 基于 pnpm-workspace.yaml 中 catalog 版本变更，自动补充发布记录。
+  默认 catalog 变更键：@icebreakers/eslint-config, @icebreakers/stylelint-config, rolldown, tailwind-variants, vite, vue-router。命名 catalog 变更键：无。
+
+- chore(deps): 自动补充依赖升级发布记录。
+  涉及包：
+  - @mpcore/vitest：devDependencies.@vitest/browser
+  - @weapp-vite/ast-native：devDependencies.vitest
+
+- fix(weapp-vite): 修复 Vite 8.4 下小程序插件开发构建监听配置变更时的入口加载错误，保留组件和页面元数据的更新。
+
+- fix(weapp-vite): 让 dev 模式一致应用 build.watch.include/exclude，并保留 pnpm 软链源码、配置依赖和环境文件的监听与重载。
+
+- fix(weapp-vite): 修复自动模式下未使用 WebSocket 仍被注入的问题。`app.prelude` 与框架 request globals 运行时块只提前安装依赖命中的目标集合，并且不再把框架 polyfill 自身文本当作业务使用线索；普通请求依赖仍按产物实际使用情况按需注入，`targets` 候选集合保持全量以维持其他 Web 全局对象的识别能力。
+
+- fix(weapp-vite): 补全自动模式请求全局对象的启动期识别，覆盖用户 app prelude 与业务 chunk 的实际使用，并同步默认依赖文档。
+
+- fix(weapp-vite): 兼容 Rolldown buildStart 不支持入口加载的限制。
+
+- perf: 复用 Rust 批量 AST 遍历收集页面特性并减少脚本重复分析。
+
+- fix(weapp-vite): 修复开发模式错误套用构建监听过滤导致外部 Vue 源码 HMR 不更新的问题。
+
+- feat(skills): 为 `@wevu/json-render` 与 `@wevu/a2ui` 增加随 npm 包分发的实践 skills，分别覆盖 json-render 会话、SpecStream 与预编译组件接入，以及 A2UI 1.0 surface、投影交互与递归宿主；同步包构建、打包、共享分发清单、发布策略、触发回归清单和文档，`@wevu/json-render-components` 的使用指南归入 json-render 技能而不重复分发。现有技能 owner 与脚手架同步参与本次分发清单发布。
+
+- Updated dependencies:
+  - @weapp-core/init@6.1.8
+  - @weapp-core/logger@3.2.8
+  - @weapp-core/shared@3.5.4
+  - @weapp-vite/language-service@0.1.9
+
 ## 3.7.2
 
 ### Patch Changes

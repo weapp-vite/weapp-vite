@@ -1,6 +1,6 @@
 {
   "name": "@weapp-vite/ast-native-darwin-arm64",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Native @weapp-vite/ast-native binding for darwin-arm64",
   "os": [
     "darwin"

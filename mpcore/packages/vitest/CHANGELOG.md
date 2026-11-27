@@ -1,5 +1,27 @@
 # @mpcore/vitest
 
+## 2.0.0
+
+### Major Changes
+
+- feat(mpcore): 按职责分开 headless 测试与 IDE E2E 入口，模板改用 Vitest 原生 API。
+
+### Patch Changes
+
+- chore(deps): 基于 pnpm-workspace.yaml 中 catalog 版本变更，自动补充发布记录。
+  默认 catalog 变更键：vite-plus, vitest。命名 catalog 变更键：tilde(vitest)。
+
+- chore(deps): 基于 pnpm-workspace.yaml 中 catalog 版本变更，自动补充发布记录。
+  默认 catalog 变更键：@icebreakers/eslint-config, @icebreakers/stylelint-config, rolldown, tailwind-variants, vite, vue-router。命名 catalog 变更键：无。
+
+- chore(deps): 自动补充依赖升级发布记录。
+  涉及包：
+  - @mpcore/vitest：devDependencies.@vitest/browser
+  - @weapp-vite/ast-native：devDependencies.vitest
+
+- Updated dependencies:
+  - @mpcore/test@1.2.9
+
 ## 1.2.8
 
 ### Patch Changes

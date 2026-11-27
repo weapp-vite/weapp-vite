@@ -1,6 +1,6 @@
 {
   "name": "@weapp-vite/ast-native-win32-x64-msvc",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Native @weapp-vite/ast-native binding for win32-x64-msvc",
   "os": [
     "win32"

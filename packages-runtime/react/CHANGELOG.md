@@ -1,5 +1,28 @@
 # @weapp-vite/react
 
+## 0.6.0
+
+### Minor Changes
+
+- feat(skills): 为 `@wevu/json-render` 与 `@wevu/a2ui` 增加随 npm 包分发的实践 skills，分别覆盖 json-render 会话、SpecStream 与预编译组件接入，以及 A2UI 1.0 surface、投影交互与递归宿主；同步包构建、打包、共享分发清单、发布策略、触发回归清单和文档，`@wevu/json-render-components` 的使用指南归入 json-render 技能而不重复分发。现有技能 owner 与脚手架同步参与本次分发清单发布。
+
+### Patch Changes
+
+- chore(deps): 基于 pnpm-workspace.yaml 中 catalog 版本变更，自动补充发布记录。
+  默认 catalog 变更键：vite-plus, vitest。命名 catalog 变更键：tilde(vitest)。
+
+- chore(deps): 基于 pnpm-workspace.yaml 中 catalog 版本变更，自动补充发布记录。
+  默认 catalog 变更键：@icebreakers/eslint-config, @icebreakers/stylelint-config, rolldown, tailwind-variants, vite, vue-router。命名 catalog 变更键：无。
+
+- chore(deps): 自动补充依赖升级发布记录。
+  涉及包：
+  - @mpcore/vitest：devDependencies.@vitest/browser
+  - @weapp-vite/ast-native：devDependencies.vitest
+
+- Updated dependencies:
+  - @weapp-core/constants@0.6.4
+  - @weapp-core/shared@3.5.4
+
 ## 0.5.3
 
 ### Patch Changes

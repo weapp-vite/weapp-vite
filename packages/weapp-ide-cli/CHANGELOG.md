@@ -1,5 +1,30 @@
 # weapp-ide-cli
 
+## 6.4.8
+
+### Patch Changes
+
+- chore(deps): 基于 pnpm-workspace.yaml 中 catalog 版本变更，自动补充发布记录。
+  默认 catalog 变更键：vite-plus, vitest。命名 catalog 变更键：tilde(vitest)。
+
+- chore(deps): 基于 pnpm-workspace.yaml 中 catalog 版本变更，自动补充发布记录。
+  默认 catalog 变更键：@icebreakers/eslint-config, @icebreakers/stylelint-config, rolldown, tailwind-variants, vite, vue-router。命名 catalog 变更键：无。
+
+- chore(deps): 自动补充依赖升级发布记录。
+  涉及包：
+  - @mpcore/vitest：devDependencies.@vitest/browser
+  - @weapp-vite/ast-native：devDependencies.vitest
+
+- fix(weapp-ide-cli): 非 macOS 回退窗口关闭证据时按完整项目路径和受管会话启动时间定位 MAIN 日志，避免误选历史会话并修复 Windows 日志累积后的清理歧义。
+
+- fix(weapp-ide-cli): 扫描微信开发者工具安装目录时忽略无权限的受保护目录，修复 Windows 上因 `Program Files\WindowsApps` 返回 EPERM 导致安装发现与 IDE 自动化整体失败的问题。
+
+- Updated dependencies:
+  - @weapp-core/logger@3.2.8
+  - @weapp-core/shared@3.5.4
+  - @weapp-vite/devtools-runtime@0.7.8
+  - @weapp-vite/miniprogram-automator@1.5.8
+
 ## 6.4.7
 
 ### Patch Changes
