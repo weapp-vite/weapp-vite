@@ -1921,6 +1921,139 @@ describe('core lifecycle emit hook extra branches', () => {
     expect(preludeSource).not.toContain('"WebSocket"')
   })
 
+  it('eagerly installs WebSocket used by an auto-mode app prelude', async () => {
+    readFileMock.mockResolvedValueOnce('new WebSocket("wss://request-globals.invalid/socket")')
+    const state = createState({
+      subPackageMeta: null,
+      entriesMap: new Map([
+        ['app', { type: 'app', path: 'app' }],
+      ]),
+      ctx: {
+        configService: {
+          packageJson: {
+            dependencies: {
+              axios: '^1.8.0',
+            },
+          },
+          weappViteConfig: {},
+          relativeAbsoluteSrcRoot: (id: string) => id.replace('/project/src/', ''),
+        },
+        scanService: {
+          subPackageMap: new Map(),
+          appEntry: {
+            preludePath: '/project/src/app.prelude.ts',
+          },
+        },
+      },
+    })
+    const hook = createGenerateBundleHook(state, false)
+    const installerFile = 'weapp-vendors/request-globals-web-apis-shared.js'
+    const bundle = {
+      [installerFile]: {
+        type: 'chunk',
+        fileName: installerFile,
+        code: [
+          'function vn(e={}){const t=e.targets??[`fetch`,`Headers`,`Request`,`Response`,`TextEncoder`,`TextDecoder`,`AbortController`,`AbortSignal`,`XMLHttpRequest`,`WebSocket`];return { fetch: Promise.resolve, WebSocket: Object }}',
+          `Object.defineProperty(vn,${JSON.stringify(REQUEST_GLOBAL_INSTALLER_MARKER)},{value:true});`,
+          'Object.defineProperty(exports,`At`,{enumerable:!0,get:function(){return vn}})',
+        ].join(';'),
+        imports: [],
+        dynamicImports: [],
+      },
+      'app.js': {
+        type: 'chunk',
+        fileName: 'app.js',
+        isEntry: true,
+        code: `const e=require("./${installerFile}");App({})`,
+        imports: [installerFile],
+        dynamicImports: [],
+      },
+    } as any
+
+    const emitFile = vi.fn((asset: any) => {
+      bundle[asset.fileName] = {
+        type: 'asset',
+        fileName: asset.fileName,
+        source: asset.source,
+      }
+    })
+
+    await hook.call({ emitFile }, {}, bundle)
+
+    const installerCode = bundle[installerFile].code
+    expect(installerCode).toContain('"WebSocket"')
+    expect(String((bundle['app.prelude.js'] as any).source)).toContain('"WebSocket"')
+  })
+
+  it('eagerly installs WebSocket used by an auto-mode vendor chunk', async () => {
+    const state = createState({
+      subPackageMeta: null,
+      entriesMap: new Map([
+        ['app', { type: 'app', path: 'app' }],
+      ]),
+      ctx: {
+        configService: {
+          packageJson: {
+            dependencies: {
+              axios: '^1.8.0',
+            },
+          },
+          weappViteConfig: {},
+          relativeAbsoluteSrcRoot: (id: string) => id.replace('/project/src/', ''),
+        },
+        scanService: {
+          subPackageMap: new Map(),
+          appEntry: {},
+        },
+      },
+    })
+    const hook = createGenerateBundleHook(state, false)
+    const installerFile = 'weapp-vendors/request-globals-web-apis-shared.js'
+    const vendorFile = 'weapp-vendors/socket-startup.js'
+    const bundle = {
+      [installerFile]: {
+        type: 'chunk',
+        fileName: installerFile,
+        code: [
+          'function vn(e={}){const t=e.targets??[`fetch`,`Headers`,`Request`,`Response`,`TextEncoder`,`TextDecoder`,`AbortController`,`AbortSignal`,`XMLHttpRequest`,`WebSocket`];return { fetch: Promise.resolve, WebSocket: Object }}',
+          `Object.defineProperty(vn,${JSON.stringify(REQUEST_GLOBAL_INSTALLER_MARKER)},{value:true});`,
+          'Object.defineProperty(exports,`At`,{enumerable:!0,get:function(){return vn}})',
+        ].join(';'),
+        imports: [],
+        dynamicImports: [],
+      },
+      [vendorFile]: {
+        type: 'chunk',
+        fileName: vendorFile,
+        code: `const runtime=require("./${installerFile}");exports.socket=new WebSocket("wss://request-globals.invalid/socket")`,
+        imports: [installerFile],
+        dynamicImports: [],
+      },
+      'app.js': {
+        type: 'chunk',
+        fileName: 'app.js',
+        isEntry: true,
+        code: `const e=require("./${vendorFile}");App({})`,
+        imports: [vendorFile],
+        dynamicImports: [],
+      },
+    } as any
+
+    const emitFile = vi.fn((asset: any) => {
+      bundle[asset.fileName] = {
+        type: 'asset',
+        fileName: asset.fileName,
+        source: asset.source,
+      }
+    })
+
+    await hook.call({ emitFile }, {}, bundle)
+
+    const installerCode = bundle[installerFile].code
+    expect(installerCode).toContain('"WebSocket"')
+    expect(String((bundle['app.prelude.js'] as any).source)).toContain('"WebSocket"')
+  })
+
   it('preserves native page sourcemaps through the complete request globals hook', async () => {
     const source = 'src/pages/request-globals/fetch.ts'
     const pageSource = [

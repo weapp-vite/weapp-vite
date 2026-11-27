@@ -98,11 +98,13 @@ export default defineConfig({
 - `graphql-request`
 - `socket.io-client`
 - `engine.io-client`
+- `ky`
+- `stream-markdown-parser`
 - `@tanstack/query-core`
 - `@tanstack/vue-query`
 - `eventsource-parser`（包含 `eventsource-parser/stream` 导入）
 
-自动模式下，`app.prelude` 与共享运行时块只提前安装命中依赖对应的目标组：`axios` / `graphql-request` / `ky` / `stream-markdown-parser` 对应请求运行时组，`@tanstack/*` 对应取消组，只有 `socket.io-client` / `engine.io-client` 才会提前安装 `WebSocket`。其余目标仍按各产物 chunk 的实际使用情况按需注入。
+自动模式下，`app.prelude` 与共享运行时块只提前安装命中依赖对应的目标组：`axios` / `graphql-request` / `ky` / `stream-markdown-parser` 对应请求运行时组，`@tanstack/query-core` / `@tanstack/vue-query` 对应取消组，只有 `socket.io-client` / `engine.io-client` 才会提前安装 `WebSocket`。业务 chunk 与用户 `app.prelude` 中实际引用的目标也会加入提前安装集合，其余目标仍按各产物 chunk 的实际使用情况按需注入。
 
 ### `networkDefaults`
 
