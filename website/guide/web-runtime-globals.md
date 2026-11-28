@@ -115,7 +115,7 @@ export default defineConfig({
 
 `native` 不读取 `dependencies`，不生成 `installWebRuntimeXXX`、eager installer context、finalizer 或 axios 环境模块，也不执行 `__wvAXFE__` bundle patch。axios 与其他库没有特殊分支：自由标识符和点号全局访问直接注入，计算属性等不可点号注入的读取由目标桥接提供。桥接不会用 polyfill 替换完整宿主实现；可修补的缺口（如 `Headers.getSetCookie`、`Response.json/error`、`URL.parse/canParse`）会就地修复并保留构造器身份。
 
-用户在 `build.rolldownOptions.transform.inject` 中的映射始终优先。自由标识符覆盖会同步到对应的 `globalThis.<target>`、`window.<target>` 等点号注入键；显式 dotted 覆盖最高，并供仍走桥接的访问使用。基础 binding 不反向导入用户 override，避免覆盖模块读取其他目标时形成循环。
+用户在 `build.rolldownOptions.transform.inject` 中的映射始终优先。自由标识符覆盖会同步到对应的 `globalThis.<target>`、`window.<target>` 等点号注入键；显式 dotted 覆盖最高，并供仍走桥接的访问使用。桥接按 `globalThis` → `global` → `self` → `window` → 裸标识符解析四类全局对象的显式覆盖，避免别名路径绕过用户配置。基础 binding 不反向导入用户 override，避免覆盖模块读取其他目标时形成循环。
 
 自定义 `app.prelude` 是普通静态模块，自身引用使用相同规则，binding 不会反向依赖 Prelude。旧 `inline`、`entry`、`require` 模式及默认 `require` 保持不变，旧模式仍可使用 `weapp.injectWebRuntimeGlobals.prelude`。
 

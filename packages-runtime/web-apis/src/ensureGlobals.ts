@@ -2,6 +2,7 @@ import {
   hasUsablePrototypeMethods,
   hasUsableResponseConstructor,
   hasUsableTextDecoderConstructor,
+  hasUsableTextDecoderStreamConstructor,
   hasWebCompatibleUrlConstructor,
   patchHeadersConstructor,
   patchResponseConstructor,
@@ -75,8 +76,8 @@ export function ensureWebRuntimeTextDecoder(current: unknown, fallback: unknown)
 }
 
 export function ensureWebRuntimeTextDecoderStream(current: unknown, fallback: unknown, usesNativeStreams = true) {
-  if (shouldInstallWebRuntimeGlobal(current)) {
+  if (shouldInstallWebRuntimeGlobal(current) || !usesNativeStreams) {
     return fallback
   }
-  return usesNativeStreams || !hasUsablePrototypeMethods(current, ['getReader']) ? fallback : current
+  return hasUsableTextDecoderStreamConstructor(current) ? current : fallback
 }

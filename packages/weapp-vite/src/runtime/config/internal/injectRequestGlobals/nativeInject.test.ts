@@ -151,7 +151,20 @@ export function ensureWebRuntimeURLSearchParams(current, fallback) { return shou
 export function ensureWebRuntimeBlob(current, fallback) { return shouldInstallWebRuntimeGlobal(current) ? fallback : current }
 export function ensureWebRuntimeFile(current, fallback) { return shouldInstallWebRuntimeGlobal(current) ? fallback : current }
 export function ensureWebRuntimeFormData(current, fallback) { return shouldInstallWebRuntimeGlobal(current) ? fallback : current }
-export function ensureWebRuntimeTextDecoderStream(current, fallback) { return shouldInstallWebRuntimeGlobal(current) ? fallback : current }
+export function ensureWebRuntimeTextDecoderStream(current, fallback, usesNativeStreams) {
+  if (shouldInstallWebRuntimeGlobal(current) || !usesNativeStreams) {
+    return fallback
+  }
+  try {
+    const stream = new current('utf-8')
+    return typeof stream.readable?.getReader === 'function' && typeof stream.writable?.getWriter === 'function'
+      ? current
+      : fallback
+  }
+  catch {
+    return fallback
+  }
+}
 `
 
 const runtimeGlobalSource = `
@@ -412,6 +425,73 @@ export const read = () => fetch()
     expect(hostGlobal.fetch).toBeTypeOf('function')
     expect((hostGlobal.fetch as () => string)()).toBe('global fetch')
     expect(plan.code).not.toContain('virtual:user-fetch')
+  })
+
+  it('resolves dotted overrides from every global alias with a stable precedence', async () => {
+    for (const [dottedKey, label] of [
+      ['window.fetch', 'window'],
+      ['self.fetch', 'self'],
+      ['global.fetch', 'global'],
+    ] as const) {
+      const plan = createWebRuntimeNativeInject(['fetch'], undefined, {
+        [dottedKey]: `virtual:user-${label}-fetch`,
+      })!
+      const code = await generateCjs(plan, `
+import "virtual:weapp-vite-web-runtime:global:fetch";
+export const read = () => globalThis["fetch"]()
+`, {
+        [`virtual:user-${label}-fetch`]: `export default () => "${label} fetch"`,
+      })
+      const module = { exports: {} as { read: () => string } }
+      const hostGlobal = {} as Record<string, unknown>
+      runInNewContext(code, { module, exports: module.exports, globalThis: hostGlobal })
+
+      expect(module.exports.read()).toBe(`${label} fetch`)
+      expect((hostGlobal.fetch as () => string)()).toBe(`${label} fetch`)
+    }
+
+    const plan = createWebRuntimeNativeInject(['fetch'], undefined, {
+      'window.fetch': 'virtual:user-window-fetch',
+      'globalThis.fetch': 'virtual:user-global-fetch',
+    })!
+    const code = await generateCjs(plan, `
+import "virtual:weapp-vite-web-runtime:global:fetch";
+export const read = () => globalThis["fetch"]()
+`, {
+      'virtual:user-window-fetch': 'export default () => "window fetch"',
+      'virtual:user-global-fetch': 'export default () => "global fetch"',
+    })
+    const module = { exports: {} as { read: () => string } }
+    const hostGlobal = {} as Record<string, unknown>
+    runInNewContext(code, { module, exports: module.exports, globalThis: hostGlobal })
+
+    expect(module.exports.read()).toBe('global fetch')
+  })
+
+  it('preserves a usable host TextDecoderStream through the bridge', async () => {
+    const plan = createWebRuntimeNativeInject(['TextDecoderStream'])!
+    const code = await generateCjs(plan, `
+import "virtual:weapp-vite-web-runtime:global:TextDecoderStream";
+export const read = () => globalThis["TextDecoderStream"]
+`)
+    class HostTextDecoderStream {
+      readable = {
+        getReader() {
+          return {}
+        },
+      }
+
+      writable = {
+        getWriter() {
+          return {}
+        },
+      }
+    }
+    const module = { exports: {} as { read: () => unknown } }
+    const hostGlobal = { TextDecoderStream: HostTextDecoderStream } as Record<string, unknown>
+    runInNewContext(code, { module, exports: module.exports, globalThis: hostGlobal })
+
+    expect(module.exports.read()).toBe(HostTextDecoderStream)
   })
 
   it('propagates free overrides to dotted inject keys unless explicitly overridden', () => {

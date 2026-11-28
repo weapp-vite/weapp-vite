@@ -48,7 +48,7 @@
 - **DOM 验收 provider 范围**：analyzer 把跨多个 case 使用的 `process.env` 模式守卫视为不确定（既定语义 uncertain→undefined），复合 `skipIf` 会被计划进所有 provider。native 的 devtools/headless case 因此只用纯 provider 守卫，模式由 case 内部 `launchMode` 选择；代价是这两个 case 会在各自 provider 的所有模式任务里运行（冗余但正确）。改 analyzer 支持复合守卫会与“多次使用即不确定”启发式冲突且影响面广，未采用。
 - **ES5 兼容是语法层，宿主全局前提与旧模式相同**：桥接用带保护的 `globalThis[key]`，ES5 转译只去掉 `=>`/`const`/`let`，`globalThis` 这类 ES6+ 全局转译不掉。旧 installer 与 passive bindings 本就依赖 `globalThis`，native 没有引入新的宿主全局要求；但该全局在 AppService 真实存在，最终要靠 Stable runtime 验收证明（见未闭合事项 1）。
 - **HMR 替换自身旧实例**：native 安装值带 `__wvRGN__` 所有权标记；下一轮全量重载可替换上一轮 native 安装，同时保留真实宿主或用户实现。桥接与精确绑定使用同一批新实现模块，不再出现旧实例分叉。
-- **用户 dotted-only 覆盖的不对称**：用户覆盖 `fetch` 会同步到 `globalThis.fetch`、`window.fetch` 等点号键（一致）；只覆盖 `globalThis.fetch` 时，自由 `fetch` 与其他全局对象点号访问仍用默认实现，`fetch()` 与 `globalThis.fetch()` 分叉。这是用户显式选择（dotted 键更具体）的结果，语义上成立，属需要说明的不对称。
+- **用户 dotted-only 覆盖的不对称**：用户覆盖 `fetch` 会同步到 `globalThis.fetch`、`window.fetch` 等点号键（一致）；只覆盖某个 dotted 键时，自由 `fetch` 与其别名点号注入仍用默认实现，但桥接访问会按 `globalThis` → `global` → `self` → `window` → 裸标识符统一取显式覆盖，不再绕过用户配置。这是用户显式选择（dotted 键更具体）的结果，语义上成立，属需要说明的不对称。
 - **精确性依赖实现模块无副作用**：带 `networkDefaults` 时绑定模块有 `setMiniProgramNetworkDefaults` 副作用调用，但未用实现仍被 tree-shake（nativeSize 带 networkDefaults 的 fixture 可证），因为各实现模块本身纯。若将来某实现模块引入副作用，精确性会退化——这是需要守护的隐含不变量。
 
 ## 验证

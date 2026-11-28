@@ -128,15 +128,30 @@ describe('native Web Runtime ensure helpers', () => {
 
   it('preserves usable stream constructors and rejects incomplete fallback paths', () => {
     class HostTextDecoderStream {
-      getReader() {
-        return {}
+      readable = {
+        getReader() {
+          return {}
+        },
+      }
+
+      writable = {
+        getWriter() {
+          return {}
+        },
       }
     }
     const fallback = class FallbackTextDecoderStream {}
 
-    expect(ensureWebRuntimeTextDecoderStream(HostTextDecoderStream, fallback, false)).toBe(HostTextDecoderStream)
-    expect(ensureWebRuntimeTextDecoderStream(HostTextDecoderStream, fallback, true)).toBe(fallback)
-    expect(ensureWebRuntimeTextDecoderStream(class IncompleteStream {}, fallback, false)).toBe(fallback)
+    expect(ensureWebRuntimeTextDecoderStream(HostTextDecoderStream, fallback, false)).toBe(fallback)
+    // 宿主已有可构造且实例能力完整的实现必须保留，不能因 native streams 可用而替换。
+    expect(ensureWebRuntimeTextDecoderStream(HostTextDecoderStream, fallback, true)).toBe(HostTextDecoderStream)
+    expect(ensureWebRuntimeTextDecoderStream(class IncompleteStream {}, fallback, true)).toBe(fallback)
+    expect(ensureWebRuntimeTextDecoderStream(class PrototypeOnlyStream {
+      getReader() {
+        return {}
+      }
+    }, fallback, true)).toBe(fallback)
+    expect(ensureWebRuntimeTextDecoderStream(markWebRuntimeGlobalInstalled(HostTextDecoderStream), fallback, true)).toBe(fallback)
   })
 
   it('patches URL parsing helpers on a compatible host constructor', () => {

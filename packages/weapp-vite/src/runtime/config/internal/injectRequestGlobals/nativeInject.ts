@@ -155,8 +155,31 @@ export function createWebRuntimeNativeGlobalImports(targets: readonly string[]) 
   return [...new Set(targets)].map(target => `import ${JSON.stringify(getWebRuntimeGlobalVirtualId(target))};`).join('\n')
 }
 
+/**
+ * 解析桥接使用的显式覆盖。
+ *
+ * 四类全局对象在宿主语义上互为别名，桥接统一安装到 `globalThis`；覆盖键则按
+ * `globalThis` → `global` → `self` → `window` → 裸标识符的顺序取第一个显式项，
+ * 避免某个对象别名上的配置被其他访问路径绕过。
+ */
+function resolveNativeGlobalBridgeOverride(
+  userInject: Record<string, string | [string, string]> | undefined,
+  target: string,
+) {
+  if (!userInject) {
+    return undefined
+  }
+  for (const objectName of WEB_RUNTIME_GLOBAL_OBJECT_NAMES) {
+    const dottedKey = `${objectName}.${target}`
+    if (Object.hasOwn(userInject, dottedKey) && userInject[dottedKey] !== undefined) {
+      return userInject[dottedKey]
+    }
+  }
+  return Object.hasOwn(userInject, target) ? userInject[target] : undefined
+}
+
 export function createWebRuntimeGlobalBridgeCode(plan: WebRuntimeNativeInject, target: string) {
-  const mapping = plan.userInject?.[`globalThis.${target}`] ?? plan.userInject?.[target]
+  const mapping = resolveNativeGlobalBridgeOverride(plan.userInject, target)
   const localName = '__weappViteGlobalBinding'
   const key = JSON.stringify(target)
   const ensureExport = NATIVE_GLOBAL_ENSURE_EXPORTS[target as RequestGlobalFreeBindingTarget]

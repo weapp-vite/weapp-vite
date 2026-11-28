@@ -217,7 +217,7 @@ export default defineConfig({
 | App Prelude 模块 | `native` 下作为普通静态模块执行，不承担 Web Runtime 启动协调；该模式注册一条分组规则把它单独拆成 `weapp-vendors/web-runtime-app-prelude.js`，旧模式仍输出 `app.prelude.js` 并且不注册任何 Web Runtime 分组规则 |
 | 入口、业务模块或动态导入模块的静态依赖 | 由实际引用和全局语义决定；除只在 `native` 生效的 app-prelude vendor 分组规则外，不额外固定 chunk 名称与优先级 |
 
-用户在 `build.rolldownOptions.transform.inject` 中提供的同名映射优先于 `native` 框架默认值。自由标识符覆盖会同步到对应的 `globalThis.<target>`、`window.<target>` 等点号注入键；用户显式提供的 dotted 覆盖优先，仍走桥接的访问也遵循该顺序。`native` 不生成 axios 环境 chunk 或 `__wvAXFE__` bundle patch。
+用户在 `build.rolldownOptions.transform.inject` 中提供的同名映射优先于 `native` 框架默认值。自由标识符覆盖会同步到对应的 `globalThis.<target>`、`window.<target>` 等点号注入键；用户显式提供的 dotted 覆盖优先，仍走桥接的访问也遵循该顺序。桥接对四类全局对象的显式 dotted 覆盖按 `globalThis` → `global` → `self` → `window` → 裸标识符解析，并统一安装到 `globalThis`。`native` 不生成 axios 环境 chunk 或 `__wvAXFE__` bundle patch。
 
 ## 常见配置
 

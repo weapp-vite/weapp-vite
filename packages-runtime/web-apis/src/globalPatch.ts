@@ -65,6 +65,22 @@ export function hasUsableTextDecoderConstructor(value: unknown): value is typeof
   }
 }
 
+/** TextDecoderStream 的能力在实例的 readable/writable 上，必须构造后探测而不是检查构造器原型。 */
+export function hasUsableTextDecoderStreamConstructor(value: unknown) {
+  if (!hasUsableConstructor(value, ['utf-8'])) {
+    return false
+  }
+  try {
+    const stream = new (value as typeof globalThis.TextDecoderStream)('utf-8')
+    const readable = (stream as { readable?: { getReader?: unknown } }).readable
+    const writable = (stream as { writable?: { getWriter?: unknown } }).writable
+    return typeof readable?.getReader === 'function' && typeof writable?.getWriter === 'function'
+  }
+  catch {
+    return false
+  }
+}
+
 function createUrlParser(URLConstructor: typeof URL) {
   return function parse(input: string | URL, base?: string | URL) {
     try {
