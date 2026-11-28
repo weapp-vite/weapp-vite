@@ -12,7 +12,7 @@ keywords:
 
 # Web Runtime 全局对象注入
 
-`weapp.appPrelude.webRuntime` 为 Web Runtime 兼容对象提供注入能力。原有 `inline`、`entry`、`require` 模式会把兼容对象安装到小程序全局环境；显式设置 `weapp.appPrelude.mode: 'native'` 后，自由标识符和 `globalThis.<target>` 等全局对象点号访问通过 Rolldown 的原生 `transform.inject` 精确导入，只有不可点号注入的显式全局语义才写入对应的 `globalThis` 目标。
+`weapp.appPrelude.webRuntime` 为 Web Runtime 兼容对象提供注入能力。原有 `inline`、`entry`、`require` 模式会把兼容对象安装到小程序全局环境；显式设置 `weapp.appPrelude.mode: 'native'` 后，自由标识符和普通 `globalThis.<target>` 点号访问通过 Rolldown 的原生 `transform.inject` 精确导入，可选链点号访问由目标桥接兜底；只有不可点号注入的显式全局语义才写入对应的 `globalThis` 目标。
 
 它关注的是“第三方依赖运行环境假设”：有些依赖会在模块初始化阶段直接读取 `fetch`、`XMLHttpRequest`、`URL`、`AbortController` 这类自由变量，小程序宿主默认不一定提供这些对象。
 
@@ -45,7 +45,7 @@ keywords:
 - `TextDecoderStream`
 - `EventSource`
 
-启用后，旧模式会安装 Web Runtime 提供的兼容对象。`native` 模式为 `fetch`、`XMLHttpRequest`、`URL` 等自由标识符，以及 `globalThis.fetch()` 等全局对象点号访问生成模块级绑定；只有 `globalThis['fetch']` 等不可点号注入的访问才生成目标级桥接。这样第三方库在模块初始化阶段读取能力时也能获得正确实现，同时避免无关全局污染。
+启用后，旧模式会安装 Web Runtime 提供的兼容对象。`native` 模式为 `fetch`、`XMLHttpRequest`、`URL` 等自由标识符，以及 `globalThis.fetch()` 等普通全局对象点号访问生成模块级绑定；`globalThis?.fetch()` 等可选链点号访问由目标桥接兜底；只有 `globalThis['fetch']` 等不可点号注入的访问才生成目标级桥接。这样第三方库在模块初始化阶段读取能力时也能获得正确实现，同时避免无关全局污染。
 
 ```ts
 import { defineConfig } from 'weapp-vite/config'
@@ -91,7 +91,7 @@ export default defineConfig({
 | 使用方式 | 处理 | 全局写入 |
 | --- | --- | --- |
 | 自由标识符 | Rolldown `transform.inject` 精确绑定 | 无 |
-| 全局对象点号访问 | Rolldown `transform.inject` 按固定 dotted 键精确绑定 | 无 |
+| 全局对象点号访问 | 普通点号由 Rolldown `transform.inject` 精确绑定；可选链点号由目标桥接兜底 | 无 |
 | 不可点号注入的显式全局访问 | 静态依赖目标级桥接 | 仅涉及目标 |
 | `globalTargets` | 在相关入口静态依赖目标级桥接 | 仅声明目标 |
 

@@ -68,12 +68,14 @@ describe('injectRequestGlobals helpers', () => {
 
   it.each([
     ['globalThis.fetch', []],
-    ['globalThis?.fetch', []],
+    ['globalThis?.fetch', ['fetch']],
     ['globalThis[\'Request\']', ['Request']],
     ['globalThis?.[\'Request\']', ['Request']],
-    ['globalThis?.Response', []],
+    ['globalThis?.Response', ['Response']],
     ['self.fetch; window.URL; global.FormData', []],
+    ['self?.fetch; window?.URL; global?.FormData', ['fetch', 'URL', 'FormData']],
     ['const host = globalThis; host.fetch', ['fetch']],
+    ['const host = globalThis; host?.fetch', ['fetch']],
     ['const { fetch, URL: url } = globalThis', ['fetch', 'URL']],
     ['const { fetch } = globalThis; const fetchLocal = () => fetch', ['fetch']],
     ['function run(globalThis) { return globalThis.fetch }', []],

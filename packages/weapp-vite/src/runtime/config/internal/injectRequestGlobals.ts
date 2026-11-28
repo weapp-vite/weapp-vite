@@ -578,8 +578,9 @@ export function resolveNativeGlobalTargets(code: string, allowedTargets: readonl
       return
     }
     if (!node.computed && node.property?.type === 'Identifier') {
-      // 直接全局对象的点号访问由 transform.inject 精确改写；别名无法按固定键注入，仍需桥接。
-      if (!globalAliases.has(objectName)) {
+      // 直接全局对象的普通点号访问由 transform.inject 精确改写；可选链不在其覆盖范围，
+      // 别名无法按固定键注入，因此这两种形式仍需桥接。
+      if (!globalAliases.has(objectName) && node.type !== 'OptionalMemberExpression') {
         return
       }
       addPropertyTarget(node.property)

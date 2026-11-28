@@ -2,7 +2,7 @@
 
 `weapp.appPrelude.mode: 'native'` 是 Web Runtime 全局对象注入的第四种模式，思路取自 babel-plugin-polyfill-corejs3，把它的 `usage-pure` 与 `usage-global` 合进一个模式：
 
-- **自由标识符与点号全局访问（usage-pure）**：源码里裸用的 `fetch`、`URL`，以及 `globalThis.fetch`、`window?.URL` 等全局对象点号访问，由 Rolldown 原生 `transform.inject` 在构建期精确绑定到对应实现模块，按需导入、不写全局、可被 tree-shake；局部同名遮蔽仍由 Rolldown 保留。
+- **自由标识符与点号全局访问（usage-pure）**：源码里裸用的 `fetch`、`URL`，以及 `globalThis.fetch` 等普通全局对象点号访问，由 Rolldown 原生 `transform.inject` 在构建期精确绑定到对应实现模块，按需导入、不写全局、可被 tree-shake；`globalThis?.fetch`、`window?.URL` 等可选链点号访问不在 inject 覆盖范围，由同一目标桥接兜底。局部同名遮蔽仍由 Rolldown 保留。
 - **不可点号注入的显式全局语义（usage-global）**：`globalThis['fetch']` 等字符串计算属性、全局解构与 `const host = globalThis; host.fetch` 别名，按目标生成幂等桥接模块。桥接保留完整宿主实现，替换缺失、占位或上一轮 native 安装的值，并对已知不完整能力按目标修补。
 - **静态盲区**：无法静态推断的动态 key 或间接访问用 `globalTargets` 显式声明，由根入口静态依赖桥接在启动期精确安装。
 
@@ -55,7 +55,7 @@
 
 - 当前基线：已 rebase 到上游 `main` `ec17eeb0c`，Vite 8.4.0、Rolldown 1.3.4（与上游锁文件一致）。
 - `pnpm --filter weapp-vite typecheck`：0 错误；`test:types`（17 组 tsd）：通过。`@wevu/web-apis` 与 `@weapp-core/shared` 的 typecheck、`test:types`：通过。
-- 定向单测：native delete guard、注入计划（含 published runtime 启动）、`emit/requestGlobals/**`、上游 `emit.more` 自动模式 eager 识别、内置子路径别名与 package resolution、Web API 能力修补、nativeSize tree-shaking，共 11 文件 / 198 例通过；web-apis 2 文件 / 15 例通过；shared 平台键回归通过。ES5 minify 产物单独核对：`globalThis.fetch/Request/Response` 均存在、桥接文件无 ES2015 语法。
+- 定向单测：native delete guard、注入计划（含 published runtime 启动）、`emit/requestGlobals/**`、上游 `emit.more` 自动模式 eager 识别、内置子路径别名与 package resolution、Web API 能力修补、nativeSize tree-shaking，共 12 文件 / 268 例通过；web-apis 2 文件 / 15 例通过；shared 平台键回归通过。ES5 minify 产物单独核对：`globalThis.fetch/Request/Response` 均存在、桥接文件无 ES2015 语法。
 - 构建产物（直连 CLI 构建 `e2e-apps/app-prelude-native` fixture 核对）：精确安装 13 个全局目标（`globalTargets` 的 fetch/Request/Response + 依赖展开 + 源码显式 `globalThis` 引用），未声明未引用的 `XMLHttpRequest`/`WebSocket`/`EventSource` 全程模块内、无全局写入；无额外强制 vendor；自定义 App Prelude 独立成 `weapp-vendors/web-runtime-app-prelude.js` 且含 `runAppPrelude`，根入口依赖它、它不反向依赖入口，独立分包自包含不跨包引用主包 vendor。ES5+压缩变体含全局写入的产物无 `=>`/`const`/`let`、无 `Reflect.get/set`；全产物无 `installWebRuntime|axiosEnv|eagerBindings|__wvAXFE__`。
 - 体积（同一 fixture）：`require` 918,884 / 744,175 B（12 文件）；native 精确 840,582 / 660,119 B（11 文件）。
 - `e2e/ci` 构建契约锁定精确语义（独立 app-prelude vendor 用例 + 精确桥接 ES5 用例），上述直连构建即按其断言逐项核对；本机正式 vitest 套件仍受跨 worktree 机器租约阻塞，当前 head 的 PR CI 已启动并在跟进。
