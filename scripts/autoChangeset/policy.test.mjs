@@ -15,11 +15,13 @@ describe('weapp-vite policy through the public repoctl engine', () => {
     expect(names(await plan({ files: ['mpcore/packages/test/src/index.ts'] }))).toEqual(['@mpcore/test'])
   })
 
-  it('releases published skill content but not contributor-only guidance', async () => {
-    expect(names(await plan({ files: ['skills/wevu-best-practices/references/store-patterns.md'] }))).toEqual(['create-weapp-vite', 'wevu'])
-    expect(names(await plan({ files: ['skills/wevu-json-render-best-practices/references/components-and-resolver.md'] }))).toEqual(['@wevu/json-render'])
-    expect(names(await plan({ files: ['skills/wevu-a2ui-best-practices/references/host-rendering.md'] }))).toEqual(['@wevu/a2ui'])
-    expect(names(await plan({ files: ['skills/distribution.json'] })).sort()).toEqual(['@wevu/a2ui', '@wevu/json-render', '@weapp-vite/react', 'create-weapp-vite', 'weapp-vite', 'wevu'].sort())
+  it('releases package-local skill content but not repository-only guidance or shared tooling', async () => {
+    expect(names(await plan({ files: ['packages-runtime/wevu/skills/wevu-best-practices/references/store-patterns.md'] }))).toEqual(['create-weapp-vite', 'wevu'])
+    expect(names(await plan({ files: ['packages/weapp-vite/skills/weapp-vite-best-practices/SKILL.md'] }))).toEqual(['create-weapp-vite', 'weapp-vite'])
+    expect(names(await plan({ files: ['packages-runtime/react/skills/weapp-vite-react-best-practices/SKILL.md'] }))).toEqual(['@weapp-vite/react'])
+    expect(names(await plan({ files: ['packages-runtime/json-render/skills/wevu-json-render-best-practices/references/components-and-resolver.md'] }))).toEqual(['@wevu/json-render'])
+    expect(names(await plan({ files: ['packages-runtime/a2ui/skills/wevu-a2ui-best-practices/references/host-rendering.md'] }))).toEqual(['@wevu/a2ui'])
+    expect(names(await plan({ files: ['skills/scripts/package-skills.mjs'] }))).toEqual([])
     expect(names(await plan({ files: ['skills/release-and-changeset-best-practices/SKILL.md'] }))).toEqual([])
   })
 

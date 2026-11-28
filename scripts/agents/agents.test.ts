@@ -1,3 +1,7 @@
+import { execFile } from 'node:child_process'
+import path from 'node:path'
+import process from 'node:process'
+import { promisify } from 'node:util'
 import { describe, expect, it } from 'vitest'
 import { generatedAgentGuidelines } from '../../packages/create-weapp-vite/src/generated/agents'
 import { recommendedSkillsInstallation } from '../../packages/create-weapp-vite/src/skills'
@@ -7,6 +11,19 @@ import { AGENTS_GENERATED_MARKER, renderAgentDocument } from './render'
 import { AgentManifestError, resolveLayer, validateManifest } from './resolve'
 
 describe('agent manifest', () => {
+  it('executes the CLI entrypoint through native Node file URLs', async () => {
+    const root = path.resolve(import.meta.dirname, '../..')
+    const { stdout } = await promisify(execFile)(process.execPath, [
+      '--import',
+      'tsx',
+      'scripts/agents/cli.ts',
+      '--target',
+      'AGENTS.md',
+      '--check',
+    ], { cwd: root })
+    expect(stdout.trim()).toBe('[agents] checked 1 file(s)')
+  })
+
   it('validates the repository manifest and resolves every layer', () => {
     expect(validateManifest(agentManifest).issues).toEqual([])
     expect(resolveLayer(agentManifest, 'root').map(section => section.id)).toContain('root.testing')

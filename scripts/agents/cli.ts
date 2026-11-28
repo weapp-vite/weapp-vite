@@ -1,6 +1,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import process from 'node:process'
+import { pathToFileURL } from 'node:url'
 import { discoverAgentFiles } from './discover'
 import { agentManifest } from './manifest'
 import { renderAgentDocument } from './render'
@@ -121,7 +122,7 @@ export function runAgentsCommand(argv = process.argv.slice(2)) {
     : `[agents] checked ${files.length} file(s)`)
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (import.meta.url === pathToFileURL(process.argv[1]).href) {
   try {
     runAgentsCommand()
   }

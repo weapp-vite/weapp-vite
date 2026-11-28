@@ -5,6 +5,7 @@ import os from 'node:os'
 import path from 'node:path'
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
+import { discoverPublicSkillSources } from '../skills/scripts/package-skills.mjs'
 
 const dryRun = process.argv.includes('--dry-run')
 
@@ -39,38 +40,33 @@ function readSkillNamesFrom(dirPath) {
     .sort()
 }
 
-function collectProjectSkills() {
-  const sources = [
-    {
-      source: 'skills',
-      dir: projectSkillsDir,
-      names: readSkillNamesFrom(projectSkillsDir),
-    },
-    {
+async function collectProjectSkills() {
+  const discovered = await discoverPublicSkillSources(repoRoot)
+  const candidates = [
+    ...discovered.map(source => ({
+      name: source.name,
+      source: source.directory,
+      path: path.join(repoRoot, source.directory),
+    })),
+    ...readSkillNamesFrom(projectClaudeSkillsDir).map(name => ({
+      name,
       source: '.claude/skills',
-      dir: projectClaudeSkillsDir,
-      names: readSkillNamesFrom(projectClaudeSkillsDir),
-    },
+      path: path.join(projectClaudeSkillsDir, name),
+    })),
   ]
 
   /** @type {Array<{ name: string, source: string, path: string }>} */
   const skills = []
   const seen = new Set()
 
-  for (const source of sources) {
-    for (const name of source.names) {
-      if (seen.has(name)) {
-        console.log(`[skip] duplicate skill name "${name}" in ${source.source}`)
-        continue
-      }
-
-      seen.add(name)
-      skills.push({
-        name,
-        source: source.source,
-        path: path.join(source.dir, name),
-      })
+  for (const source of candidates) {
+    if (seen.has(source.name)) {
+      console.log(`[skip] duplicate skill name "${source.name}" in ${source.source}`)
+      continue
     }
+
+    seen.add(source.name)
+    skills.push(source)
   }
 
   return skills
@@ -124,7 +120,7 @@ function toRelativeTarget(baseDir, targetPath) {
   return rel || '.'
 }
 
-const skills = collectProjectSkills()
+const skills = await collectProjectSkills()
 
 if (skills.length === 0) {
   console.log(`No project skills found in ${projectSkillsDir} or ${projectClaudeSkillsDir}`)

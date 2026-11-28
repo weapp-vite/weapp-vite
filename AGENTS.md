@@ -158,19 +158,19 @@ Avoid cross-package edits unless the change is truly shared.
 
 ## 7. Project Skills (Codex + Claude Code)
 
-- Skill source lives in `skills/*`. This index includes consumer, optional and contributor workflows, not a default installation list:
-  - `weapp-vite-best-practices`
+- Repository-owned skill sources live in `skills/*`. This index includes contributor workflows, not a default installation list:
   - `weapp-acceptance`
   - `docs-and-website-sync`
   - `release-and-changeset-best-practices`
   - `weapp-devtools-e2e-best-practices`
-  - `weapp-vite-vue-sfc-best-practices`
-  - `weapp-vite-react-best-practices`
-  - `wevu-best-practices`
-  - `wevu-json-render-best-practices`
-  - `wevu-a2ui-best-practices`
   - `native-to-weapp-vite-wevu-migration`
-- `skills/distribution.json` selects package-owned consumer skills for `weapp-vite`, `wevu`, `@weapp-vite/react`, `@wevu/json-render` and `@wevu/a2ui`, published at `skills/<name>/SKILL.md`.
+- Package-owned consumer skills are committed directly in their owner package and published from the same `skills/<name>/` tree:
+  - `packages/weapp-vite/skills/`: `weapp-vite-best-practices`, `weapp-vite-vue-sfc-best-practices`
+  - `packages-runtime/wevu/skills/`: `wevu-best-practices`
+  - `packages-runtime/react/skills/`: `weapp-vite-react-best-practices`
+  - `packages-runtime/json-render/skills/`: `wevu-json-render-best-practices`
+  - `packages-runtime/a2ui/skills/`: `wevu-a2ui-best-practices`
+- `skills/scripts/package-skills.mjs` discovers workspace package sources and root contributor sources. There is no root distribution registry, build-time copy, prepack generation, or generated package skill directory.
 
 ### Consumer projects
 
@@ -180,7 +180,7 @@ Avoid cross-package edits unless the change is truly shared.
 ### Repository contributors
 
 - This repo may also include project-specific Claude skills under `.claude/skills/*` (for example `playwright-cli`).
-- `pnpm skills:link` will sync both `skills/*` and `.claude/skills/*` into local Codex/Claude skill directories.
+- `pnpm skills:link` will sync repository-owned `skills/*`, package-local consumer skills, and `.claude/skills/*` into local Codex/Claude skill directories.
 - Internal maintainer skills are under `maintainers/skills/*`; do not expose them in user guidance.
 - For local development and direct use of this checkout's skills in Codex and Claude Code (no global package install), run:
   - `pnpm skills:link`

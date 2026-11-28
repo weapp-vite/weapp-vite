@@ -37,7 +37,7 @@ npx --yes skills add sonofmagic/skills --skill weapp-vite-best-practices weapp-v
 
 ## 随依赖安装
 
-pnpm 从 12.11.0 支持随直接依赖安装 skills，让技能内容跟随依赖版本更新。手动安装和随依赖安装使用同一份技能正文，但手动安装的版本由原安装器管理。
+pnpm 从 12.11.0 支持随直接依赖安装 skills，让技能内容跟随依赖版本更新。手动安装和随依赖安装覆盖相同能力，但两条路径分别由原安装器和 pnpm 管理版本。
 
 | 直接依赖包 | 随包 skills |
 | --- | --- |
@@ -105,15 +105,20 @@ pnpm approve
 
 | 入口                                                | 需要同步的内容                                |
 | --------------------------------------------------- | --------------------------------------------- |
-| `skills/<name>/SKILL.md`                            | skill 正文、触发场景、输出要求                |
-| `skills/<name>/agents/openai.yaml`                  | display name、short description、隐式触发提示 |
-| `skills/distribution.json`                         | 唯一消费包 owner，以及不随消费包发布的按需/贡献者分类               |
+| `skills/<name>/SKILL.md`                            | 仓库 contributor skill 正文、触发场景、输出要求 |
+| `<owner-package>/skills/<name>/SKILL.md`            | 包专属 skill 的唯一源、触发场景与输出要求       |
+| `<owner-package>/skills/<name>/agents/openai.yaml`  | 包专属 skill 的 display name、简短描述与触发提示 |
+| `skills/<name>/agents/openai.yaml`                  | 仓库 contributor skill 的元数据与触发提示        |
+| `<owner-package>/package.json`                      | 发布包的 `files` 必须包含 `skills`               |
+| `skills/scripts/package-skills.mjs`                 | workspace 包与两类技能源的发现规则               |
 | `skills/skill-trigger-regression-checklist.md`      | 主用例、边界用例、冲突场景                    |
 | `skills/scripts/score-skill-trigger-regression.mjs` | 预期 skill 映射与统计分组                     |
 | `skills/scripts/check-public-skill-sync.mjs`        | 公开目录、元数据、评分映射与入口一致性检查    |
 | `website/guide/skills.md`                           | 对外索引、任务路由和关联文档                  |
 | `website/guide/ai.md` 与 `/ai` 页面                 | 安装方式和公开 skill 清单                     |
 | `CLAUDE.md` / 脚手架 `AGENTS.md` 模板               | AI 客户端可见的默认清单                       |
+
+包专属技能直接提交并随 owner 包发布，不在根目录维护副本，也不通过构建或 prepack 生成。修改包内技能后，发布归属按包路径自然确定。
 
 完成后至少运行：
 

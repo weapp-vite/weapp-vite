@@ -33,31 +33,6 @@
         "dist/**"
       ]
     },
-    "weapp-vite#build": {
-      "dependsOn": ["^build"],
-      "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/skills/distribution.json", "$TURBO_ROOT$/skills/scripts/distribution.mjs", "$TURBO_ROOT$/skills/scripts/sync-package-skills.mjs", "$TURBO_ROOT$/skills/weapp-vite-best-practices/**", "$TURBO_ROOT$/skills/weapp-vite-vue-sfc-best-practices/**"],
-      "outputs": ["dist/**", "skills/**"]
-    },
-    "wevu#build": {
-      "dependsOn": ["^build"],
-      "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/skills/distribution.json", "$TURBO_ROOT$/skills/scripts/distribution.mjs", "$TURBO_ROOT$/skills/scripts/sync-package-skills.mjs", "$TURBO_ROOT$/skills/wevu-best-practices/**"],
-      "outputs": ["dist/**", "skills/**"]
-    },
-    "@weapp-vite/react#build": {
-      "dependsOn": ["^build"],
-      "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/skills/distribution.json", "$TURBO_ROOT$/skills/scripts/distribution.mjs", "$TURBO_ROOT$/skills/scripts/sync-package-skills.mjs", "$TURBO_ROOT$/skills/weapp-vite-react-best-practices/**"],
-      "outputs": ["dist/**", "skills/**"]
-    },
-    "@wevu/json-render#build": {
-      "dependsOn": ["^build"],
-      "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/skills/distribution.json", "$TURBO_ROOT$/skills/scripts/distribution.mjs", "$TURBO_ROOT$/skills/scripts/sync-package-skills.mjs", "$TURBO_ROOT$/skills/wevu-json-render-best-practices/**"],
-      "outputs": ["dist/**", "skills/**"]
-    },
-    "@wevu/a2ui#build": {
-      "dependsOn": ["^build"],
-      "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/skills/distribution.json", "$TURBO_ROOT$/skills/scripts/distribution.mjs", "$TURBO_ROOT$/skills/scripts/sync-package-skills.mjs", "$TURBO_ROOT$/skills/wevu-a2ui-best-practices/**"],
-      "outputs": ["dist/**", "skills/**"]
-    },
     "lint": {
       "dependsOn": [
         "^lint"

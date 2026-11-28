@@ -5,6 +5,7 @@ import path from 'node:path'
 import process from 'node:process'
 import fg from 'fast-glob'
 import YAML from 'yaml'
+import { discoverPackageSkills } from './package-skills.mjs'
 
 const SKILLS_YAML_GLOB = 'skills/**/*.{yaml,yml}'
 
@@ -21,13 +22,20 @@ function formatYamlError(error, filePath) {
 }
 
 async function resolveTargetFiles(argv) {
+  const packageSkills = await discoverPackageSkills()
+  const packageSkillDirectories = packageSkills.flatMap(pkg => pkg.skills.map(name => `${pkg.directory}/skills/${name}`))
+  const isSkillFile = file => file.startsWith('skills/') || packageSkillDirectories.some(directory => file.startsWith(`${directory}/`))
   if (argv.length > 0) {
     return argv
+      .map(file => file.replaceAll('\\', '/'))
       .filter(file => file.endsWith('.yaml') || file.endsWith('.yml'))
-      .filter(file => file.startsWith('skills/'))
+      .filter(isSkillFile)
   }
 
-  return fg(SKILLS_YAML_GLOB, {
+  return fg([
+    SKILLS_YAML_GLOB,
+    ...packageSkillDirectories.map(directory => `${directory}/**/*.{yaml,yml}`),
+  ], {
     cwd: process.cwd(),
     absolute: false,
     onlyFiles: true,

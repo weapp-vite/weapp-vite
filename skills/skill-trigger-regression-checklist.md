@@ -31,8 +31,10 @@
 
 | 位置                                                | 需要同步的内容                                      |
 | --------------------------------------------------- | --------------------------------------------------- |
-| `skills/*/SKILL.md`                                 | 公开 skill 的真实列表与触发场景                     |
-| `skills/*/agents/openai.yaml`                       | 隐式触发提示与简短描述                              |
+| `skills/*/SKILL.md`                                 | 仓库 contributor skill 的正文与触发场景             |
+| `<owner-package>/skills/*/SKILL.md`                 | 包专属 skill 的唯一源、正文与触发场景               |
+| `<owner-package>/skills/*/agents/openai.yaml`       | 包专属 skill 的隐式触发提示与简短描述               |
+| `skills/*/agents/openai.yaml`                       | 仓库 contributor skill 的隐式触发提示与简短描述      |
 | `skills/skill-trigger-regression-checklist.md`      | 用例清单、边界用例、冲突场景和记录模板              |
 | `skills/scripts/score-skill-trigger-regression.mjs` | `EXPECTED_BY_ID`、`MAIN_SKILL_CASES`、边界/冲突集合 |
 | `website/guide/skills.md`                           | 对外 skill 索引与任务路由                           |
@@ -42,7 +44,7 @@
 快速核对当前公开 skill：
 
 ```bash
-find skills -maxdepth 2 -name SKILL.md | sort
+pnpm skills:check
 ```
 
 ## 半自动打分

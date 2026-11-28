@@ -6,7 +6,6 @@ import { pathToFileURL } from 'node:url'
 /* eslint-disable e18e/ban-dependencies -- release guard scans workspace package manifests with fast-glob, consistent with existing repository checks. */
 import fg from 'fast-glob'
 import { validateReleasePreparation } from 'repoctl'
-import { skillPackagesForFile } from '../skills/scripts/distribution.mjs'
 import { collectChangesetPackages } from './changeset-utils'
 
 const CONSTANTS_PACKAGE_NAME = '@weapp-core/constants'
@@ -294,7 +293,7 @@ export function collectPublishableWorkspaceChangesetIssues(options: {
   changesetPackages: Set<string>
 }) {
   const changedPackageNames = options.packages
-    .filter(pkg => options.changedFiles.some(file => isReleaseWorthyWorkspaceFile(file, pkg.dir) || skillPackagesForFile(file).includes(pkg.name)))
+    .filter(pkg => options.changedFiles.some(file => isReleaseWorthyWorkspaceFile(file, pkg.dir)))
     .map(pkg => pkg.name)
     .sort()
 

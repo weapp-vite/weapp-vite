@@ -23,6 +23,8 @@
 - `docs/integration/react.md`
 - `website/guide/multi-platform.md`
 - `skills/*/SKILL.md`
+- `packages/*/skills/*/SKILL.md`
+- `packages-runtime/*/skills/*/SKILL.md`
 
 ## 再查受影响的公开入口
 
@@ -53,7 +55,8 @@
 
 ### 新增或调整 skill
 
-- 核对 `SKILL.md`、`agents/openai.yaml` 和分发配置与实际安装结果。
+- 核对 `SKILL.md`、`agents/openai.yaml`、owner 包的 `files: ["skills"]` 发布声明与实际 tarball。
+- 包专属 skill 只维护包内唯一源；新增、删除或迁移时运行 `pnpm skills:check` 和 `node skills/scripts/verify-package-skills.mjs`，不要恢复根副本或生成脚本。
 - 安装或触发契约变化时更新技能入口、触发回归清单和 `skills/scripts/score-skill-trigger-regression.mjs`。
 - 检查网站、`AGENTS.md`、`CLAUDE.md` 与脚手架是否引用了变更的名称或链接，按需更新。
 

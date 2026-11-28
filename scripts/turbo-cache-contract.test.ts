@@ -74,6 +74,16 @@ describe('Turbo release cache contract', () => {
     }
   }, 60_000)
 
+  it('treats committed package skills as build inputs rather than generated outputs', async () => {
+    const project = await fixture()
+    const relative = 'packages/library/skills/example/SKILL.md'
+    await project.write(relative, '# Package guidance\n')
+    const baseline = await project.plan('build')
+    expect(baseline.resolvedTaskDefinition.outputs).toEqual(['dist/**'])
+    await project.write(relative, '# Updated package guidance\n')
+    expect((await project.plan('build')).hash).not.toBe(baseline.hash)
+  }, 60_000)
+
   it('invalidates cached tasks for shared configuration and the actual toolchain identity', async () => {
     const project = await fixture()
     const baseline = await project.plan('build')

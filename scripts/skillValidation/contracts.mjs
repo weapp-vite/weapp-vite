@@ -71,7 +71,7 @@ function uniqueId(value, seen) {
   return true
 }
 
-/** 校验四个消费技能的独立项目输入；包与技能归属来自 distribution.packages。 */
+/** 校验包消费技能的独立项目输入；包与技能归属来自包内 SKILL.md 的发现结果。 */
 export function validateCaseCatalog(catalog, distributionPackages) {
   const issues = []
   const add = (code, path) => issues.push({ code, path })

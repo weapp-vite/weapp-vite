@@ -26,6 +26,11 @@ it('retains only applicable generated document and public skill contracts', () =
   expect(requiredDocumentContracts(['CLAUDE.md'])).toEqual(['skills'])
   expect(requiredDocumentContracts(['packages/weapp-vite/AGENTS.md', 'scripts/agents/content/root-intro.md'])).toEqual(['agents'])
   expect(requiredDocumentContracts(['skills/example/SKILL.md', 'skills/scripts/check-public-skill-sync.mjs'])).toEqual(['skills'])
+  expect(requiredDocumentContracts([
+    'packages/weapp-vite/skills/weapp-vite-best-practices/SKILL.md',
+    'packages-runtime/wevu/skills/wevu-best-practices/agents/openai.yaml',
+    'packages-runtime/json-render/skills/wevu-json-render-best-practices/references/components-and-resolver.md',
+  ])).toEqual(['skills'])
   expect(requiredDocumentContracts(['packages/create-weapp-vite/src/generated/agents.ts'])).toEqual(['agents'])
   expect(requiredDocumentContracts(['website/guide/skills.md'])).toEqual(['skills'])
 })

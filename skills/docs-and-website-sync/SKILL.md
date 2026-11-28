@@ -56,6 +56,8 @@ description: 面向 weapp-vite monorepo 的文档、website 与公开 skills 同
    - `packages/create-weapp-vite/src/agents.ts`
    - `packages/create-weapp-vite/src/skills.ts`
    - `skills/*/SKILL.md`
+   - `packages/*/skills/*/SKILL.md`
+   - `packages-runtime/*/skills/*/SKILL.md`
 2. 确定现有正文归属。官网负责完整公开用法，README 保留入口和最小示例。随包文档维护清单内的版本化离线说明，`AGENTS.md` 与 skills 分别维护执行约束和操作流程。按读者和发布形态核对入口：
    - 配置变化：`website/config/**`
    - CLI / AI / MCP：`website/guide/**`、`website/packages/**`、`website/.vitepress/components/AiLearningPage.vue`、`packages/weapp-vite/README.md`
@@ -79,9 +81,9 @@ description: 面向 weapp-vite monorepo 的文档、website 与公开 skills 同
    - `website/public/seo-quality-report.json`
 5. skill 新增、删除或合并时，核对[同步清单](references/docs-sync-checklist.md)。仅更新受影响的分发、导航、引用和触发契约。
 6. 按最小范围验证：
-   - `pnpm exec eslint --no-warn-ignored skills/*/SKILL.md`
+   - 涉及 skill 正文、元数据或分发时运行 `pnpm skills:check`
    - 涉及 `website/**` 时跑 `pnpm --filter website-weapp-vite build`
-   - 涉及 skill 触发/评分时再跑 `pnpm skills:check:yaml`、`pnpm skills:score:json`
+   - 涉及 skill 触发/评分时再跑 `pnpm skills:score:json`
 
 ## 能力主题映射
 

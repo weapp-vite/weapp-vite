@@ -8,6 +8,7 @@ export const DOCUMENT_CONTRACTS = {
   skills: 'skills:check',
 }
 
+const PACKAGE_SKILL_PATH = /^(?:apps|packages|packages-private|packages-runtime|e2e-apps|templates|benchmarks|mpcore\/(?:packages|demos)|@weapp-core|extensions)\/[^/]+\/skills\//u
 const PUBLIC_SKILL_CONTRACT_FILES = new Set([
   'AGENTS.md',
   'CLAUDE.md',
@@ -27,7 +28,7 @@ export function requiredDocumentContracts(files) {
       || file === 'packages/create-weapp-vite/src/generated/agents.ts') {
       checks.add('agents')
     }
-    if (PUBLIC_SKILL_CONTRACT_FILES.has(file) || file.startsWith('skills/')
+    if (PUBLIC_SKILL_CONTRACT_FILES.has(file) || file.startsWith('skills/') || PACKAGE_SKILL_PATH.test(file)
       || file.startsWith('maintainers/skillValidation/') || file.startsWith('scripts/skillValidation/')) {
       checks.add('skills')
     }
