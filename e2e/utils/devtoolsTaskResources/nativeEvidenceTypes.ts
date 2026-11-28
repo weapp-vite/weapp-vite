@@ -36,6 +36,15 @@ export interface VerifiedPostAnchorForeignProcess {
   semantics: 'closure-ownership-only; no-preparation-or-closure-rss-counted'
 }
 
+export interface VerifiedPlatformDaemonProcess {
+  process: ProcessIdentityGapObservation
+  proof: 'stable-closure-platform-daemon-with-denied-resource-reads'
+  phases: Array<'closure1' | 'closure2'>
+  image: NativeImageEvidence
+  deniedReads: 'task-rss-and-birth'
+  semantics: 'closure-ownership-only; no-preparation-or-closure-rss-counted'
+}
+
 export interface VerifiedAnchorForeignProcess {
   process: ProcessIdentityGapObservation
   proof: 'complete-anchor-foreign-brackets-after-preparation'

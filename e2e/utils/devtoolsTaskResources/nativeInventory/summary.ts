@@ -11,6 +11,7 @@ import { verifiedForeignCredentialProcesses } from './foreignCredentials'
 import { verifiedForeignImageTransitions } from './foreignImageTransitions'
 import { verifiedForeignNativeExecs } from './foreignNativeExecs'
 import { insideInstallation, metadata, sameNativeIdentity } from './model'
+import { verifiedPlatformDaemonProcesses } from './platformDaemons'
 import { verifiedPostAnchorForeignProcesses } from './postAnchorForeign'
 import { verifiedTerminalProcesses } from './terminalProcesses'
 
@@ -36,9 +37,10 @@ export function summarizeNativeInventory(options: SummaryOptions): InstallationP
   const foreignCredentials = verifiedForeignCredentialProcesses(inventory, installationRoot, proveForeignBrackets)
   const foreignNativeExecs = verifiedForeignNativeExecs(inventory, installationRoot)
   const postAnchorForeign = verifiedPostAnchorForeignProcesses(inventory, installationRoot)
+  const platformDaemons = verifiedPlatformDaemonProcesses(inventory, installationRoot)
   const anchorForeign = verifiedAnchorForeignProcesses(inventory, installationRoot)
   const mainBracketForeignProcesses = new Set([...anchorForeign, ...foreignCredentials].map(proof => proof.process.pid))
-  const verifiedForeignProcesses = new Set([...foreignTransitions, ...foreignNativeExecs, ...postAnchorForeign, ...anchorForeign, ...foreignCredentials].map(proof => proof.process.pid))
+  const verifiedForeignProcesses = new Set([...foreignTransitions, ...foreignNativeExecs, ...postAnchorForeign, ...platformDaemons, ...anchorForeign, ...foreignCredentials].map(proof => proof.process.pid))
   const terminalProofs = [...verifiedTerminalProcesses(inventory, installationRoot), ...verifiedAnchorExits(inventory, installationRoot), ...verifiedAnchorTerminals(inventory, installationRoot)]
   const terminalProcesses = new Set(terminalProofs.map(proof => proof.process.pid))
   const preAnchorExited = new Set<number>()
@@ -128,6 +130,8 @@ export function summarizeNativeInventory(options: SummaryOptions): InstallationP
     verifiedForeignNativeExecs: foreignNativeExecs,
     verifiedPostAnchorForeignProcessCount: postAnchorForeign.length,
     verifiedPostAnchorForeignProcesses: postAnchorForeign,
+    verifiedPlatformDaemonProcessCount: platformDaemons.length,
+    verifiedPlatformDaemonProcesses: platformDaemons,
     verifiedAnchorForeignProcessCount: anchorForeign.length,
     verifiedAnchorForeignProcesses: anchorForeign,
     verifiedForeignCredentialProcessCount: foreignCredentials.length,
