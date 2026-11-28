@@ -53,12 +53,12 @@
 
 ## 验证
 
-- 当前基线：Vite 8.3.5、Rolldown 1.2.16（按 PR 分支锁文件）。
+- 当前基线：已 rebase 到上游 `main` `ec17eeb0c`，Vite 8.4.0、Rolldown 1.3.4（与上游锁文件一致）。
 - `pnpm --filter weapp-vite typecheck`：0 错误；`test:types`（17 组 tsd）：通过。`@wevu/web-apis` 与 `@weapp-core/shared` 的 typecheck、`test:types`：通过。
-- 定向单测：native delete guard、注入计划（含 published runtime 启动）、`emit/requestGlobals/**`、内置子路径别名与 package resolution、Web API 能力修补、nativeSize tree-shaking，共 6 文件 / 104 例通过；别名与 package resolution 5 文件 / 52 例通过；web-apis 2 文件 / 15 例通过；shared 平台键回归通过。ES5 minify 产物单独核对：`globalThis.fetch/Request/Response` 均存在、桥接文件无 ES2015 语法。
+- 定向单测：native delete guard、注入计划（含 published runtime 启动）、`emit/requestGlobals/**`、上游 `emit.more` 自动模式 eager 识别、内置子路径别名与 package resolution、Web API 能力修补、nativeSize tree-shaking，共 11 文件 / 198 例通过；web-apis 2 文件 / 15 例通过；shared 平台键回归通过。ES5 minify 产物单独核对：`globalThis.fetch/Request/Response` 均存在、桥接文件无 ES2015 语法。
 - 构建产物（直连 CLI 构建 `e2e-apps/app-prelude-native` fixture 核对）：精确安装 13 个全局目标（`globalTargets` 的 fetch/Request/Response + 依赖展开 + 源码显式 `globalThis` 引用），未声明未引用的 `XMLHttpRequest`/`WebSocket`/`EventSource` 全程模块内、无全局写入；无额外强制 vendor；自定义 App Prelude 独立成 `weapp-vendors/web-runtime-app-prelude.js` 且含 `runAppPrelude`，根入口依赖它、它不反向依赖入口，独立分包自包含不跨包引用主包 vendor。ES5+压缩变体含全局写入的产物无 `=>`/`const`/`let`、无 `Reflect.get/set`；全产物无 `installWebRuntime|axiosEnv|eagerBindings|__wvAXFE__`。
 - 体积（同一 fixture）：`require` 918,884 / 744,175 B（12 文件）；native 精确 840,582 / 660,119 B（11 文件）。
-- `e2e/ci` 构建契约锁定精确语义（独立 app-prelude vendor 用例 + 精确桥接 ES5 用例），上述直连构建即按其断言逐项核对；正式 vitest 套件复跑因跨 worktree 机器租约阻塞（另一 worktree 残留未终结 scope，约定先不动）顺延到 PR CI。`ide-headless-full` runtime 曾在合入上游前本地通过。
+- `e2e/ci` 构建契约锁定精确语义（独立 app-prelude vendor 用例 + 精确桥接 ES5 用例），上述直连构建即按其断言逐项核对；本机正式 vitest 套件仍受跨 worktree 机器租约阻塞，当前 head 的 PR CI 已启动并在跟进。
 - 发布策略：changeset 为 `weapp-vite` minor、`@wevu/web-apis` minor（新增轻量公开入口）、`@weapp-core/shared` minor（新增 `global-keys` 入口与运行时依赖）、`@weapp-core/constants` patch（新增所有权标记）、`create-weapp-vite` patch；policy 检查通过。
 
 ## 未闭合事项与后续
