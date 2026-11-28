@@ -1,5 +1,25 @@
 # @wevu/web-apis
 
+## 1.5.5
+
+### Patch Changes
+
+- chore(deps): 基于 pnpm-workspace.yaml 中 catalog 版本变更，自动补充发布记录。
+  默认 catalog 变更键：vite-plus, vitest。命名 catalog 变更键：tilde(vitest)。
+
+- chore(deps): 基于 pnpm-workspace.yaml 中 catalog 版本变更，自动补充发布记录。
+  默认 catalog 变更键：@icebreakers/eslint-config, @icebreakers/stylelint-config, rolldown, tailwind-variants, vite, vue-router。命名 catalog 变更键：无。
+
+- chore(deps): 自动补充依赖升级发布记录。
+  涉及包：
+  - @mpcore/vitest：devDependencies.@vitest/browser
+  - @weapp-vite/ast-native：devDependencies.vitest
+
+- Updated dependencies:
+  - @weapp-core/api@0.4.8
+  - @weapp-core/constants@0.6.4
+  - @wevu/api@0.4.8
+
 ## 1.5.4
 
 ### Patch Changes

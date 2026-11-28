@@ -1,5 +1,25 @@
 # @weapp-vite/miniprogram-automator
 
+## 1.5.8
+
+### Patch Changes
+
+- chore(deps): 基于 pnpm-workspace.yaml 中 catalog 版本变更，自动补充发布记录。
+  默认 catalog 变更键：vite-plus, vitest。命名 catalog 变更键：tilde(vitest)。
+
+- chore(deps): 基于 pnpm-workspace.yaml 中 catalog 版本变更，自动补充发布记录。
+  默认 catalog 变更键：@icebreakers/eslint-config, @icebreakers/stylelint-config, rolldown, tailwind-variants, vite, vue-router。命名 catalog 变更键：无。
+
+- chore(deps): 自动补充依赖升级发布记录。
+  涉及包：
+  - @mpcore/vitest：devDependencies.@vitest/browser
+  - @weapp-vite/ast-native：devDependencies.vitest
+
+- fix(miniprogram-automator): 修复微信开发者工具 `2.02.2609250` 搭配基础库 `3.18.1` 时组件方法调用的 `this` 丢失。
+
+- Updated dependencies:
+  - @weapp-vite/qr@1.2.8
+
 ## 1.5.7
 
 ### Patch Changes
