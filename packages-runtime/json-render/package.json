@@ -47,7 +47,6 @@
   "scripts": {
     "dev": "tsdown -w",
     "build": "tsdown",
-    "prepack": "node ../../skills/scripts/sync-package-skills.mjs @wevu/json-render",
     "test": "vitest run",
     "test:types": "pnpm build && pnpm run test:types:check",
     "test:types:check": "tsd --files \"test-d/**/*.test-d.{ts,tsx}\"",

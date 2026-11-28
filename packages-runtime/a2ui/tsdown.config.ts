@@ -1,5 +1,4 @@
 import { defineConfig } from 'tsdown'
-import { syncPackageSkills } from '../../skills/scripts/distribution.mjs'
 
 export default defineConfig({
   entry: ['./src/index.ts'],
@@ -14,7 +13,4 @@ export default defineConfig({
     resolveDepSubpath: true,
   },
   sourcemap: true,
-  hooks: {
-    'build:done': () => syncPackageSkills('@wevu/a2ui'),
-  },
 })

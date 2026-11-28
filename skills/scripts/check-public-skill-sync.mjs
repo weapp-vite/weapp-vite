@@ -8,9 +8,8 @@ import skillCases from '../../maintainers/skillValidation/cases.json' with { typ
 import skillFeedback from '../../maintainers/skillValidation/feedback.json' with { type: 'json' }
 import { validateCaseCatalog, validateEvidenceReport, validateFeedbackCatalog } from '../../scripts/skillValidation/contracts.mjs'
 import { hashSkillTree } from '../../scripts/skillValidation/fixtures.mjs'
-import { distribution } from './distribution.mjs'
+import { discoverPackageSkills, discoverPublicSkillSources } from './package-skills.mjs'
 
-const SKILLS_ROOT = 'skills'
 const CONSUMER_GUIDE = 'website/guide/skills.md'
 const FRONTMATTER_REGEX = /^---\r?\n([\s\S]*?)\r?\n---/
 const MAIN_SKILL_CASES_REGEX = /const MAIN_SKILL_CASES = \{([\s\S]*?)\n\}/
@@ -23,25 +22,11 @@ const TEMPLATE_SKILLS_BY_FRAMEWORK = {
   wevu: ['weapp-vite-best-practices', 'weapp-vite-vue-sfc-best-practices', 'wevu-best-practices'],
   react: ['weapp-vite-best-practices', 'weapp-vite-react-best-practices'],
 }
-
-async function discoverPublicSkills() {
-  const entries = await fs.readdir(SKILLS_ROOT, { withFileTypes: true })
-  const skills = []
-
-  for (const entry of entries) {
-    if (!entry.isDirectory()) {
-      continue
-    }
-    const skillFile = path.join(SKILLS_ROOT, entry.name, 'SKILL.md')
-    try {
-      await fs.access(skillFile)
-      skills.push(entry.name)
-    }
-    catch {}
-  }
-
-  return skills.sort()
-}
+const OBSOLETE_DISTRIBUTION_FILES = [
+  'skills/distribution.json',
+  'skills/scripts/distribution.mjs',
+  'skills/scripts/sync-package-skills.mjs',
+]
 
 function readFrontmatter(source, file) {
   const match = source.match(FRONTMATTER_REGEX)
@@ -77,14 +62,15 @@ async function validateScoringMap(skills, issues) {
   }
 }
 
-async function validateSkill(name, issues) {
-  const skillFile = path.join(SKILLS_ROOT, name, 'SKILL.md')
-  const agentFile = path.join(SKILLS_ROOT, name, 'agents/openai.yaml')
+async function validateSkill(source, issues) {
+  const skillRoot = path.resolve(source.directory)
+  const skillFile = path.join(skillRoot, 'SKILL.md')
+  const agentFile = path.join(skillRoot, 'agents/openai.yaml')
   const skillSource = await fs.readFile(skillFile, 'utf8')
   const frontmatter = readFrontmatter(skillSource, skillFile)
 
-  if (frontmatter?.name !== name) {
-    issues.push(`${skillFile}: frontmatter name must match directory name ${name}`)
+  if (frontmatter?.name !== source.name) {
+    issues.push(`${path.relative(process.cwd(), skillFile)}: frontmatter name must match directory name ${source.name}`)
   }
 
   let agentSource
@@ -92,7 +78,7 @@ async function validateSkill(name, issues) {
     agentSource = await fs.readFile(agentFile, 'utf8')
   }
   catch {
-    issues.push(`${agentFile}: missing agents metadata`)
+    issues.push(`${path.relative(process.cwd(), agentFile)}: missing agents metadata`)
     return
   }
 
@@ -103,90 +89,116 @@ async function validateSkill(name, issues) {
 
   for (const field of ['display_name', 'short_description', 'default_prompt']) {
     if (typeof interfaceConfig?.[field] !== 'string' || !interfaceConfig[field].trim()) {
-      issues.push(`${agentFile}: interface.${field} must be a non-empty string`)
+      issues.push(`${path.relative(process.cwd(), agentFile)}: interface.${field} must be a non-empty string`)
     }
     if (!quotedFields.has(field)) {
-      issues.push(`${agentFile}: interface.${field} must use a quoted scalar`)
+      issues.push(`${path.relative(process.cwd(), agentFile)}: interface.${field} must use a quoted scalar`)
     }
   }
 
   if (typeof shortDescription === 'string') {
     const length = [...shortDescription].length
     if (length < 25 || length > 64) {
-      issues.push(`${agentFile}: short_description must be 25-64 characters, got ${length}`)
+      issues.push(`${path.relative(process.cwd(), agentFile)}: short_description must be 25-64 characters, got ${length}`)
     }
   }
 
-  if (!interfaceConfig?.default_prompt?.startsWith(`Use $${name}`)) {
-    issues.push(`${agentFile}: default_prompt must start with "Use $${name}"`)
+  if (!interfaceConfig?.default_prompt?.startsWith(`Use $${source.name}`)) {
+    issues.push(`${path.relative(process.cwd(), agentFile)}: default_prompt must start with "Use $${source.name}"`)
   }
   if (agent?.policy?.allow_implicit_invocation !== true) {
-    issues.push(`${agentFile}: policy.allow_implicit_invocation must be true`)
+    issues.push(`${path.relative(process.cwd(), agentFile)}: policy.allow_implicit_invocation must be true`)
   }
 }
-async function validateDistribution(skills, issues) {
-  const categories = [...distribution.optional, ...distribution.contributor]
+
+async function validateSkillReferences(source, issues) {
+  const root = path.resolve(source.directory)
+  for await (const file of fs.glob('**/*.md', { cwd: root })) {
+    const absoluteFile = path.join(root, file)
+    const relativeFile = path.relative(process.cwd(), absoluteFile)
+    const content = await fs.readFile(absoluteFile, 'utf8')
+    const links = [...content.matchAll(/\]\(([^\s)#]+)(?:#[^)]*)?\)/g)].map(match => match[1])
+    const references = [...content.matchAll(/`(references\/[^`#]+)(?:#[^`]*)?`/g)].map(match => match[1])
+    for (const reference of [...links, ...references]) {
+      if (/^(?:[a-z]+:|\/|#)/i.test(reference)) {
+        continue
+      }
+      const target = path.resolve(path.dirname(absoluteFile), reference)
+      if (!target.startsWith(`${root}${path.sep}`)) {
+        issues.push(`${relativeFile}: reference escapes its skill: ${reference}`)
+        continue
+      }
+      try {
+        await fs.access(target)
+      }
+      catch {
+        issues.push(`${relativeFile}: missing reference ${reference}`)
+      }
+    }
+  }
+}
+
+async function validateDistribution(sources, packageSkills, issues) {
+  const names = sources.map(source => source.name)
+  if (new Set(names).size !== names.length) {
+    issues.push('every public skill must have exactly one repository or package source')
+  }
+  for (const obsolete of OBSOLETE_DISTRIBUTION_FILES) {
+    if (await fs.access(obsolete).then(() => true, error => error.code === 'ENOENT' ? false : Promise.reject(error))) {
+      issues.push(`${obsolete}: package skills must be maintained directly in their owning package`)
+    }
+  }
+
   const turbo = JSON.parse(await fs.readFile('turbo.json', 'utf8'))
   const policy = JSON.parse(await fs.readFile('.github/repoctl-auto-changeset.json', 'utf8'))
   const guide = await fs.readFile(CONSUMER_GUIDE, 'utf8')
-  const sharedInputs = ['skills/distribution.json', 'skills/scripts/distribution.mjs', 'skills/scripts/sync-package-skills.mjs']
-  for (const [owner, config] of Object.entries(distribution.packages)) {
-    categories.push(...config.skills)
-    const pkg = JSON.parse(await fs.readFile(`${config.directory}/package.json`, 'utf8'))
-    if (pkg.name !== owner || !pkg.files.includes('skills') || !pkg.scripts.prepack?.includes('sync-package-skills.mjs')) {
-      issues.push(`${owner}: package name, files or prepack does not include owned skills`)
-    }
-    const task = turbo.tasks[`${owner}#build`]
-    for (const input of [...sharedInputs, ...config.skills.map(name => `skills/${name}/**`)]) {
-      if (!task?.inputs?.includes(`$TURBO_ROOT$/${input}`)) {
-        issues.push(`${owner}: build cache missing ${input}`)
+  const packageConfigs = Object.fromEntries(packageSkills.map(pkg => [pkg.name, { directory: pkg.directory, skills: pkg.skills }]))
+  const consumerSkills = packageSkills.flatMap(pkg => pkg.skills)
+  const obsoletePolicyPatterns = new Set([
+    ...OBSOLETE_DISTRIBUTION_FILES,
+    ...consumerSkills.map(name => `skills/${name}/**`),
+  ])
+  for (const entry of policy.paths) {
+    for (const pattern of entry.patterns) {
+      if (obsoletePolicyPatterns.has(pattern)) {
+        issues.push(`.github/repoctl-auto-changeset.json: obsolete package skill mapping ${pattern}`)
       }
     }
-    if (!task?.outputs?.includes('skills/**')) {
-      issues.push(`${owner}: build cache does not restore skills`)
+  }
+
+  for (const pkg of packageSkills) {
+    if (typeof pkg.name !== 'string' || !pkg.name || pkg.manifest.private === true || !pkg.manifest.files?.includes('skills')) {
+      issues.push(`${pkg.directory}: publishable package must include its committed skills directory`)
     }
-    for (const name of config.skills) {
+    const generationPhases = Object.entries(pkg.manifest.scripts ?? {})
+      .filter(([, command]) => typeof command === 'string' && /sync-package-skills\.mjs|skills[\\/]scripts[\\/]distribution\.mjs/u.test(command))
+      .map(([phase]) => phase)
+    const tsdownConfig = await fs.readFile(path.join(pkg.directory, 'tsdown.config.ts'), 'utf8')
+      .catch(error => error.code === 'ENOENT' ? '' : Promise.reject(error))
+    if (/syncPackageSkills|sync-package-skills\.mjs|skills[\\/]scripts[\\/]distribution\.mjs/u.test(tsdownConfig)) {
+      generationPhases.push('tsdown.config.ts')
+    }
+    if (generationPhases.length > 0) {
+      issues.push(`${pkg.directory}: package skills must not be generated by ${generationPhases.join(', ')}`)
+    }
+    if (turbo.tasks[`${pkg.name}#build`]) {
+      issues.push(`${pkg.name}: package-local skills must use the default build inputs without a dedicated task`)
+    }
+    for (const name of pkg.skills) {
       if (!guide.includes(name)) {
         issues.push(`${CONSUMER_GUIDE}: missing package skill ${name}`)
       }
-      if (!policy.paths.some(entry => entry.packages.includes(owner) && entry.patterns.includes(`skills/${name}/**`))) {
-        issues.push(`${owner}: release policy missing ${name}`)
+      const source = sources.find(item => item.name === name && item.owner === pkg.name)
+      if (!source) {
+        issues.push(`${pkg.directory}: missing discovered source for ${name}`)
+        continue
       }
-      for await (const file of fs.glob(`skills/${name}/**/*.md`)) {
-        const source = await fs.readFile(file, 'utf8')
-        const links = [...source.matchAll(/\]\(([^\s)#]+)(?:#[^)]*)?\)/g)].map(match => match[1])
-        const references = [...source.matchAll(/`(references\/[^`#]+)(?:#[^`]*)?`/g)].map(match => match[1])
-        for (const reference of [...links, ...references]) {
-          if (/^(?:[a-z]+:|\/|#)/i.test(reference)) {
-            continue
-          }
-          const target = path.resolve(path.dirname(file), reference)
-          const root = path.resolve('skills', name)
-          if (!target.startsWith(`${root}${path.sep}`)) {
-            issues.push(`${file}: reference escapes its skill: ${reference}`)
-            continue
-          }
-          try {
-            await fs.access(target)
-          }
-          catch {
-            issues.push(`${file}: missing reference ${reference}`)
-          }
-        }
-      }
+      await validateSkillReferences(source, issues)
     }
   }
-  for (const input of sharedInputs) {
-    if (!policy.paths.some(entry => entry.patterns.includes(input) && Object.keys(distribution.packages).every(owner => entry.packages.includes(owner)))) {
-      issues.push(`release policy missing shared skills input ${input}`)
-    }
-  }
-  if (new Set(categories).size !== categories.length || [...categories].sort().join('\n') !== skills.join('\n')) {
-    issues.push('distribution.json: every public skill must have exactly one package owner or explicit optional/contributor category')
-  }
+
   const templates = JSON.parse(await fs.readFile('packages/create-weapp-vite/src/templateDefinitions.json', 'utf8'))
   const { generatedAgentGuidelines } = await import('../../packages/create-weapp-vite/src/generated/agents.ts')
-  const consumerSkills = Object.values(distribution.packages).flatMap(config => config.skills)
   for (const template of templates) {
     const selected = template.skills
     if (!Array.isArray(selected) || selected.some(name => !consumerSkills.includes(name))) {
@@ -202,16 +214,17 @@ async function validateDistribution(skills, issues) {
       issues.push(`${template.id}: ${template.framework} templates must select exactly ${required.join(', ')} without duplicates`)
     }
     const guidance = generatedAgentGuidelines[template.id] ?? ''
-    for (const name of skills) {
+    for (const name of names) {
       if (guidance.includes(`$${name}`) !== selected.includes(name)) {
         issues.push(`${template.id}: template guidance differs from selected skills: ${name}`)
       }
     }
   }
+  return packageConfigs
 }
 
-async function validateMaintenanceContracts(issues) {
-  const caseIssues = validateCaseCatalog(skillCases, distribution.packages)
+async function validateMaintenanceContracts(packageConfigs, sources, issues) {
+  const caseIssues = validateCaseCatalog(skillCases, packageConfigs)
   issues.push(...caseIssues.map(issue => `skill cases: ${issue.path}: ${issue.code}`))
   if (caseIssues.length) {
     return
@@ -226,7 +239,8 @@ async function validateMaintenanceContracts(issues) {
     return
   }
   const report = JSON.parse(await fs.readFile(args[1], 'utf8'))
-  const digests = Object.fromEntries(await Promise.all(Object.values(distribution.packages).flatMap(config => config.skills).map(async name => [name, await hashSkillTree(path.join(SKILLS_ROOT, name))])))
+  const packageSources = sources.filter(source => source.owner)
+  const digests = Object.fromEntries(await Promise.all(packageSources.map(async source => [source.name, await hashSkillTree(path.resolve(source.directory))])))
   const recordIssues = validateEvidenceReport(report, skillCases, digests)
   issues.push(...recordIssues.map(issue => `skill evidence: ${issue.path}: ${issue.code}`))
   if (recordIssues.length) {
@@ -248,17 +262,19 @@ async function validateMaintenanceContracts(issues) {
 }
 
 async function main() {
-  const skills = await discoverPublicSkills()
+  const sources = await discoverPublicSkillSources()
+  const packageSkills = await discoverPackageSkills()
+  const names = sources.map(source => source.name)
   const issues = []
 
-  if (skills.length === 0) {
+  if (names.length === 0) {
     throw new Error('No public skills found')
   }
 
-  await Promise.all(skills.map(name => validateSkill(name, issues)))
-  await validateScoringMap(skills, issues)
-  await validateDistribution(skills, issues)
-  const evidence = await validateMaintenanceContracts(issues)
+  await Promise.all(sources.map(source => validateSkill(source, issues)))
+  await validateScoringMap(names, issues)
+  const packageConfigs = await validateDistribution(sources, packageSkills, issues)
+  const evidence = await validateMaintenanceContracts(packageConfigs, sources, issues)
 
   if (issues.length > 0) {
     console.error('[public-skills] contract validation failed:')
@@ -269,7 +285,7 @@ async function main() {
     return
   }
 
-  console.log(`[public-skills] validated ${skills.length} public skills, ${Object.keys(distribution.packages).length} package owners and scoped template contracts`)
+  console.log(`[public-skills] validated ${names.length} public skills, ${packageSkills.length} package owners and scoped template contracts`)
   console.log(`[skill-cases] checked ${skillCases.cases.length} candidate/approved case contracts; no task executed`)
   if (evidence) {
     console.log(`[skill-evidence] record consistency only, not evidence authenticity: ${JSON.stringify(evidence)}`)

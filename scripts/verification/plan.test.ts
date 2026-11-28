@@ -276,12 +276,12 @@ it('preserves generated agent and public skill checks in local quick for modifie
   const root = await createPlanRoot()
   try {
     const input = { root, packages, resources, mode: 'quick' as const }
-    for (const file of ['AGENTS.md', 'scripts/agents/content/root-intro.md', 'skills/example/SKILL.md']) {
+    for (const file of ['AGENTS.md', 'scripts/agents/content/root-intro.md', 'skills/example/SKILL.md', 'packages-runtime/wevu/skills/wevu-best-practices/SKILL.md']) {
       const plan = await createVerificationPlan({ ...input, changes: changes([file]) })
       const policies = plan.tasks.filter(task => task.id.startsWith('policy:'))
       expect(policies.map(task => task.args)).toEqual(file === 'AGENTS.md'
         ? [['run', 'agents:check'], ['run', 'skills:check']]
-        : file.startsWith('skills/') ? [['run', 'skills:check']] : [['run', 'agents:check']])
+        : file.startsWith('skills/') || file.includes('/skills/') ? [['run', 'skills:check']] : [['run', 'agents:check']])
       expect(plan.tasks.some(task => task.kind === 'runtime' || task.id.startsWith('test:'))).toBe(false)
     }
   }

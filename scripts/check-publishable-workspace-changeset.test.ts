@@ -199,21 +199,28 @@ it('collectPublishableWorkspaceChangesetIssues accepts complete release sets', (
   assert.deepEqual(issues, [])
 })
 
-it('requires the owning release for skill bodies, references and ownership changes', () => {
+it('requires the owning release for package-local skill bodies, references and metadata', () => {
   const packages = [
     { dir: 'packages/weapp-vite', name: 'weapp-vite', localWorkspaceDependencies: [] },
     { dir: 'packages-runtime/wevu', name: 'wevu', localWorkspaceDependencies: [] },
     { dir: 'packages-runtime/react', name: '@weapp-vite/react', localWorkspaceDependencies: [] },
+    { dir: 'packages-runtime/json-render', name: '@wevu/json-render', localWorkspaceDependencies: [] },
+    { dir: 'packages-runtime/a2ui', name: '@wevu/a2ui', localWorkspaceDependencies: [] },
   ]
-  for (const file of ['skills/wevu-best-practices/SKILL.md', 'skills/wevu-best-practices/references/store-patterns.md', 'skills/wevu-best-practices/agents/openai.yaml']) {
+  for (const [file, owner] of [
+    ['packages/weapp-vite/skills/weapp-vite-best-practices/SKILL.md', 'weapp-vite'],
+    ['packages-runtime/wevu/skills/wevu-best-practices/references/store-patterns.md', 'wevu'],
+    ['packages-runtime/wevu/skills/wevu-best-practices/agents/openai.yaml', 'wevu'],
+    ['packages-runtime/react/skills/weapp-vite-react-best-practices/SKILL.md', '@weapp-vite/react'],
+    ['packages-runtime/json-render/skills/wevu-json-render-best-practices/SKILL.md', '@wevu/json-render'],
+    ['packages-runtime/a2ui/skills/wevu-a2ui-best-practices/SKILL.md', '@wevu/a2ui'],
+  ]) {
     const options = { packages, changedFiles: [file], changesetPackages: new Set<string>() }
     assert.deepEqual(collectPublishableWorkspaceChangesetIssues(options), [
-      'Missing changeset for releasable publishable workspace packages.\nChanged packages: wevu\nMissing in changesets: wevu',
+      `Missing changeset for releasable publishable workspace packages.\nChanged packages: ${owner}\nMissing in changesets: ${owner}`,
     ])
-    assert.deepEqual(collectPublishableWorkspaceChangesetIssues({ ...options, changesetPackages: new Set(['wevu']) }), [])
+    assert.deepEqual(collectPublishableWorkspaceChangesetIssues({ ...options, changesetPackages: new Set([owner]) }), [])
   }
-  const issues = collectPublishableWorkspaceChangesetIssues({ packages, changedFiles: ['skills/distribution.json'], changesetPackages: new Set(['wevu']) })
-  assert.match(issues[0]!, /Missing in changesets: @weapp-vite\/react, weapp-vite/)
   assert.deepEqual(collectPublishableWorkspaceChangesetIssues({ packages, changedFiles: ['skills/release-and-changeset-best-practices/SKILL.md'], changesetPackages: new Set() }), [])
 })
 

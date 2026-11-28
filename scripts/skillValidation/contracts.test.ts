@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import cases from '../../maintainers/skillValidation/cases.json' with { type: 'json' }
 import feedback from '../../maintainers/skillValidation/feedback.json' with { type: 'json' }
-import distribution from '../../skills/distribution.json' with { type: 'json' }
+import { discoverPackageSkills } from '../../skills/scripts/package-skills.mjs'
 import { safeProjectFilePath, validateCaseCatalog, validateEvidenceReport, validateFeedbackCatalog } from './contracts.mjs'
 
 interface Confirmation { scope: string, reference: string, subject: string }
@@ -27,6 +27,8 @@ interface EvidenceReport {
   records: RecordEntry[]
 }
 
+const packageSkills = await discoverPackageSkills()
+const packageConfigs = Object.fromEntries(packageSkills.map(pkg => [pkg.name, { directory: pkg.directory, skills: pkg.skills }]))
 const catalog = (): CaseCatalog => structuredClone(cases)
 const feedbackCatalog = (): FeedbackCatalog => structuredClone(feedback)
 const selected = cases.cases[0]!
@@ -113,7 +115,7 @@ describe('project file safety', () => {
 
 describe('candidate case contract', () => {
   it('accepts complete candidate input data without asserting an outcome', () => {
-    expect(validateCaseCatalog(cases, distribution.packages)).toEqual([])
+    expect(validateCaseCatalog(cases, packageConfigs)).toEqual([])
     expect(validateFeedbackCatalog(feedback, cases)).toEqual([])
   })
 
@@ -122,9 +124,9 @@ describe('candidate case contract', () => {
     value.cases.pop()
     value.cases[1]!.id = value.cases[0]!.id
     value.cases[0]!.criteria[1]!.id = value.cases[0]!.criteria[0]!.id
-    expect(codes(validateCaseCatalog(value, distribution.packages))).toEqual(expect.arrayContaining(['case.missing-skill', 'case.id', 'criterion.id']))
+    expect(codes(validateCaseCatalog(value, packageConfigs))).toEqual(expect.arrayContaining(['case.missing-skill', 'case.id', 'criterion.id']))
     value.cases[0]!.criteria[0]!.id = ''
-    expect(codes(validateCaseCatalog(value, distribution.packages))).toContain('criterion.id')
+    expect(codes(validateCaseCatalog(value, packageConfigs))).toContain('criterion.id')
   })
 
   it('rejects unsupported skills, unrelated dependencies and duplicate skill coverage', () => {
@@ -132,13 +134,13 @@ describe('candidate case contract', () => {
     value.cases[0]!.skill = 'invented-skill'
     value.cases[1]!.dependencies.push('wevu')
     value.cases[3]!.skill = value.cases[2]!.skill
-    expect(codes(validateCaseCatalog(value, distribution.packages))).toEqual(expect.arrayContaining(['case.skill', 'case.dependencies', 'case.missing-skill']))
+    expect(codes(validateCaseCatalog(value, packageConfigs))).toEqual(expect.arrayContaining(['case.skill', 'case.dependencies', 'case.missing-skill']))
   })
 
   it('rejects unsafe, case-colliding and file-directory-colliding inputs', () => {
     const value = catalog()
     Object.assign(value.cases[0]!.files, { '../escape': '', 'SRC/App.js': '', 'src': '' })
-    const issues = validateCaseCatalog(value, distribution.packages)
+    const issues = validateCaseCatalog(value, packageConfigs)
     expect(codes(issues)).toEqual(expect.arrayContaining(['case.file-path', 'case.file-collision']))
     expect(issues.every(issue => typeof issue.path === 'string')).toBe(true)
   })
@@ -149,22 +151,22 @@ describe('candidate case contract', () => {
   ])('rejects Unicode-equivalent file and directory aliases', (files) => {
     const value = catalog()
     Object.assign(value.cases[0]!.files, files)
-    expect(codes(validateCaseCatalog(value, distribution.packages))).toContain('case.file-collision')
+    expect(codes(validateCaseCatalog(value, packageConfigs))).toContain('case.file-collision')
   })
 
   it('requires specific example confirmation, not plan consent', () => {
     const value = catalog()
     const item = value.cases[0]!
     item.review = { state: 'approved', confirmation: { scope: 'plan', reference: 'review/message', subject: item.id } }
-    expect(codes(validateCaseCatalog(value, distribution.packages))).toContain('case.review')
+    expect(codes(validateCaseCatalog(value, packageConfigs))).toContain('case.review')
     item.review.confirmation!.scope = 'example'
-    expect(validateCaseCatalog(value, distribution.packages)).toEqual([])
+    expect(validateCaseCatalog(value, packageConfigs)).toEqual([])
     item.review.confirmation!.subject = 'publishing-scheme'
-    expect(codes(validateCaseCatalog(value, distribution.packages))).toContain('case.review')
+    expect(codes(validateCaseCatalog(value, packageConfigs))).toContain('case.review')
   })
 
   it.each([null, {}, { version: 1, cases: [null] }])('returns issues for malformed catalogs', (value) => {
-    expect(validateCaseCatalog(value, distribution.packages).length).toBeGreaterThan(0)
+    expect(validateCaseCatalog(value, packageConfigs).length).toBeGreaterThan(0)
     expect(codes(validateCaseCatalog({ version: 1, cases: [] }, {}))).toContain('distribution.shape')
   })
 })

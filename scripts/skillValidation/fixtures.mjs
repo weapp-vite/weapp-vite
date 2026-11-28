@@ -4,7 +4,7 @@ import fs from 'node:fs/promises'
 import path from 'node:path'
 import process from 'node:process'
 import caseCatalog from '../../maintainers/skillValidation/cases.json' with { type: 'json' }
-import distribution from '../../skills/distribution.json' with { type: 'json' }
+import { repositoryRoot as defaultRepositoryRoot, discoverPackageSkills } from '../../skills/scripts/package-skills.mjs'
 import { safeProjectFilePath, validateCaseCatalog } from './contracts.mjs'
 
 /** 指纹覆盖正文、引用与元数据，避免引用变化后沿用旧验证。 */
@@ -30,11 +30,15 @@ export async function hashSkillTree(directory) {
 }
 
 /** 只创建本次拥有的新项目；依赖来自已核验的 tarball 安装，不执行安装或模型。 */
-export async function createSkillCaseFixture({ caseId, outputParent, skillRoot, installedModulesRoot, catalog = caseCatalog }) {
-  const issues = validateCaseCatalog(catalog, distribution.packages)
+export async function createSkillCaseFixture({ caseId, outputParent, repositoryRoot = defaultRepositoryRoot, installedModulesRoot, catalog = caseCatalog }) {
+  const packageSkills = await discoverPackageSkills(repositoryRoot)
+  const packageConfigs = Object.fromEntries(packageSkills.map(pkg => [pkg.name, { directory: pkg.directory, skills: pkg.skills }]))
+  const issues = validateCaseCatalog(catalog, packageConfigs)
   assert.equal(issues.length, 0, `Invalid skill case contracts: ${JSON.stringify(issues)}`)
   const taskCase = catalog.cases.find(item => item.id === caseId)
   assert(taskCase, `Unknown skill case: ${caseId}`)
+  const owner = packageSkills.find(pkg => pkg.skills.includes(taskCase.skill))
+  assert(owner, `No package owns skill: ${taskCase.skill}`)
   assert(typeof outputParent === 'string' && outputParent, 'An owned fixture parent is required')
   assert(typeof installedModulesRoot === 'string' && installedModulesRoot, 'An existing verified consumer installation is required')
   const packages = {}
@@ -53,7 +57,7 @@ export async function createSkillCaseFixture({ caseId, outputParent, skillRoot, 
       }
     }
   }
-  const sourceSkill = path.join(skillRoot, taskCase.skill)
+  const sourceSkill = path.join(repositoryRoot, owner.directory, 'skills', taskCase.skill)
   await fs.access(path.join(sourceSkill, 'SKILL.md'))
   const skillDigest = await hashSkillTree(sourceSkill)
   const scripts = {}

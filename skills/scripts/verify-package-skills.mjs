@@ -5,8 +5,8 @@ import process from 'node:process'
 // eslint-disable-next-line e18e/ban-dependencies -- 验收需要跨平台启动真实包管理器。
 import { execa } from 'execa'
 import { parse, stringify } from 'yaml'
-import { distribution, repositoryRoot } from './distribution.mjs'
 import { verifyNativeBoundaries } from './native-boundaries.mjs'
+import { discoverPackageSkills, discoverWorkspacePackages, repositoryRoot } from './package-skills.mjs'
 
 const evidenceRoot = path.resolve(process.argv[2] ?? '.tmp/package-skills')
 const pnpm = process.env.PNPM_SKILLS_BIN ?? 'pnpm'
@@ -49,14 +49,24 @@ async function entries(cwd, directory = '.agents/skills') {
   return items.filter(entry => entry.isSymbolicLink()).map(entry => entry.name).sort()
 }
 
+async function filesUnder(root) {
+  const files = []
+  for await (const relative of fs.glob('**/*', { cwd: root })) {
+    if ((await fs.stat(path.join(root, relative))).isFile()) {
+      files.push(relative.replaceAll(path.sep, '/'))
+    }
+  }
+  return files.sort()
+}
+
 async function verifyTrees(root, config) {
   assert.deepEqual((await fs.readdir(path.join(root, 'skills'))).sort(), [...config.skills].sort())
   for (const name of config.skills) {
-    const source = path.join(repositoryRoot, 'skills', name)
-    for await (const relative of fs.glob('**/*', { cwd: source })) {
-      if (!(await fs.stat(path.join(source, relative))).isFile()) {
-        continue
-      }
+    const source = path.join(repositoryRoot, config.directory, 'skills', name)
+    const sourceFiles = await filesUnder(source)
+    const packedFiles = await filesUnder(path.join(root, 'skills', name))
+    assert.deepEqual(packedFiles, sourceFiles, `${name}: tarball file set differs from committed package source`)
+    for (const relative of sourceFiles) {
       assert.deepEqual(await fs.readFile(path.join(root, 'skills', name, relative)), await fs.readFile(path.join(source, relative)), `${name}/${relative}`)
     }
   }
@@ -71,16 +81,11 @@ const modernSkills = minor >= 18
 const skillLink = (owner, name) => modernSkills ? name : `pnpm-${owner.replace('/', '+')}-${name}`
 
 // 尚未发布的 workspace 依赖也使用真实 tarball，不删除发布清单中的依赖来换取验收通过。
-const workspace = parse(await fs.readFile(path.join(repositoryRoot, 'pnpm-workspace.yaml'), 'utf8'))
-const members = {}
-for await (const file of fs.glob(workspace.packages.filter(pattern => !pattern.startsWith('!')).map(pattern => `${pattern}/package.json`), {
-  cwd: repositoryRoot,
-  exclude: workspace.packages.filter(pattern => pattern.startsWith('!')).map(pattern => `${pattern.slice(1)}/**`),
-})) {
-  const manifest = JSON.parse(await fs.readFile(path.join(repositoryRoot, file), 'utf8'))
-  members[manifest.name] = { manifest, directory: path.dirname(file) }
-}
-const pending = Object.keys(distribution.packages)
+const packageSkills = await discoverPackageSkills(repositoryRoot)
+const packageSkillNames = new Set(packageSkills.map(pkg => pkg.name))
+const workspace = await discoverWorkspacePackages(repositoryRoot)
+const members = Object.fromEntries(workspace.map(({ manifest, directory }) => [manifest.name, { manifest, directory }]))
+const pending = [...packageSkillNames]
 const visited = new Set()
 while (pending.length) {
   const name = pending.pop()
@@ -90,7 +95,7 @@ while (pending.length) {
   visited.add(name)
   const { manifest, directory } = members[name]
   pending.push(...Object.keys({ ...manifest.dependencies, ...manifest.optionalDependencies }))
-  if (distribution.packages[name]) {
+  if (packageSkillNames.has(name)) {
     continue
   }
   await run(path.join(repositoryRoot, directory), ['pack', '--pack-destination', output], 'pnpm')
@@ -98,7 +103,8 @@ while (pending.length) {
 }
 const tarballs = {}
 const observations = []
-for (const [owner, config] of Object.entries(distribution.packages)) {
+for (const config of packageSkills) {
+  const owner = config.name
   const pkgRoot = path.join(repositoryRoot, config.directory)
   await run(pkgRoot, ['pack', '--pack-destination', output], 'pnpm')
   const manifest = JSON.parse(await fs.readFile(path.join(pkgRoot, 'package.json'), 'utf8'))
