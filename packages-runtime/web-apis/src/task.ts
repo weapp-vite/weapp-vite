@@ -1,4 +1,5 @@
 import { REQUEST_GLOBAL_PLACEHOLDER_KEY } from '@weapp-core/constants'
+import { resolveGlobalValue } from './globalValue'
 
 export function queueMicrotaskPolyfill(callback: () => void) {
   if (typeof callback !== 'function') {
@@ -6,7 +7,7 @@ export function queueMicrotaskPolyfill(callback: () => void) {
   }
 
   const nativeQueueMicrotask = typeof globalThis !== 'undefined'
-    ? (globalThis as Record<string, any>).queueMicrotask
+    ? resolveGlobalValue<typeof queueMicrotask & Record<string, unknown>>('queueMicrotask')
     : undefined
   if (
     typeof nativeQueueMicrotask === 'function'

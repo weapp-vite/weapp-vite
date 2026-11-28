@@ -10,6 +10,20 @@
           "launchMode": "default"
         },
         {
+          "name": "pages/native-api/index",
+          "pathName": "pages/native-api/index",
+          "query": "baseUrl=",
+          "scene": null,
+          "launchMode": "default"
+        },
+        {
+          "name": "pages/native-vue/index",
+          "pathName": "pages/native-vue/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
+        },
+        {
           "name": "subpackages/normal/pages/entry/index",
           "pathName": "subpackages/normal/pages/entry/index",
           "query": "",

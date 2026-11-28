@@ -1,6 +1,7 @@
 import type { RequestGlobalsBlobLike } from '../shared'
 import type { HeadersPolyfill } from './headers'
 import { isUrlSearchParamsInstance } from '../constructors'
+import { resolveGlobalValue } from '../globalValue'
 import { createMultipartBoundary, encodeMultipartFormData } from '../multipart'
 import { cloneArrayBuffer, cloneArrayBufferView, encodeText, isArrayBufferLike, isBlobLike } from '../shared'
 import { ReadableStream } from '../streams'
@@ -33,7 +34,8 @@ export function isReadableBodyStream(value: unknown): value is ReadableStream<Ui
 }
 
 function isFormData(value: unknown): value is FormData | FormDataPolyfill {
-  return value instanceof FormDataPolyfill || (typeof FormData === 'function' && value instanceof FormData)
+  const HostFormData = resolveGlobalValue<typeof FormData>('FormData')
+  return value instanceof FormDataPolyfill || (typeof HostFormData === 'function' && value instanceof HostFormData)
 }
 
 /** 转换初始化时归类为缓冲的非空值，并兼容外部 BlobLike 别名在拉取前换形为流。 */
@@ -246,7 +248,8 @@ export abstract class HttpBody {
     const bytes = await this.arrayBuffer()
     const contentType = this.headers.get('content-type') ?? ''
     const type = /^[!#$%&'*+.^`|~\w-]+\/[!#$%&'*+.^`|~\w-]+(?:\s*;[^\r\n]*)?$/.test(contentType) ? contentType : ''
-    const BlobConstructor = typeof Blob === 'function' ? Blob : BlobPolyfill
+    const HostBlob = resolveGlobalValue<typeof Blob>('Blob')
+    const BlobConstructor = typeof HostBlob === 'function' ? HostBlob : BlobPolyfill
     return new BlobConstructor([bytes], { type })
   }
 

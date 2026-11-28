@@ -8,8 +8,22 @@ import { parseSync } from 'oxc-parser'
 import { describe, expect, it, vi } from 'vitest'
 import { compileScript, parse as parseSfc } from 'vue/compiler-sfc'
 import { createSidecarSourceSpecifier } from '../../../moduleGraph/protocol'
+import { createWebRuntimeNativeInject, WEB_RUNTIME_GLOBAL_VIRTUAL_PREFIX } from '../../../runtime/config/internal/injectRequestGlobals/nativeInject'
 import { createImportMetaDefineRegistry } from '../../../utils/importMeta'
 import { createTransformHook } from './transform'
+
+const mayContainRequestGlobalsUsageByTextMock = vi.hoisted(() => vi.fn())
+
+vi.mock('../../../runtime/config/internal/injectRequestGlobals', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../../runtime/config/internal/injectRequestGlobals')>()
+  return {
+    ...actual,
+    mayContainRequestGlobalsUsageByText: (...args: Parameters<typeof actual.mayContainRequestGlobalsUsageByText>) => {
+      mayContainRequestGlobalsUsageByTextMock(...args)
+      return actual.mayContainRequestGlobalsUsageByText(...args)
+    },
+  }
+})
 
 function createCachedEnvLinePattern(prefix: string) {
   return new RegExp(
@@ -141,6 +155,134 @@ describe('core lifecycle transform hook injectWeapi', () => {
     expect(code).toMatch(createCachedEnvLinePattern('"env":\\(?'))
     expect(code).not.toContain('const env = {\n')
     expect(code).not.toContain('env: {\n')
+  })
+
+  it('leaves native dotted global access to Rolldown inject without a bridge', async () => {
+    const transform = createTransformHook({
+      nativeWebRuntimeInjectEnabled: true,
+      nativeWebRuntimeInjectPlan: createWebRuntimeNativeInject(['fetch', 'Request', 'Response']),
+      ctx: {
+        configService: createConfigServiceMock({
+          weappViteConfig: {
+            appPrelude: { mode: 'native' },
+            injectWebRuntimeGlobals: {
+              enabled: true,
+              targets: ['fetch', 'Request', 'Response'],
+            },
+          },
+        }),
+      },
+    } as any)
+
+    await expect(transform(
+      'export function read() { return globalThis.fetch("/api") }',
+      '/project/node_modules/.pnpm/axios@1.0.0/node_modules/axios/lib/adapters/fetch.js',
+    )).resolves.toBeNull()
+  })
+
+  it('adds a native global bridge for computed explicit global access', async () => {
+    const transform = createTransformHook({
+      nativeWebRuntimeInjectEnabled: true,
+      nativeWebRuntimeInjectPlan: createWebRuntimeNativeInject(['fetch', 'Request', 'Response']),
+      ctx: {
+        configService: createConfigServiceMock({
+          weappViteConfig: {
+            appPrelude: { mode: 'native' },
+            injectWebRuntimeGlobals: {
+              enabled: true,
+              targets: ['fetch', 'Request', 'Response'],
+            },
+          },
+        }),
+      },
+    } as any)
+
+    const result = await transform(
+      'export function read() { return globalThis["fetch"]("/api") }',
+      '/project/node_modules/.pnpm/axios@1.0.0/node_modules/axios/lib/adapters/fetch.js',
+    )
+    const code = result && typeof result === 'object' && 'code' in result ? result.code : ''
+
+    expect(code).toContain(`import "${WEB_RUNTIME_GLOBAL_VIRTUAL_PREFIX}fetch";`)
+    expect(code).not.toContain(`${WEB_RUNTIME_GLOBAL_VIRTUAL_PREFIX}Request;`)
+    expect(code).toContain('export function read() { return globalThis["fetch"]("/api") }')
+  })
+
+  it('does not add a global bridge for free identifiers in third-party modules', async () => {
+    const transform = createTransformHook({
+      nativeWebRuntimeInjectEnabled: true,
+      nativeWebRuntimeInjectPlan: createWebRuntimeNativeInject(['AbortController']),
+      ctx: {
+        configService: createConfigServiceMock({
+          weappViteConfig: {
+            appPrelude: { mode: 'native' },
+            injectWebRuntimeGlobals: {
+              enabled: true,
+              targets: ['AbortController'],
+            },
+          },
+        }),
+      },
+    } as any)
+
+    const result = await transform(
+      'export function read() { return fetch("/api") }',
+      '/project/node_modules/.pnpm/axios@1.0.0/node_modules/axios/lib/adapters/fetch.js',
+    )
+
+    expect(result).toBeNull()
+  })
+
+  it('skips legacy usage scans when native lazy bindings are active', async () => {
+    mayContainRequestGlobalsUsageByTextMock.mockClear()
+    const transform = createTransformHook({
+      nativeWebRuntimeInjectEnabled: true,
+      nativeWebRuntimeInjectPlan: createWebRuntimeNativeInject(['fetch']),
+      ctx: {
+        configService: createConfigServiceMock({
+          packageJson: { dependencies: { axios: '^1.0.0' } },
+          weappViteConfig: {
+            appPrelude: { mode: 'native' },
+            injectWebRuntimeGlobals: { targets: ['fetch'] },
+          },
+        }),
+      },
+    } as any)
+
+    await expect(transform(
+      'export const read = () => fetch("/api")',
+      '/project/src/pages/home/index.ts',
+    )).resolves.toBeNull()
+    expect(mayContainRequestGlobalsUsageByTextMock).not.toHaveBeenCalled()
+  })
+
+  it.each(['inline', 'entry', 'require'] as const)('keeps legacy usage scans for appPrelude mode %s', async (mode) => {
+    mayContainRequestGlobalsUsageByTextMock.mockClear()
+    const transform = createTransformHook({
+      nativeWebRuntimeInjectEnabled: false,
+      nativeWebRuntimeInjectPlan: null,
+      ctx: {
+        configService: createConfigServiceMock({
+          packageJson: { dependencies: { axios: '^1.0.0' } },
+          weappViteConfig: {
+            appPrelude: { mode },
+            injectWebRuntimeGlobals: { targets: ['fetch'] },
+          },
+        }),
+      },
+      loadedEntrySet: new Set(['/project/src/pages/home/index.ts']),
+      entriesMap: new Map(),
+    } as any)
+
+    const result = await transform(
+      'export const read = () => fetch("/api")',
+      '/project/src/pages/home/index.ts',
+    )
+    const code = result && typeof result === 'object' && 'code' in result ? result.code : ''
+
+    expect(code).toContain('installWebRuntimeGlobals')
+    expect(code).not.toContain(WEB_RUNTIME_GLOBAL_VIRTUAL_PREFIX)
+    expect(mayContainRequestGlobalsUsageByTextMock).toHaveBeenCalled()
   })
 
   it('injects request globals for declared page entries as transform fallback', async () => {

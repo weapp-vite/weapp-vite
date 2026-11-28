@@ -70,14 +70,17 @@ export default defineConfig({
 })
 ```
 
-需要 Web 风格全局对象时，再在同一个 `appPrelude` 配置下启用 `webRuntime`。这样前置脚本和 Web Runtime 注入会共享清晰的执行时机。
+需要 Web 风格全局对象时，可以在同一个 `appPrelude` 配置下启用 `webRuntime`。默认的 `inline`、`entry`、`require` 继续使用原有 Web Runtime 注入路径和默认安装时机。
+
+新增的 `native` 是显式选择的第四种模式：自由标识符和 `globalThis.<target>` 等全局对象点号访问通过 Rolldown 的 `transform.inject` 精确绑定，字符串计算属性、全局解构与别名等不可点号注入的访问使用按目标裁剪的幂等桥接；自定义 `app.prelude` 作为普通静态模块执行。该模式没有 `prelude` 或策略选项，也不生成 installer、eager 状态或 axios 专用补丁。Prelude 自身引用 Web 目标时遵循相同模块依赖规则，不会形成反向循环。完整边界见 [App Prelude 配置](/config/app-prelude#mode) 和 [Web Runtime 全局对象注入配置](/config/web-runtime-globals)。
 
 ## 验证方式
 
 构建后可以检查产物中是否出现这些内容：
 
-- `app.prelude.js`
-- 入口 JS 顶部的 `require("./app.prelude.js")` 或等价相对路径
+- `require` 模式的 `app.prelude.js`
+- `require` 模式入口 JS 顶部的 `require("./app.prelude.js")` 或等价相对路径
+- `native` 模式的普通 Prelude 模块、精确绑定与按需目标级全局桥接依赖
 
 ```bash
 pnpm build

@@ -1,4 +1,4 @@
-import type { WebRuntimeGlobalTarget } from '@weapp-core/constants'
+import type { WebRuntimeDerivedGlobalTarget, WebRuntimeGlobalTarget } from '@weapp-core/constants'
 import type { MiniProgramNetworkDefaults } from '@wevu/web-apis/network-defaults'
 import type { InlineConfig } from 'vite'
 import type { PageLayoutMeta, WevuConfigDefaults } from 'wevu/config'
@@ -208,6 +208,14 @@ export interface WeappBuildScopeObjectConfig {
 export type WeappBuildScopeConfig = string | string[] | WeappBuildScopeObjectConfig
 
 /**
+ * @description 由目标依赖展开自动安装的实现目标；native 可在 `globalTargets` 中显式声明。
+ */
+export type WeappInjectWebRuntimeDerivedGlobalTarget = WebRuntimeDerivedGlobalTarget
+
+/** @description `globalTargets` 接受的公开目标集合：基础目标与依赖展开目标。 */
+export type WeappInjectWebRuntimeDeclaredGlobalTarget = WeappInjectWebRuntimeGlobalsTarget | WeappInjectWebRuntimeDerivedGlobalTarget
+
+/**
  * @description `@wevu/api` 注入配置
  */
 export interface WeappInjectWeapiConfig {
@@ -227,6 +235,10 @@ export interface WeappInjectWebRuntimeGlobalsConfig {
   enabled?: boolean
   targets?: WeappInjectWebRuntimeGlobalsTarget[]
   dependencies?: (string | RegExp)[]
+  /**
+   * @description 是否强制在业务入口前安装 Web Runtime。
+   * @description `native` 的自动匹配与 `appPrelude.webRuntime` 默认 false，按实际引用延迟安装；显式启用默认 false，旧模式的自动匹配与嵌套配置保持原有默认时机。
+   */
   prelude?: boolean
   /**
    * @description Web Runtime 网络兼容层的宿主默认参数。
@@ -247,24 +259,69 @@ export interface WeappInjectRequestGlobalsConfig extends WeappInjectWebRuntimeGl
 export interface WeappWebRuntimeConfig extends Omit<WeappInjectWebRuntimeGlobalsConfig, 'prelude'> {}
 
 /**
+ * @description `appPrelude.mode: 'native'` 中的 Web Runtime 注入配置。
+ * @description 行为固定为精确最优解，无策略开关：自由标识符与全局对象点号访问由 Rolldown `transform.inject` 精确绑定（按需导入、可 tree-shake）；
+ *              字符串计算属性、全局解构、别名与 `globalTargets` 声明的目标生成宿主优先的幂等桥接；分包交给打包器自然分组。
+ *              不全量安装未用实现；用户通过 `targets` 选择作用域、`globalTargets` 精确补充隐藏访问。
+ */
+export interface WeappNativeWebRuntimeConfig extends Omit<WeappInjectWebRuntimeGlobalsConfig, 'dependencies' | 'prelude'> {
+  /** @description native 不使用依赖包名匹配。 */
+  dependencies?: never
+  /**
+   * @description 需要额外安装到全局对象的 Web Runtime 目标；用于源码里静态推断不到的隐藏计算访问。
+   * @description 精确补充：只安装声明的目标，不会全量安装未用实现。
+   */
+  globalTargets?: WeappInjectWebRuntimeDeclaredGlobalTarget[]
+}
+
+/**
  * @description 已废弃，请迁移到 `WeappWebRuntimeConfig`
  */
 export interface WeappRequestRuntimeConfig extends WeappWebRuntimeConfig {}
 
-export type WeappAppPreludeMode = 'inline' | 'entry' | 'require'
+/**
+ * @description 已废弃，请迁移到 `WeappNativeWebRuntimeConfig`
+ */
+export interface WeappNativeRequestRuntimeConfig extends WeappNativeWebRuntimeConfig {}
 
 /**
- * @description `app.prelude` 前置注入配置
+ * @description App Prelude 注入模式。
+ * @description `native` 使用 Rolldown 原生注入建立 Web Runtime 精确绑定，并按不可点号注入的显式全局语义加载最小全局桥接。
  */
-export interface WeappAppPreludeConfig {
+export type WeappAppPreludeMode = 'inline' | 'entry' | 'require' | 'native'
+
+interface WeappAppPreludeBaseConfig {
   enabled?: boolean
-  mode?: WeappAppPreludeMode
+}
+
+/**
+ * @description 旧 App Prelude 模式配置；嵌套 Web Runtime 始终提前安装。
+ */
+export interface WeappLegacyAppPreludeConfig extends WeappAppPreludeBaseConfig {
+  mode?: Exclude<WeappAppPreludeMode, 'native'>
   webRuntime?: boolean | WeappWebRuntimeConfig
   /**
    * @deprecated 已废弃，请迁移到 `weapp.appPrelude.webRuntime`。
    */
   requestRuntime?: boolean | WeappRequestRuntimeConfig
 }
+
+/**
+ * @description `app.prelude.mode: 'native'` 配置；Web Runtime 使用精确绑定与按需全局桥接，无 installer 启动时机。
+ */
+export interface WeappNativeAppPreludeConfig extends WeappAppPreludeBaseConfig {
+  mode: 'native'
+  webRuntime?: boolean | WeappNativeWebRuntimeConfig
+  /**
+   * @deprecated 已废弃，请迁移到 `weapp.appPrelude.webRuntime`。
+   */
+  requestRuntime?: boolean | WeappNativeRequestRuntimeConfig
+}
+
+/**
+ * @description `app.prelude` 前置注入配置
+ */
+export type WeappAppPreludeConfig = WeappLegacyAppPreludeConfig | WeappNativeAppPreludeConfig
 
 /**
  * @description 本地 npm 构建配置

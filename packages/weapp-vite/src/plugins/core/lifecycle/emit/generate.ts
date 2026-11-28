@@ -490,6 +490,8 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
     webRuntime: configService.weappViteConfig?.injectWebRuntimeGlobals,
     injectRequestGlobals: configService.weappViteConfig?.injectRequestGlobals,
   }, configService.packageJson, message => logger.warn(message))
+  const nativeWebRuntimeInjectConfigured = injectRequestGlobalsOptions?.native === true
+    && Boolean(injectRequestGlobalsOptions.targets.length)
   const npmBuildCandidateDependencies = resolveNpmBuildCandidateDependencyRecordSync(ctx, configService.packageJson)
 
   return async function generateBundle(this: any, _options: any, bundle: any) {
@@ -498,6 +500,8 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
       ctx.moduleGraphService?.bindBuildContext(state, this)
       ctx.moduleGraphService?.bindPluginContext(state, this)
       const rolldownBundle = bundle as unknown as OutputBundle
+      // 策略属于整个编译 session；局部 HMR 产物可能不包含未变化的 shim chunk。
+      const usesNativeWebRuntimeInject = state.nativeWebRuntimeInjectEnabled === true && nativeWebRuntimeInjectConfigured
       const nativeAssetBundle = isPluginBuild ? { ...rolldownBundle } : rolldownBundle
       if (isPluginBuild) {
         filterPluginBundleOutputs(nativeAssetBundle, configService)
@@ -556,7 +560,8 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
         )
         return
       }
-      const shouldInjectRequestGlobalsPrelude = injectRequestGlobalsOptions?.prelude === true
+      const shouldInjectRequestGlobalsPrelude = !usesNativeWebRuntimeInject
+        && injectRequestGlobalsOptions?.prelude === true
         && Boolean(scanService.appEntry || subPackageMeta)
       // 先移除无效预加载并同步当前 require 边，再推导本代真实发布依赖。
       removeImplicitPagePreloads(rolldownBundle, {
@@ -826,7 +831,10 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
 
       const appPreludePath = scanService.appEntry?.preludePath
       const appPreludeOptions = resolveAppPreludeOptions(state)
-      const shouldRunAppPrelude = (appPreludeOptions.enabled && Boolean(appPreludePath))
+      const usesNativeCustomAppPrelude = appPreludeOptions.mode === 'native'
+        && appPreludeOptions.enabled
+        && Boolean(appPreludePath)
+      const shouldRunAppPrelude = (!usesNativeCustomAppPrelude && appPreludeOptions.enabled && Boolean(appPreludePath))
         || shouldInjectRequestGlobalsPrelude
       const appPreludeCode = shouldRunAppPrelude
         ? await resolveAppPreludeCode(appPreludePath, {
@@ -837,17 +845,20 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
           })
         : undefined
       // auto 模式下，依赖规则提供基础 eager 集合，业务 chunk 与用户 prelude 的实际引用补充启动期目标。
+      // native 走精确绑定，不生成安装器，eager 集合只保留显式声明。
       const requestGlobalsEagerTargets = injectRequestGlobalsOptions?.targets?.length
-        ? resolveRequestGlobalsEagerTargets(
-            rolldownBundle,
-            injectRequestGlobalsOptions.targets,
-            injectRequestGlobalsOptions.mode,
-            injectRequestGlobalsOptions.eagerTargets ?? injectRequestGlobalsOptions.targets,
-            appPreludeCode,
-            requestGlobalsAnalysis,
-          )
+        ? (usesNativeWebRuntimeInject
+            ? injectRequestGlobalsOptions.eagerTargets ?? injectRequestGlobalsOptions.targets
+            : resolveRequestGlobalsEagerTargets(
+                rolldownBundle,
+                injectRequestGlobalsOptions.targets,
+                injectRequestGlobalsOptions.mode,
+                injectRequestGlobalsOptions.eagerTargets ?? injectRequestGlobalsOptions.targets,
+                appPreludeCode,
+                requestGlobalsAnalysis,
+              ))
         : []
-      const installerChunks = injectRequestGlobalsOptions?.targets?.length
+      const installerChunks = !usesNativeWebRuntimeInject && injectRequestGlobalsOptions?.targets?.length
         ? injectRequestGlobalsBundleRuntime(
             rolldownBundle,
             injectRequestGlobalsOptions.targets,
@@ -858,21 +869,23 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
           )
         : new Map<string, string>()
       if (injectRequestGlobalsOptions?.targets?.length) {
-        injectRequestGlobalsPassiveBindings(rolldownBundle, installerChunks, injectRequestGlobalsOptions.targets, injectRequestGlobalsOptions.mode, state.entriesMap, requestGlobalsAnalysis)
-        injectRequestGlobalsLocalBindings(
-          rolldownBundle,
-          installerChunks,
-          injectRequestGlobalsOptions.targets,
-          injectRequestGlobalsOptions.mode,
-          state.entriesMap,
-          injectRequestGlobalsOptions.networkDefaults,
-          requestGlobalsAnalysis,
-        )
-        injectAxiosFetchAdapterEnv(rolldownBundle)
-        injectRequestGlobalsAppRegistration(rolldownBundle, installerChunks)
-        // 开发产物跨局部重建复用，不能删除下一轮原始 runtime 仍会引用的支持块。
-        if (!configService.isDev) {
-          collapseRequestGlobalsRuntimeSupportChunk(rolldownBundle)
+        if (!usesNativeWebRuntimeInject) {
+          injectRequestGlobalsPassiveBindings(rolldownBundle, installerChunks, injectRequestGlobalsOptions.targets, injectRequestGlobalsOptions.mode, state.entriesMap, requestGlobalsAnalysis)
+          injectRequestGlobalsLocalBindings(
+            rolldownBundle,
+            installerChunks,
+            injectRequestGlobalsOptions.targets,
+            injectRequestGlobalsOptions.mode,
+            state.entriesMap,
+            injectRequestGlobalsOptions.networkDefaults,
+            requestGlobalsAnalysis,
+          )
+          injectRequestGlobalsAppRegistration(rolldownBundle, installerChunks)
+          injectAxiosFetchAdapterEnv(rolldownBundle)
+          // 开发产物跨局部重建复用，不能删除下一轮原始 runtime 仍会引用的支持块。
+          if (!configService.isDev) {
+            collapseRequestGlobalsRuntimeSupportChunk(rolldownBundle)
+          }
         }
       }
 

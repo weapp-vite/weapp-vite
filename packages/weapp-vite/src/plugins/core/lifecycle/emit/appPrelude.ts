@@ -70,6 +70,7 @@ export async function resolveAppPreludeCode(
   options?: {
     importMetaDefineRegistry?: ImportMetaDefineRegistry
     relativePath?: string
+    exportRunner?: boolean
   },
 ) {
   if (!preludePath) {
@@ -103,6 +104,21 @@ export async function resolveAppPreludeCode(
   const normalizedCode = importMetaCode.replace(USE_STRICT_PREFIX_RE, '').trim()
   if (!normalizedCode) {
     return undefined
+  }
+
+  if (options?.exportRunner) {
+    return [
+      `/* ${APP_PRELUDE_CHUNK_MARKER} */`,
+      'export function runAppPrelude() {',
+      `  if (globalThis[${JSON.stringify(APP_PRELUDE_GUARD_KEY)}]) {`,
+      '    return',
+      '  }',
+      `  globalThis[${JSON.stringify(APP_PRELUDE_GUARD_KEY)}] = true`,
+      '  {',
+      normalizedCode,
+      '  }',
+      '}',
+    ].join('\n')
   }
 
   return [
@@ -265,8 +281,9 @@ export function injectAppPreludeCode(
   const installerDependencies = requestGlobalsPreludeOptions.enabled
     ? collectRequestGlobalsInstallerDependencies(bundle, requestGlobalsPreludeOptions.installerChunks.keys(), analysis)
     : new Set<string>()
-  const entryChunkFileNames = options.mode === 'entry' ? collectAppPreludeEntryChunkFileNames(state) : undefined
-  if (options.mode === 'require' && (appPreludeCode || requestGlobalsPreludeOptions.enabled)) {
+  const preludeMode = options.mode
+  const entryChunkFileNames = preludeMode === 'entry' ? collectAppPreludeEntryChunkFileNames(state) : undefined
+  if (preludeMode === 'require' && (appPreludeCode || requestGlobalsPreludeOptions.enabled)) {
     preservedRequestGlobalsInstallerChunks = emitAppPreludeRequireAssets(bundle, appPreludeCode, state, requestGlobalsPreludeOptions, emitFile, analysis)
   }
   for (const output of Object.values(bundle)) {
@@ -284,7 +301,7 @@ export function injectAppPreludeCode(
     if (entryChunkFileNames && !isTargetEntryChunk) {
       continue
     }
-    const requestGlobalsPreludeCode = requestGlobalsPreludeOptions.enabled && options.mode !== 'require'
+    const requestGlobalsPreludeCode = requestGlobalsPreludeOptions.enabled && preludeMode !== 'require'
       ? createRequestGlobalsPreludeCode(
           chunk,
           requestGlobalsPreludeOptions.installerChunks,
@@ -298,7 +315,7 @@ export function injectAppPreludeCode(
       || hasRequestGlobalsPreludeDependency(chunk, requestGlobalsPreludeOptions, analysis)
     const injectedCode = [
       requestGlobalsPreludeCode,
-      options.mode === 'require'
+      preludeMode === 'require'
         ? shouldInjectRequirePrelude
           ? createAppPreludeRequireStatement(chunk.fileName, resolveAppPreludeRequireFileName(chunk.fileName, state))
           : undefined

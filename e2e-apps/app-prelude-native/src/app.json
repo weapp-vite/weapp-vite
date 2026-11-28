@@ -1,6 +1,8 @@
 {
   "pages": [
-    "pages/index/index"
+    "pages/index/index",
+    "pages/native-api/index",
+    "pages/native-vue/index"
   ],
   "subPackages": [
     {

@@ -47,12 +47,14 @@ export function injectRequestGlobalsIntoLoadResult(
   targets: string[],
   options?: {
     localBindings?: boolean
+    nativeModuleId?: string
+    nativeModuleIds?: string[]
     networkDefaults?: MiniProgramNetworkDefaults
     passiveLocalBindings?: boolean
     sourceMap?: boolean
   },
 ) {
-  if (!result || typeof result !== 'object' || !('code' in result) || typeof result.code !== 'string' || targets.length === 0) {
+  if (!result || typeof result !== 'object' || !('code' in result) || typeof result.code !== 'string' || (targets.length === 0 && !options?.nativeModuleId && !options?.nativeModuleIds?.length)) {
     return result
   }
 

@@ -1,4 +1,4 @@
-import { resolvePreludeLog, resolveRequestRuntimeState } from '../../shared/acceptance'
+import { markNativePageLoad, resolvePreludeLog, resolveRequestRuntimeState } from '../../shared/acceptance'
 import { sharedRouteLabel } from '../../shared/runtime'
 
 Page({
@@ -7,5 +7,8 @@ Page({
     sharedRouteLabel,
     preludeLog: resolvePreludeLog(),
     requestRuntime: resolveRequestRuntimeState(),
+  },
+  onLoad() {
+    markNativePageLoad('main')
   },
 })

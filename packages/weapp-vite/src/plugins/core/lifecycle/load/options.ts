@@ -9,6 +9,8 @@ import { createLogicalEntryId } from '../../../../moduleGraph/protocol'
 import { normalizeSourceId } from '../../../../moduleGraph/traversal'
 import { getSelectedAutoRouteSource } from '../../../../runtime/autoRoutesPlugin/selection'
 import { prepareIndependentOutputs } from '../../../../runtime/buildPlugin/independentPlan'
+import { resolveRequestRuntimeOptions } from '../../../../runtime/config/internal/injectRequestGlobals'
+import { createWebRuntimeNativeInject } from '../../../../runtime/config/internal/injectRequestGlobals/nativeInject'
 import { resolveWeappLibEntries } from '../../../../runtime/lib'
 import { findJsEntry, findVueEntry, normalizeAppJson } from '../../../../utils'
 import { createCachedEntryResolveOptions, resolveEntryPath } from '../../../../utils/entryResolve'
@@ -144,8 +146,40 @@ async function resolvePluginOnlyInput(state: CorePluginState) {
 export function createOptionsHook(state: CorePluginState) {
   const { ctx, subPackageMeta } = state
   const { scanService, configService } = ctx
-
+  const requestGlobalsOptions = resolveRequestRuntimeOptions({
+    appPrelude: configService.weappViteConfig?.appPrelude,
+    webRuntime: configService.weappViteConfig?.injectWebRuntimeGlobals,
+    injectRequestGlobals: configService.weappViteConfig?.injectRequestGlobals,
+  }, configService.packageJson)
   return async function options(this: any, options: any) {
+    const transform = options.transform ?? {}
+    const appPreludeConfig = configService.weappViteConfig?.appPrelude
+    const needsNativeAppPreludeEntry = typeof appPreludeConfig === 'object'
+      && appPreludeConfig !== null
+      && appPreludeConfig.mode === 'native'
+      && appPreludeConfig.enabled !== false
+    const mainAppEntry = !configService.weappLibConfig?.enabled && (!subPackageMeta || needsNativeAppPreludeEntry)
+      ? await scanService.loadAppEntry?.()
+      : undefined
+    const nativeAppPreludeEnabled = needsNativeAppPreludeEntry
+      && Boolean(scanService.appEntry?.preludePath)
+    const nativeWebRuntimeInject = requestGlobalsOptions?.native === true
+      ? createWebRuntimeNativeInject(
+          requestGlobalsOptions.targets,
+          requestGlobalsOptions.networkDefaults,
+          transform.inject,
+          requestGlobalsOptions.globalTargets,
+        )
+      : null
+    state.nativeAppPreludeEnabled = nativeAppPreludeEnabled
+    state.nativeWebRuntimeInjectEnabled = Boolean(nativeWebRuntimeInject)
+    state.nativeWebRuntimeInjectPlan = nativeWebRuntimeInject
+    if (nativeWebRuntimeInject) {
+      options.transform = {
+        ...transform,
+        inject: nativeWebRuntimeInject.inject,
+      }
+    }
     if (this) {
       ctx.moduleGraphService?.bindPluginContext(state, this)
     }
@@ -198,7 +232,7 @@ export function createOptionsHook(state: CorePluginState) {
           weappLibOutputMap: undefined,
         }
       }
-      const appEntry = await scanService.loadAppEntry()
+      const appEntry = mainAppEntry ?? await scanService.loadAppEntry()
       if (configService.pluginOnly) {
         scannedInput = Object.fromEntries(
           Object.entries(await resolvePluginOnlyInput(state)).map(([name, input]) => [name, {

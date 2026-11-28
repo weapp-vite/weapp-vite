@@ -31,7 +31,7 @@ it('resolves each project package once while checking every distinct alias entry
 
   const aliases = resolveBuiltinPackageAliases({ cwd, isDev: true })
 
-  expect(aliases).toHaveLength(15)
+  expect(aliases).toHaveLength(16)
   expect(packageReads('@weapp-core/shared')).toHaveLength(1)
   expect(packageReads('wevu')).toHaveLength(1)
   for (const { replacement } of aliases) {
@@ -39,6 +39,7 @@ it('resolves each project package once while checking every distinct alias entry
   }
   expect(aliases).toContainEqual({ find: 'wevu/compiler', replacement: path.join(roots.get('wevu')!, 'dist/dev/compiler.mjs') })
   expect(aliases).toContainEqual({ find: '@weapp-core/shared/platforms/runtime', replacement: path.join(roots.get('@weapp-core/shared')!, 'dist/platforms/runtime/index.js') })
+  expect(aliases).toContainEqual({ find: '@weapp-core/shared/platforms/runtime/global-keys', replacement: path.join(roots.get('@weapp-core/shared')!, 'dist/platforms/runtime/globalKeys.js') })
 })
 
 it('resolves missing project packages once within one synchronous alias resolution', () => {

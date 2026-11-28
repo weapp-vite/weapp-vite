@@ -1,5 +1,6 @@
 import type { ResolvedConfig } from 'vite'
 import type { BuildTarget, CompilerContext } from '../../../context'
+import type { WebRuntimeNativeInject } from '../../../runtime/config/internal/injectRequestGlobals/nativeInject'
 import type { Entry, SubPackageMetaValue } from '../../../types'
 import type { JsonEmitRecord } from '../../hooks/useLoadEntry/jsonEmit'
 
@@ -21,6 +22,9 @@ export interface CorePluginState {
   watchFilesSnapshot: string[]
   buildTarget: BuildTarget
   resolvedConfig?: ResolvedConfig
+  nativeWebRuntimeInjectEnabled?: boolean
+  nativeWebRuntimeInjectPlan?: WebRuntimeNativeInject | null
+  nativeAppPreludeEnabled?: boolean
   hmrState: {
     didEmitAllEntries: boolean
     hasBuiltOnce: boolean

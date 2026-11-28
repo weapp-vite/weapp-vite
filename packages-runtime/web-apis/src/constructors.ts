@@ -1,9 +1,9 @@
+import { resolveGlobalValue } from './globalValue'
 import { URLPolyfill, URLSearchParamsPolyfill } from './url'
 
 export function resolveUrlConstructor() {
-  return typeof globalThis.URL === 'function'
-    ? globalThis.URL
-    : undefined
+  const HostUrl = resolveGlobalValue<typeof URL>('URL')
+  return typeof HostUrl === 'function' ? HostUrl : undefined
 }
 
 export function isUrlInstance(value: unknown): value is URL | URLPolyfill {
@@ -15,9 +15,8 @@ export function isUrlInstance(value: unknown): value is URL | URLPolyfill {
 }
 
 export function resolveUrlSearchParamsConstructor() {
-  return typeof globalThis.URLSearchParams === 'function'
-    ? globalThis.URLSearchParams
-    : undefined
+  const HostUrlSearchParams = resolveGlobalValue<typeof URLSearchParams>('URLSearchParams')
+  return typeof HostUrlSearchParams === 'function' ? HostUrlSearchParams : undefined
 }
 
 export function isUrlSearchParamsInstance(value: unknown): value is URLSearchParams | URLSearchParamsPolyfill {
@@ -29,13 +28,11 @@ export function isUrlSearchParamsInstance(value: unknown): value is URLSearchPar
 }
 
 export function resolveTextEncoderConstructor() {
-  return typeof globalThis.TextEncoder === 'function'
-    ? globalThis.TextEncoder
-    : undefined
+  const TextEncoderConstructor = resolveGlobalValue<typeof TextEncoder>('TextEncoder')
+  return typeof TextEncoderConstructor === 'function' ? TextEncoderConstructor : undefined
 }
 
 export function resolveTextDecoderConstructor() {
-  return typeof globalThis.TextDecoder === 'function'
-    ? globalThis.TextDecoder
-    : undefined
+  const TextDecoderConstructor = resolveGlobalValue<typeof TextDecoder>('TextDecoder')
+  return typeof TextDecoderConstructor === 'function' ? TextDecoderConstructor : undefined
 }

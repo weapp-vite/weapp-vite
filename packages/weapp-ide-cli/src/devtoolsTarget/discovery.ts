@@ -24,13 +24,17 @@ export function compareWechatDevtoolsVersions(a: string, b: string) {
   return 0
 }
 
+// Windows 对受 ACL 保护的系统目录（例如 WindowsApps）返回 EPERM，而不是 EACCES；
+// 候选扫描只是查找安装，不能因为某个目录不可列出而让全部安装发现失败。
+// 显式登记或显式传入的 CLI 仍会在后续检查阶段完整报错，不会被这里吞掉。
+const unscannableDirectoryErrors = ['ENOENT', 'EACCES', 'EPERM', 'ENOTDIR']
+
 async function directories(root: string) {
   try {
     return await fs.readdir(root, { withFileTypes: true })
   }
   catch (error) {
-    // Windows 的受保护目录（如 Program Files\WindowsApps）对普通用户返回 EPERM，不能中断安装扫描。
-    if (['ENOENT', 'EACCES', 'EPERM'].includes((error as NodeJS.ErrnoException).code ?? '')) {
+    if (unscannableDirectoryErrors.includes((error as NodeJS.ErrnoException).code ?? '')) {
       return []
     }
     throw error

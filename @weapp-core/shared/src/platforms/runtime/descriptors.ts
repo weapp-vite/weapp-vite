@@ -1,4 +1,12 @@
 import type { MiniProgramPlatformDescriptor, MiniProgramRuntimeCapabilities } from '../types'
+import {
+  ALIPAY_RUNTIME_GLOBAL_KEY,
+  JD_RUNTIME_GLOBAL_KEY,
+  SWAN_RUNTIME_GLOBAL_KEY,
+  TT_RUNTIME_GLOBAL_KEY,
+  WEAPP_RUNTIME_GLOBAL_KEY,
+  XHS_RUNTIME_GLOBAL_KEY,
+} from './globalKeys'
 
 export type MiniProgramRuntimeDescriptor = Pick<MiniProgramPlatformDescriptor, 'id' | 'aliases' | 'runtime'>
 
@@ -32,7 +40,7 @@ export const WEAPP_RUNTIME_DESCRIPTOR: MiniProgramRuntimeDescriptor = {
   id: 'weapp',
   aliases: ['weapp', 'wechat', 'weixin', 'wx'],
   runtime: {
-    globalObjectKey: 'wx',
+    globalObjectKey: WEAPP_RUNTIME_GLOBAL_KEY,
     hostConfigKey: DEFAULT_RUNTIME_HOST_CONFIG_KEY,
     globalResolvePriority: 1,
     routeGlobalResolvePriority: 0,
@@ -57,7 +65,7 @@ export const ALIPAY_RUNTIME_DESCRIPTOR: MiniProgramRuntimeDescriptor = {
   id: 'alipay',
   aliases: ['alipay', 'ali', 'my'],
   runtime: {
-    globalObjectKey: 'my',
+    globalObjectKey: ALIPAY_RUNTIME_GLOBAL_KEY,
     hostConfigKey: DEFAULT_RUNTIME_HOST_CONFIG_KEY,
     globalResolvePriority: 0,
     routeGlobalResolvePriority: 2,
@@ -74,7 +82,7 @@ export const SWAN_RUNTIME_DESCRIPTOR: MiniProgramRuntimeDescriptor = {
   id: 'swan',
   aliases: ['swan', 'baidu', 'bd'],
   runtime: {
-    globalObjectKey: 'swan',
+    globalObjectKey: SWAN_RUNTIME_GLOBAL_KEY,
     hostConfigKey: DEFAULT_RUNTIME_HOST_CONFIG_KEY,
     capabilities: DEFAULT_RUNTIME_CAPABILITIES,
     pageIdentityRules: DEFAULT_PAGE_IDENTITY_RULES,
@@ -85,7 +93,7 @@ export const TT_RUNTIME_DESCRIPTOR: MiniProgramRuntimeDescriptor = {
   id: 'tt',
   aliases: ['tt', 'toutiao', 'bytedance', 'douyin'],
   runtime: {
-    globalObjectKey: 'tt',
+    globalObjectKey: TT_RUNTIME_GLOBAL_KEY,
     hostConfigKey: DEFAULT_RUNTIME_HOST_CONFIG_KEY,
     globalResolvePriority: 2,
     routeGlobalResolvePriority: 1,
@@ -101,7 +109,7 @@ export const JD_RUNTIME_DESCRIPTOR: MiniProgramRuntimeDescriptor = {
   id: 'jd',
   aliases: ['jd', 'jingdong'],
   runtime: {
-    globalObjectKey: 'jd',
+    globalObjectKey: JD_RUNTIME_GLOBAL_KEY,
     hostConfigKey: DEFAULT_RUNTIME_HOST_CONFIG_KEY,
     capabilities: DEFAULT_RUNTIME_CAPABILITIES,
     pageIdentityRules: DEFAULT_PAGE_IDENTITY_RULES,
@@ -112,7 +120,7 @@ export const XHS_RUNTIME_DESCRIPTOR: MiniProgramRuntimeDescriptor = {
   id: 'xhs',
   aliases: ['xhs', 'xiaohongshu', 'little-red-book', 'red'],
   runtime: {
-    globalObjectKey: 'xhs',
+    globalObjectKey: XHS_RUNTIME_GLOBAL_KEY,
     hostConfigKey: DEFAULT_RUNTIME_HOST_CONFIG_KEY,
     capabilities: DEFAULT_RUNTIME_CAPABILITIES,
     pageIdentityRules: DEFAULT_PAGE_IDENTITY_RULES,

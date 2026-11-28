@@ -1,4 +1,4 @@
-import { resolvePreludeLog } from '../../../../shared/acceptance'
+import { markNativePageLoad, resolvePreludeLog, resolveRequestRuntimeState } from '../../../../shared/acceptance'
 import { sharedRouteLabel } from '../../../../shared/runtime'
 
 Page({
@@ -6,5 +6,9 @@ Page({
     route: 'independent-subpackage',
     preludeLog: resolvePreludeLog(),
     sharedRouteLabel,
+    requestRuntime: resolveRequestRuntimeState(),
+  },
+  onLoad() {
+    markNativePageLoad('independent')
   },
 })

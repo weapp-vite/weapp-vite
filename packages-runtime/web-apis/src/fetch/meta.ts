@@ -2,6 +2,7 @@ import type { WeapiMiniProgramRequestMethod } from '@wevu/api'
 import type { RequestGlobalsMiniProgramOptions } from '../networkDefaults'
 import type { URLPolyfill } from '../url'
 import { isUrlInstance, isUrlSearchParamsInstance } from '../constructors'
+import { resolveGlobalValue } from '../globalValue'
 import { RequestPolyfill } from '../http'
 import { consumeBodyValue, isReadableBodyStream, isStreamingRequestBody, readBodyStream } from '../http/body'
 import { createMultipartBoundary, encodeMultipartFormData } from '../multipart'
@@ -139,11 +140,12 @@ function isRequestLikeInput(input: unknown): input is RequestLikeInput {
 }
 
 function isFormDataInstance(value: unknown): value is FormData {
+  const HostFormData = resolveGlobalValue<typeof FormData>('FormData')
   return Boolean(
     value
     && typeof value === 'object'
     && (
-      (typeof FormData !== 'undefined' && value instanceof FormData)
+      (typeof HostFormData === 'function' && value instanceof HostFormData)
       || value instanceof FormDataPolyfill
     ),
   )

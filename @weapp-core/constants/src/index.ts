@@ -1,5 +1,5 @@
-export { resolveWebRuntimeGlobalTargetDependencies, WEB_RUNTIME_GLOBAL_TARGETS, WEB_RUNTIME_STREAM_TARGETS } from './webRuntimeGlobals'
-export type { WebRuntimeGlobalTarget } from './webRuntimeGlobals'
+export { resolveWebRuntimeGlobalTargetDependencies, WEB_RUNTIME_DERIVED_GLOBAL_TARGETS, WEB_RUNTIME_GLOBAL_INSTALL_PREDICATE, WEB_RUNTIME_GLOBAL_TARGETS, WEB_RUNTIME_STREAM_TARGETS } from './webRuntimeGlobals'
+export type { WebRuntimeDerivedGlobalTarget, WebRuntimeGlobalTarget } from './webRuntimeGlobals'
 
 export const APP_PRELUDE_CHUNK_MARKER = '__wvAPR__'
 export const APP_PRELUDE_GUARD_KEY = '__ai'
@@ -12,6 +12,8 @@ export const REQUEST_GLOBAL_LOCAL_BINDINGS_MARKER = '__wvRGC__'
 export const REQUEST_GLOBAL_BUNDLE_MARKER = '__wvRGB__'
 export const REQUEST_GLOBAL_ACTUALS_KEY = '__ra'
 export const REQUEST_GLOBAL_PLACEHOLDER_KEY = '__rp'
+/** 标记 native 桥接已安装的全局值；HMR 重载时可替换自身旧实例，同时保留真实宿主实现。 */
+export const REQUEST_GLOBAL_NATIVE_OWNER_KEY = '__wvRGN__'
 /** 标记真实 Web Runtime installer，供编译器定位而不依赖压缩后的函数名或函数体。 */
 export const REQUEST_GLOBAL_INSTALLER_MARKER = '__wvRGM__'
 

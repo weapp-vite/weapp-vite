@@ -62,6 +62,7 @@ describe.each([false, true])('issue #1263 shared chunk diagnostics, development=
       },
     })
 
+    expect(fixture.output.codeSplitting.groups.every(group => typeof group.debugName === 'string' && group.debugName.length > 0)).toBe(true)
     expect(labeled.diagnostics.filter(log => log.code === 'MISSING_CODE_SPLITTING_GROUP_DEBUG_NAME')).toEqual([])
     expect(unlabeled.diagnostics.filter(log => log.code === 'MISSING_CODE_SPLITTING_GROUP_DEBUG_NAME'))
       .toHaveLength(fixture.output.codeSplitting.groups.length)

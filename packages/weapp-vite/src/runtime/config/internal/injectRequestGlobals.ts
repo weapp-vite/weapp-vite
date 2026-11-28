@@ -4,10 +4,10 @@ import type {
   WeappAppPreludeConfig,
   WeappInjectRequestGlobalsConfig,
   WeappInjectRequestGlobalsTarget,
+  WeappInjectWebRuntimeDeclaredGlobalTarget,
   WeappInjectWebRuntimeGlobalsConfig,
   WeappInjectWebRuntimeGlobalsTarget,
-  WeappRequestRuntimeConfig,
-  WeappWebRuntimeConfig,
+  WeappNativeWebRuntimeConfig,
 } from '../../../types'
 import {
   REQUEST_GLOBAL_ACTUALS_KEY,
@@ -32,6 +32,12 @@ import {
   REQUEST_GLOBAL_EARLY_CAPABILITY_HELPER,
 } from './injectRequestGlobals/earlyCapabilities'
 import {
+  createRequestGlobalsInstallerOptionsCode,
+  resolveRequestGlobalsBindingTargets,
+  resolveRequestGlobalsRuntimeModuleId,
+  WEB_RUNTIME_GLOBAL_OBJECT_NAMES,
+} from './injectRequestGlobals/runtime'
+import {
   ABORT_REQUEST_GLOBAL_TARGETS,
   FULL_REQUEST_GLOBAL_TARGETS,
   REQUEST_RUNTIME_REQUEST_TARGETS,
@@ -39,6 +45,7 @@ import {
   STREAM_REQUEST_GLOBAL_TARGETS,
 } from './injectRequestGlobals/targets'
 
+export { createRequestGlobalsInstallerOptionsCode, resolveRequestGlobalsBindingTargets } from './injectRequestGlobals/runtime'
 export { ABORT_REQUEST_GLOBAL_TARGETS, FULL_REQUEST_GLOBAL_TARGETS, REQUEST_RUNTIME_REQUEST_TARGETS } from './injectRequestGlobals/targets'
 
 const REQUEST_RUNTIME_CORE_USAGE_TARGETS = new Set<WeappInjectWebRuntimeGlobalsTarget>([
@@ -60,17 +67,6 @@ const DEFAULT_ABORT_GLOBAL_DEPENDENCIES = ['@tanstack/query-core', '@tanstack/vu
 const WEBSOCKET_USAGE_HINT_RE = /\bwebsocket\b/iu
 // 短包名不能用裸 includes 做文本判定，否则容易把无关字符串误判为依赖引用。
 const REQUEST_GLOBAL_KNOWN_DEPENDENCY_SPECIFIER_RE = /['"](?:ky|stream-markdown-parser)(?:\/[^'"]*)?['"]/u
-type WeappRequestGlobalFreeBindingTarget = WeappInjectRequestGlobalsTarget | 'URL' | 'URLSearchParams' | 'Blob' | 'File' | 'FormData'
-
-const REQUEST_GLOBAL_FREE_BINDING_TARGETS = new Set<WeappRequestGlobalFreeBindingTarget>([
-  ...FULL_REQUEST_GLOBAL_TARGETS,
-  'URL',
-  'URLSearchParams',
-  'Blob',
-  'File',
-  'FormData',
-])
-
 export interface InjectRequestGlobalsAutoRule {
   dependencyPatterns: (string | RegExp)[]
   targets: WeappInjectWebRuntimeGlobalsTarget[]
@@ -90,7 +86,12 @@ export interface ResolvedInjectRequestGlobalsOptions {
   eagerTargets?: WeappInjectWebRuntimeGlobalsTarget[]
   dependencyPatterns?: (string | RegExp)[]
   networkDefaults?: MiniProgramNetworkDefaults
-  prelude: boolean
+  /** 仅旧模式有意义：是否在业务入口前安装全局对象。native 不返回该字段（精确绑定无入口前置安装时机）。 */
+  prelude?: boolean
+  /** native 模式下需要显式安装到全局对象的目标（精确补充静态推断不到的隐藏访问）。 */
+  globalTargets?: WeappInjectWebRuntimeDeclaredGlobalTarget[]
+  /** 仅显式选择 `appPrelude.mode: 'native'` 时启用 Rolldown 原生注入。 */
+  native?: true
 }
 
 export interface ResolveRequestRuntimeOptionsInput {
@@ -125,27 +126,23 @@ const CODE_USAGE_AUTO_RULES: InjectRequestGlobalsAutoRule[] = [
 function resolveAppPreludeWebRuntimeConfig(
   appPrelude?: boolean | WeappAppPreludeConfig,
   warn?: (message: string) => void,
+  native = false,
 ): boolean | WeappInjectWebRuntimeGlobalsConfig | undefined {
   if (!appPrelude || typeof appPrelude !== 'object') {
     return undefined
   }
 
-  const webRuntime = appPrelude.webRuntime as boolean | WeappWebRuntimeConfig | undefined
-  const requestRuntime = appPrelude.requestRuntime as boolean | WeappRequestRuntimeConfig | undefined
+  const webRuntime = appPrelude.webRuntime as boolean | WeappInjectWebRuntimeGlobalsConfig | undefined
+  const requestRuntime = appPrelude.requestRuntime as boolean | WeappInjectWebRuntimeGlobalsConfig | undefined
 
   if (webRuntime !== undefined) {
     if (requestRuntime !== undefined) {
       warn?.('`weapp.appPrelude.requestRuntime` 已废弃，且当前会被 `weapp.appPrelude.webRuntime` 覆盖。请迁移到 `weapp.appPrelude.webRuntime`。')
     }
     if (typeof webRuntime === 'boolean') {
-      return webRuntime
-        ? { enabled: true, prelude: true }
-        : false
+      return webRuntime ? { enabled: true, prelude: !native } : false
     }
-    return {
-      ...webRuntime,
-      prelude: true,
-    }
+    return native ? webRuntime : { ...webRuntime, prelude: true }
   }
 
   if (requestRuntime === undefined) {
@@ -153,14 +150,9 @@ function resolveAppPreludeWebRuntimeConfig(
   }
   warn?.('`weapp.appPrelude.requestRuntime` 已废弃，请迁移到 `weapp.appPrelude.webRuntime`。')
   if (typeof requestRuntime === 'boolean') {
-    return requestRuntime
-      ? { enabled: true, prelude: true }
-      : false
+    return requestRuntime ? { enabled: true, prelude: !native } : false
   }
-  return {
-    ...requestRuntime,
-    prelude: true,
-  }
+  return native ? requestRuntime : { ...requestRuntime, prelude: true }
 }
 
 function hasMatchedDependency(
@@ -219,9 +211,9 @@ function hasConfiguredNetworkDefaults(config?: boolean | WeappInjectRequestGloba
   )
 }
 
-function resolveAutoPrelude(config?: boolean | WeappInjectRequestGlobalsConfig) {
+function resolveAutoPrelude(config?: boolean | WeappInjectRequestGlobalsConfig, native = false) {
   if (!config || typeof config !== 'object' || !hasOwn(config, 'prelude')) {
-    return true
+    return !native
   }
   return config.prelude === true
 }
@@ -266,6 +258,7 @@ function resolveAutoRules(config?: boolean | WeappInjectRequestGlobalsConfig): I
 export function resolveInjectRequestGlobalsOptions(
   config: boolean | WeappInjectRequestGlobalsConfig | undefined,
   packageJson: PackageJson | undefined,
+  native = false,
 ): ResolvedInjectRequestGlobalsOptions | null {
   if (config === false) {
     return null
@@ -282,6 +275,25 @@ export function resolveInjectRequestGlobalsOptions(
   const networkDefaults = config && typeof config === 'object'
     ? config.networkDefaults
     : undefined
+
+  if (native) {
+    const nativeConfig = config && typeof config === 'object'
+      ? config as WeappNativeWebRuntimeConfig
+      : undefined
+    const targets = resolveTargets(config)
+    const declaredGlobalTargets = Array.isArray(nativeConfig?.globalTargets) && nativeConfig.globalTargets.length > 0
+      ? [...new Set(nativeConfig.globalTargets)]
+      : undefined
+    // native 固定精确行为，无 install/vendorChunk/prelude 开关：自由标识符与全局对象点号访问精确绑定（可 tree-shake）；
+    // 计算属性、全局解构、别名等无法按固定点号键注入的访问与 globalTargets 声明的目标生成宿主优先桥接；分包交给打包器自然分组。
+    // globalTargets 只收声明目标，其必要依赖闭包由注入计划补齐；不全量安装未用实现。
+    return {
+      mode: 'explicit',
+      targets,
+      ...(networkDefaults !== undefined ? { networkDefaults } : {}),
+      ...(declaredGlobalTargets ? { globalTargets: declaredGlobalTargets } : {}),
+    }
+  }
 
   if (enabled === true || hasConfiguredNetworkDefaults(config)) {
     return {
@@ -316,7 +328,7 @@ export function resolveInjectRequestGlobalsOptions(
     mode: 'auto',
     targets: [...matchedTargets],
     eagerTargets: [...matchedEagerTargets],
-    prelude: resolveAutoPrelude(config),
+    prelude: resolveAutoPrelude(config, native),
   }
 }
 
@@ -325,9 +337,18 @@ export function resolveRequestRuntimeOptions(
   packageJson: PackageJson | undefined,
   warn?: (message: string) => void,
 ): ResolvedInjectRequestGlobalsOptions | null {
-  const nestedConfig = resolveAppPreludeWebRuntimeConfig(input.appPrelude, warn)
+  const native = Boolean(
+    input.appPrelude
+    && typeof input.appPrelude === 'object'
+    && input.appPrelude.enabled !== false
+    && input.appPrelude.mode === 'native',
+  )
+  const nestedConfig = resolveAppPreludeWebRuntimeConfig(input.appPrelude, warn, native)
   const preferredTopLevelConfig = input.webRuntime
   const legacyConfig = input.injectRequestGlobals
+  const withNativeMode = (options: ResolvedInjectRequestGlobalsOptions | null) => native && options
+    ? { ...options, native: true as const }
+    : options
 
   if (nestedConfig !== undefined) {
     if (preferredTopLevelConfig !== undefined) {
@@ -336,62 +357,21 @@ export function resolveRequestRuntimeOptions(
     if (legacyConfig !== undefined) {
       warn?.('`weapp.injectRequestGlobals` 已废弃，且当前会被 `weapp.appPrelude.webRuntime` 覆盖。请迁移到 `weapp.appPrelude.webRuntime`。')
     }
-    return resolveInjectRequestGlobalsOptions(nestedConfig, packageJson)
+    return withNativeMode(resolveInjectRequestGlobalsOptions(nestedConfig, packageJson, native))
   }
 
   if (preferredTopLevelConfig !== undefined) {
     if (legacyConfig !== undefined) {
       warn?.('`weapp.injectRequestGlobals` 已废弃，且当前会被 `weapp.injectWebRuntimeGlobals` 覆盖。请迁移到 `weapp.injectWebRuntimeGlobals`。')
     }
-    return resolveInjectRequestGlobalsOptions(preferredTopLevelConfig, packageJson)
+    return withNativeMode(resolveInjectRequestGlobalsOptions(preferredTopLevelConfig, packageJson, native))
   }
 
   if (legacyConfig !== undefined) {
     warn?.('`weapp.injectRequestGlobals` 已废弃，请迁移到 `weapp.appPrelude.webRuntime`。')
   }
 
-  return resolveInjectRequestGlobalsOptions(legacyConfig, packageJson)
-}
-
-function resolveRequestGlobalsRuntimeModuleId() {
-  return 'weapp-vite/web-apis'
-}
-
-export function resolveRequestGlobalsBindingTargets(targets: WeappInjectRequestGlobalsTarget[]) {
-  const expandedTargets = resolveRequestGlobalsTargetDependencies(targets)
-  const bindingTargets: WeappRequestGlobalFreeBindingTarget[] = [...expandedTargets]
-  const needsRequestRuntimeBinarySupport = expandedTargets.some(target => (
-    target === 'fetch'
-    || target === 'Request'
-    || target === 'Response'
-    || target === 'XMLHttpRequest'
-    || target === 'WebSocket'
-  ))
-
-  if (needsRequestRuntimeBinarySupport) {
-    bindingTargets.push('TextEncoder', 'TextDecoder')
-    bindingTargets.push('URL', 'URLSearchParams', 'Blob', 'File', 'FormData')
-  }
-
-  if (targets.includes('CustomEvent')) {
-    bindingTargets.push('Event')
-  }
-
-  return [...new Set(bindingTargets)].filter(target => REQUEST_GLOBAL_FREE_BINDING_TARGETS.has(target))
-}
-
-/**
- * @description 生成运行时 installer 的选项代码。
- */
-export function createRequestGlobalsInstallerOptionsCode(
-  targets: WeappInjectRequestGlobalsTarget[],
-  networkDefaults?: MiniProgramNetworkDefaults,
-) {
-  const options = [`targets: ${JSON.stringify(targets)}`]
-  if (networkDefaults !== undefined) {
-    options.push(`networkDefaults: ${JSON.stringify(networkDefaults)}`)
-  }
-  return `{ ${options.join(', ')} }`
+  return withNativeMode(resolveInjectRequestGlobalsOptions(native ? true : legacyConfig, packageJson, native))
 }
 
 /**
@@ -558,6 +538,137 @@ function extractRequestGlobalsUsageSource(code: string) {
   ].filter((content): content is string => typeof content === 'string' && content.trim().length > 0)
 
   return blocks.join('\n')
+}
+
+const GLOBAL_OBJECT_NAMES = new Set<string>(WEB_RUNTIME_GLOBAL_OBJECT_NAMES)
+
+/** 仅分析无法被 Rolldown 点号注入覆盖、仍需写入全局的显式访问。 */
+export function resolveNativeGlobalTargets(code: string, allowedTargets: readonly string[]) {
+  if (allowedTargets.length === 0) {
+    return []
+  }
+  const usageSource = extractRequestGlobalsUsageSource(code)
+  if (!allowedTargets.some(target => containsIdentifierByText(usageSource, target))) {
+    return []
+  }
+
+  const allowedTargetSet = new Set(allowedTargets)
+  const referencedTargets = new Set<string>()
+  const aliasBindings = new Set<object>()
+  const resolveBinding = (name: string, scope: any) => scope?.getBinding?.(name)
+  const isAliasObject = (name: string, scope: any) => {
+    const binding = resolveBinding(name, scope)
+    return Boolean(binding && aliasBindings.has(binding))
+  }
+  const isGlobalObject = (name: string, scope: any) => {
+    const binding = resolveBinding(name, scope)
+    if (binding) {
+      return aliasBindings.has(binding)
+    }
+    return GLOBAL_OBJECT_NAMES.has(name)
+  }
+  const addPropertyTarget = (property: any) => {
+    const name = property?.type === 'Identifier'
+      ? property.name
+      : property?.type === 'StringLiteral'
+        ? property.value
+        : undefined
+    if (name && allowedTargetSet.has(name)) {
+      referencedTargets.add(name)
+    }
+  }
+  const isWriteOrDeleteTarget = (path: any) => {
+    const parent = path.parentPath
+    const node = path.node
+    if (!parent?.node) {
+      return false
+    }
+    if (parent.node.type === 'AssignmentExpression' && parent.node.left === node) {
+      return true
+    }
+    if (parent.node.type === 'UpdateExpression' && parent.node.argument === node) {
+      return true
+    }
+    return parent.node.type === 'UnaryExpression'
+      && parent.node.operator === 'delete'
+      && parent.node.argument === node
+  }
+  const collectMemberTarget = (path: any) => {
+    // 写入/自增/删除是用户显式操作，不需要先安装 polyfill；delete 的语法保护由 transform 阶段处理。
+    if (isWriteOrDeleteTarget(path)) {
+      return
+    }
+    const node = path.node
+    const objectName = node?.object?.type === 'Identifier' ? node.object.name : undefined
+    if (!objectName || !isGlobalObject(objectName, path.scope)) {
+      return
+    }
+    if (!node.computed && node.property?.type === 'Identifier') {
+      // 直接全局对象的普通点号访问由 transform.inject 精确改写；可选链不在其覆盖范围，
+      // 别名无法按固定键注入，因此这两种形式仍需桥接。
+      if (!isAliasObject(objectName, path.scope) && node.type !== 'OptionalMemberExpression') {
+        return
+      }
+      addPropertyTarget(node.property)
+      return
+    }
+    if (node.computed && node.property?.type === 'StringLiteral') {
+      addPropertyTarget(node.property)
+    }
+  }
+
+  try {
+    const ast = parseJsLike(usageSource) as any
+    // 先收集全部别名绑定，再分析访问，避免声明顺序影响；绑定对象同时用于区分参数/局部遮蔽。
+    traverse(ast, {
+      VariableDeclarator(path: any) {
+        const { id, init } = path.node
+        if (
+          id?.type === 'Identifier'
+          && init?.type === 'Identifier'
+          && GLOBAL_OBJECT_NAMES.has(init.name)
+          && !path.scope?.getBinding?.(init.name)
+        ) {
+          const binding = path.scope?.getBinding?.(id.name)
+          if (binding) {
+            aliasBindings.add(binding)
+          }
+        }
+      },
+    })
+    traverse(ast, {
+      ObjectPattern(path: any) {
+        const declarator = path.parentPath
+        if (!declarator?.isVariableDeclarator?.()) {
+          return
+        }
+        const init = declarator.node.init
+        const objectName = init?.type === 'Identifier' ? init.name : undefined
+        if (!objectName || !isGlobalObject(objectName, path.scope)) {
+          return
+        }
+        for (const property of path.node.properties) {
+          if (property?.type === 'ObjectProperty') {
+            addPropertyTarget(property.key)
+          }
+        }
+      },
+      MemberExpression: collectMemberTarget,
+      OptionalMemberExpression: collectMemberTarget,
+    })
+  }
+  catch {
+    if (!/\b(?:globalThis|global|self|window)\b/u.test(usageSource)) {
+      return []
+    }
+    for (const target of allowedTargets) {
+      if (containsIdentifierByText(usageSource, target)) {
+        referencedTargets.add(target)
+      }
+    }
+  }
+
+  return allowedTargets.filter(target => referencedTargets.has(target))
 }
 
 function resolveFallbackReferencedRequestGlobalsTargets(
@@ -846,10 +957,23 @@ export function createInjectRequestGlobalsCode(
   targets: WeappInjectRequestGlobalsTarget[],
   options?: {
     localBindings?: boolean
+    nativeModuleId?: string
+    nativeModuleIds?: string[]
     networkDefaults?: MiniProgramNetworkDefaults
     passiveLocalBindings?: boolean
   },
 ) {
+  const nativeModuleIds = options?.nativeModuleIds?.length
+    ? options.nativeModuleIds
+    : options?.nativeModuleId
+      ? [options.nativeModuleId]
+      : []
+  const nativeImportsCode = nativeModuleIds.length > 0
+    ? nativeModuleIds.map(moduleId => `import ${JSON.stringify(moduleId)};`).join('\n')
+    : ''
+  if (nativeImportsCode && targets.length === 0) {
+    return `${nativeImportsCode}\n`
+  }
   if (options?.passiveLocalBindings) {
     const passiveBindingsCode = createRequestGlobalsPassiveBindingsCode(targets)
     return passiveBindingsCode
@@ -860,6 +984,7 @@ export function createInjectRequestGlobalsCode(
   const runtimeModuleId = resolveRequestGlobalsRuntimeModuleId()
   const installerOptionsCode = createRequestGlobalsInstallerOptionsCode(targets, options?.networkDefaults)
   const lines = [
+    ...(nativeImportsCode ? [nativeImportsCode] : []),
     `import { installWebRuntimeGlobals as __weappViteInstallRequestGlobals } from ${JSON.stringify(runtimeModuleId)}`,
   ]
 
@@ -885,6 +1010,8 @@ export function createInjectRequestGlobalsSfcCode(
   targets: WeappInjectRequestGlobalsTarget[],
   options?: {
     localBindings?: boolean
+    nativeModuleId?: string
+    nativeModuleIds?: string[]
     networkDefaults?: MiniProgramNetworkDefaults
     passiveLocalBindings?: boolean
     setup?: boolean
@@ -899,11 +1026,13 @@ export function resolveRequestGlobalsSfcInjection(
   targets: WeappInjectRequestGlobalsTarget[],
   options?: {
     localBindings?: boolean
+    nativeModuleId?: string
+    nativeModuleIds?: string[]
     networkDefaults?: MiniProgramNetworkDefaults
     passiveLocalBindings?: boolean
   },
 ) {
-  if (targets.length === 0) {
+  if (targets.length === 0 && !options?.nativeModuleId && !options?.nativeModuleIds?.length) {
     return null
   }
 
@@ -980,6 +1109,8 @@ export function injectRequestGlobalsIntoSfc(
   targets: WeappInjectRequestGlobalsTarget[],
   options?: {
     localBindings?: boolean
+    nativeModuleId?: string
+    nativeModuleIds?: string[]
     networkDefaults?: MiniProgramNetworkDefaults
     passiveLocalBindings?: boolean
   },

@@ -14,6 +14,53 @@ export interface SnapshotOptions {
   dependenciesReady?: (directory: string) => Promise<boolean>
 }
 
+interface SnapshotCleanupOptions {
+  root: string
+  owned: string
+  directory: string
+  attached: boolean
+  env: Record<string, string | undefined>
+}
+
+function isRegisteredWorktree(inventory: string, directory: string) {
+  return inventory.split('\0').some(field => field.startsWith('worktree ') && path.resolve(field.slice(9)) === directory)
+}
+
+/**
+ * 回收本任务快照。Windows 上 git 可能先注销 worktree，再因目录树过大而删除失败；
+ * 此时只要注册记录已消失，就继续用 Node 删除任务目录，不把可恢复的清理错误升级为推送失败。
+ */
+export async function cleanupPushSnapshot(options: SnapshotCleanupOptions): Promise<void> {
+  const { root, owned, directory, attached, env } = options
+  const git = (args: string[]) => execa('git', verificationGitArgs(args), { cwd: root, env })
+  const inventory = await git(['worktree', 'list', '--porcelain', '-z'])
+  const registered = isRegisteredWorktree(inventory.stdout, directory)
+  let removeError: unknown
+  if (attached || registered) {
+    try {
+      await git(['worktree', 'remove', '--force', directory])
+    }
+    catch (error) {
+      removeError = error
+    }
+  }
+  try {
+    await rm(owned, { recursive: true, force: true })
+    if (removeError) {
+      const after = await git(['worktree', 'list', '--porcelain', '-z'])
+      if (isRegisteredWorktree(after.stdout, directory)) {
+        throw removeError
+      }
+    }
+  }
+  catch (error) {
+    if (removeError) {
+      throw new AggregateError([removeError, error], '候选快照清理失败')
+    }
+    throw error
+  }
+}
+
 /** 仅 clean 且身份相符时借用当前工作树；否则创建、安装并回收本任务快照。 */
 export async function withPushSnapshot<T>(options: SnapshotOptions, work: (directory: string) => Promise<T>): Promise<T> {
   const { root, head, env, signal } = options
@@ -51,12 +98,7 @@ export async function withPushSnapshot<T>(options: SnapshotOptions, work: (direc
   }
   try {
     // 取消后仍完成本任务 checkout 的定向清理，不传播已取消的 signal。
-    const inventory = await execa('git', verificationGitArgs(['worktree', 'list', '--porcelain', '-z']), { cwd: root, env })
-    const registered = inventory.stdout.split('\0').some(field => field.startsWith('worktree ') && path.resolve(field.slice(9)) === directory)
-    if (attached || registered) {
-      await execa('git', verificationGitArgs(['worktree', 'remove', '--force', directory]), { cwd: root, env })
-    }
-    await rm(owned, { recursive: true, force: true })
+    await cleanupPushSnapshot({ root, owned, directory, attached, env })
   }
   catch (error) {
     failures.push(error)

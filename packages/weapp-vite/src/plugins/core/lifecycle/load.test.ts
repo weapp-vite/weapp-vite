@@ -14,12 +14,20 @@ import path from 'pathe'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createLogicalEntryId } from '../../../moduleGraph/protocol'
 import { FULL_REQUEST_GLOBAL_TARGETS } from '../../../runtime/config/internal/injectRequestGlobals'
+import {
+  getWebRuntimeGlobalVirtualId,
+  WEB_RUNTIME_APP_PRELUDE_STARTUP_VIRTUAL_ID,
+  WEB_RUNTIME_INJECT_VIRTUAL_ID,
+} from '../../../runtime/config/internal/injectRequestGlobals/nativeInject'
 import { createLoadHook, createOptionsHook } from './load'
+import { createTransformHook } from './transform'
 
 const resolveWeappLibEntriesMock = vi.hoisted(() => vi.fn())
 const findJsEntryMock = vi.hoisted(() => vi.fn())
 const findVueEntryMock = vi.hoisted(() => vi.fn())
 const pathExistsCachedMock = vi.hoisted(() => vi.fn(async () => true))
+const resolveRequestGlobalsTargetsForCodeMock = vi.hoisted(() => vi.fn())
+const resolvePassiveRequestGlobalsTargetsMock = vi.hoisted(() => vi.fn())
 const FULL_REQUEST_GLOBAL_TARGETS_SERIALIZED = FULL_REQUEST_GLOBAL_TARGETS.map(target => JSON.stringify(target)).join(',')
 
 vi.mock('../../utils/cache', async () => {
@@ -53,6 +61,21 @@ vi.mock('../../../utils/entryResolve', async (importOriginal) => {
   }
 })
 
+vi.mock('./load/requestGlobals', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('./load/requestGlobals')>()
+  return {
+    ...actual,
+    resolveRequestGlobalsTargetsForCode: (...args: Parameters<typeof actual.resolveRequestGlobalsTargetsForCode>) => {
+      resolveRequestGlobalsTargetsForCodeMock(...args)
+      return actual.resolveRequestGlobalsTargetsForCode(...args)
+    },
+    resolvePassiveRequestGlobalsTargets: (...args: Parameters<typeof actual.resolvePassiveRequestGlobalsTargets>) => {
+      resolvePassiveRequestGlobalsTargetsMock(...args)
+      return actual.resolvePassiveRequestGlobalsTargets(...args)
+    },
+  }
+})
+
 describe('core lifecycle load hook injectWeapi', () => {
   beforeEach(() => {
     findJsEntryMock.mockReset()
@@ -61,6 +84,8 @@ describe('core lifecycle load hook injectWeapi', () => {
     findVueEntryMock.mockResolvedValue(undefined)
     pathExistsCachedMock.mockReset()
     pathExistsCachedMock.mockResolvedValue(true)
+    resolveRequestGlobalsTargetsForCodeMock.mockClear()
+    resolvePassiveRequestGlobalsTargetsMock.mockClear()
   })
 
   it('injects abort globals for tanstack query projects during app load', async () => {
@@ -1031,6 +1056,282 @@ describe('core lifecycle options hook', () => {
       '/project/src/pages/a/index.ts',
       '/project/src/pages/b/index.ts',
     ])
+  })
+
+  it('merges native WebRuntime inject defaults without replacing user mappings', async () => {
+    findJsEntryMock.mockResolvedValue({ path: '/project/src/pages/home/index.ts', predictions: [] })
+    const state = {
+      ctx: {
+        configService: {
+          absoluteSrcRoot: '/project/src',
+          relativeAbsoluteSrcRoot: (id: string) => id.replace('/project/src/', ''),
+          weappViteConfig: {
+            appPrelude: { mode: 'native' },
+            injectWebRuntimeGlobals: {
+              enabled: true,
+              targets: ['fetch'],
+              networkDefaults: { request: { timeout: 1234 } },
+            },
+          },
+        },
+        scanService: {},
+        buildService: {},
+      },
+      subPackageMeta: { entries: ['pages/home/index'] },
+    } as any
+    const options = {
+      transform: {
+        minify: false,
+        inject: {
+          fetch: ['virtual:user-fetch', 'default'],
+          userGlobal: 'virtual:user-global',
+        },
+      },
+    } as Record<string, any>
+
+    await createOptionsHook(state).call({ resolve: async (id: string) => ({ id }) }, options)
+
+    expect(state.nativeWebRuntimeInjectEnabled).toBe(true)
+    expect(options.transform.minify).toBe(false)
+    expect(options.transform.inject).toMatchObject({
+      fetch: ['virtual:user-fetch', 'default'],
+      userGlobal: 'virtual:user-global',
+      URL: [WEB_RUNTIME_INJECT_VIRTUAL_ID, 'URL'],
+      FormData: [WEB_RUNTIME_INJECT_VIRTUAL_ID, 'FormData'],
+    })
+  })
+
+  it('activates native custom prelude after loading the initial app entry', async () => {
+    const appSource = '/project/src/app.ts'
+    const appEntry = {
+      path: appSource,
+      preludePath: '/project/src/app.prelude.ts',
+      json: { pages: [] },
+      type: 'app',
+    }
+    findJsEntryMock.mockResolvedValue({ path: appSource, predictions: [] })
+    const scanService = {
+      appEntry: undefined as typeof appEntry | undefined,
+      loadAppEntry: vi.fn(async () => {
+        scanService.appEntry = appEntry
+        return appEntry
+      }),
+      loadSubPackages: vi.fn(async () => {}),
+    }
+    const state = {
+      ctx: {
+        configService: {
+          absoluteSrcRoot: '/project/src',
+          options: {},
+          relativeAbsoluteSrcRoot: (id: string) => id.replace('/project/src/', ''),
+          isDev: false,
+          weappViteConfig: {
+            injectWeapi: { enabled: false },
+            appPrelude: { mode: 'native' },
+            injectWebRuntimeGlobals: { enabled: true, targets: ['fetch'], prelude: false },
+          },
+        },
+        scanService,
+        runtimeState: {
+          build: { hmr: { fullEntryScan: true } },
+          lib: { entries: new Map() },
+        },
+        buildService: {},
+      },
+      buildTarget: 'app',
+      subPackageMeta: undefined,
+      entriesMap: new Map(),
+      loadedEntrySet: new Set(),
+      resolvedEntryMap: new Map(),
+      loadEntry: vi.fn(async () => ({ code: 'App({})' })),
+    } as any
+    const options: Record<string, any> = {}
+
+    await createOptionsHook(state).call({ resolve: async (id: string) => ({ id }) }, options)
+
+    expect(state.ctx.scanService.loadAppEntry).toHaveBeenCalledTimes(1)
+    expect(state.nativeAppPreludeEnabled).toBe(true)
+    expect(state.nativeWebRuntimeInjectPlan?.code).not.toContain('runAppPrelude')
+    const loaded = await createLoadHook(state).call({}, appSource) as { code: string }
+    expect(loaded.code).toContain(WEB_RUNTIME_APP_PRELUDE_STARTUP_VIRTUAL_ID)
+  })
+
+  it('loads the native custom prelude for an independent subpackage entry', async () => {
+    const relativeEntry = 'subpackages/independent/pages/entry/index'
+    const pageSource = `/project/src/${relativeEntry}.ts`
+    const appEntry = {
+      path: '/project/src/app.ts',
+      preludePath: '/project/src/app.prelude.ts',
+      json: { pages: [] },
+      type: 'app',
+    }
+    findJsEntryMock.mockImplementation(async (id: string) => ({
+      path: id === '/project/src/app' ? appEntry.path : pageSource,
+      predictions: [],
+    }))
+    const scanService = {
+      appEntry: undefined as typeof appEntry | undefined,
+      loadAppEntry: vi.fn(async () => {
+        scanService.appEntry = appEntry
+        return appEntry
+      }),
+    }
+    const state = {
+      ctx: {
+        configService: {
+          absoluteSrcRoot: '/project/src',
+          options: {},
+          relativeAbsoluteSrcRoot: (id: string) => id.replace('/project/src/', ''),
+          weappViteConfig: {
+            injectWeapi: { enabled: false },
+            appPrelude: { mode: 'native' },
+            injectWebRuntimeGlobals: { enabled: true, targets: ['fetch'], prelude: false },
+          },
+        },
+        scanService,
+        buildService: {},
+      },
+      subPackageMeta: { entries: [relativeEntry] },
+      entriesMap: new Map([[relativeEntry, { path: pageSource, type: 'page' }]]),
+      loadedEntrySet: new Set([pageSource]),
+      resolvedEntryMap: new Map(),
+      loadEntry: vi.fn(async () => ({ code: 'Page({})' })),
+    } as any
+
+    await createOptionsHook(state).call({ resolve: async (id: string) => ({ id }) }, {})
+    const loaded = await createLoadHook(state).call({}, pageSource) as { code: string }
+
+    expect(scanService.loadAppEntry).toHaveBeenCalledTimes(1)
+    expect(state.nativeAppPreludeEnabled).toBe(true)
+    expect(state.nativeWebRuntimeInjectPlan?.code).not.toContain('runAppPrelude')
+    expect(loaded.code).toContain(WEB_RUNTIME_APP_PRELUDE_STARTUP_VIRTUAL_ID)
+  })
+
+  it.each(['inline', 'entry', 'require'] as const)('keeps legacy injection behavior for appPrelude mode %s', async (mode) => {
+    const sourceId = '/project/src/pages/home/index.ts'
+    const source = 'export const read = () => fetch("/api")'
+    findJsEntryMock.mockResolvedValue({ path: sourceId, predictions: [] })
+    const userInject = {
+      fetch: ['virtual:user-fetch', 'default'],
+      userGlobal: 'virtual:user-global',
+    }
+    const state = {
+      ctx: {
+        configService: {
+          absoluteSrcRoot: '/project/src',
+          relativeAbsoluteSrcRoot: (id: string) => id.replace('/project/src/', ''),
+          packageJson: { dependencies: {} },
+          weappViteConfig: {
+            injectWeapi: { enabled: false },
+            appPrelude: { mode },
+            injectWebRuntimeGlobals: { enabled: true, targets: ['fetch'], prelude: false },
+          },
+        },
+        scanService: {},
+        buildService: {},
+      },
+      subPackageMeta: { entries: ['pages/home/index'] },
+      entriesMap: new Map(),
+      loadedEntrySet: new Set([sourceId]),
+      resolvedEntryMap: new Map(),
+      loadEntry: vi.fn(async () => ({ code: source })),
+    } as any
+    const options = {
+      transform: {
+        inject: userInject,
+      },
+    }
+
+    await createOptionsHook(state).call({ resolve: async (id: string) => ({ id }) }, options)
+    const loaded = await createLoadHook(state).call({}, sourceId) as { code: string }
+
+    expect(state.nativeWebRuntimeInjectEnabled).toBe(false)
+    expect(state.nativeWebRuntimeInjectPlan).toBeNull()
+    expect(options.transform.inject).toBe(userInject)
+    expect(resolveRequestGlobalsTargetsForCodeMock).toHaveBeenCalled()
+    expect(loaded.code).toContain('installWebRuntimeGlobals')
+    expect(loaded.code).not.toContain(WEB_RUNTIME_INJECT_VIRTUAL_ID)
+  })
+
+  it('activates native bindings and globalTargets bridges in hooks created before options', async () => {
+    const sourceId = '/project/src/pages/home/index.ts'
+    const source = 'export const read = () => fetch()'
+    findJsEntryMock.mockResolvedValue({ path: sourceId, predictions: [] })
+    const state = {
+      ctx: {
+        configService: {
+          absoluteSrcRoot: '/project/src',
+          relativeAbsoluteSrcRoot: (id: string) => id.replace('/project/src/', ''),
+          weappViteConfig: {
+            injectWeapi: { enabled: false },
+            appPrelude: { mode: 'native', webRuntime: { targets: ['fetch'], globalTargets: ['fetch'] } },
+          },
+        },
+        scanService: {},
+        buildService: {},
+      },
+      subPackageMeta: { entries: ['pages/home/index'] },
+      entriesMap: new Map(),
+      loadedEntrySet: new Set([sourceId]),
+      resolvedEntryMap: new Map(),
+      loadEntry: vi.fn(async () => ({ code: source })),
+    } as any
+    const load = createLoadHook(state)
+    const transform = createTransformHook(state)
+    const options: Record<string, any> = {}
+
+    expect(state.nativeWebRuntimeInjectEnabled).toBeUndefined()
+    await createOptionsHook(state).call({ resolve: async (id: string) => ({ id }) }, options)
+
+    const loaded = await load.call({}, sourceId) as { code: string }
+    // globalTargets 声明的目标由根入口静态依赖桥接，隐藏全局访问在启动前完成安装。
+    expect(loaded.code).toContain(`import ${JSON.stringify(getWebRuntimeGlobalVirtualId('fetch'))};`)
+    expect(loaded.code.endsWith(source)).toBe(true)
+    expect(loaded.code).not.toContain('installWebRuntimeGlobals')
+    await expect(transform.call({}, source, sourceId)).resolves.toBeNull()
+    expect(options.transform.inject.fetch).toEqual([WEB_RUNTIME_INJECT_VIRTUAL_ID, 'fetch'])
+    expect(options.transform.inject['globalThis.fetch']).toEqual([WEB_RUNTIME_INJECT_VIRTUAL_ID, 'fetch'])
+  })
+
+  it('keeps native inject active without startup or legacy rewriting when prelude is disabled', async () => {
+    const sourceId = '/project/src/pages/home/index.ts'
+    const source = 'export const read = () => fetch()'
+    findJsEntryMock.mockResolvedValue({ path: sourceId, predictions: [] })
+    const state = {
+      ctx: {
+        configService: {
+          absoluteSrcRoot: '/project/src',
+          relativeAbsoluteSrcRoot: (id: string) => id.replace('/project/src/', ''),
+          weappViteConfig: {
+            injectWeapi: { enabled: false },
+            appPrelude: { mode: 'native' },
+            injectWebRuntimeGlobals: { enabled: true, targets: ['fetch'], prelude: false },
+          },
+        },
+        scanService: {},
+        buildService: {},
+      },
+      subPackageMeta: { entries: ['pages/home/index'] },
+      entriesMap: new Map(),
+      loadedEntrySet: new Set([sourceId]),
+      resolvedEntryMap: new Map(),
+      loadEntry: vi.fn(async () => ({ code: source })),
+    } as any
+    const load = createLoadHook(state)
+    const transform = createTransformHook(state)
+    const options: Record<string, any> = {}
+
+    await createOptionsHook(state).call({ resolve: async (id: string) => ({ id }) }, options)
+
+    const loaded = await load.call({}, sourceId) as { code: string }
+    expect(loaded.code).toBe(source)
+    await expect(transform.call({}, loaded.code, sourceId)).resolves.toBeNull()
+    expect(resolveRequestGlobalsTargetsForCodeMock).not.toHaveBeenCalled()
+    expect(resolvePassiveRequestGlobalsTargetsMock).not.toHaveBeenCalled()
+    expect(options.transform.inject.fetch).toEqual([WEB_RUNTIME_INJECT_VIRTUAL_ID, 'fetch'])
+    expect(options.transform.inject['globalThis.fetch']).toEqual([WEB_RUNTIME_INJECT_VIRTUAL_ID, 'fetch'])
+    expect(loaded.code).not.toContain('__weappViteInstallRequestGlobals')
+    expect(loaded.code).not.toContain(WEB_RUNTIME_INJECT_VIRTUAL_ID)
   })
 
   it('only promotes physical app routes and local components to logical inputs', async () => {

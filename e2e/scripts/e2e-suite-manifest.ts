@@ -41,6 +41,7 @@ const APP_PRELUDE_MODE_ENV = 'WEAPP_VITE_E2E_APP_PRELUDE_MODE'
 const APP_PRELUDE_CASES = {
   'inline': 'e2e app: app-prelude-native runtime > executes inline app prelude once even after relaunching main and subpackage pages',
   'default': 'e2e app: app-prelude-native runtime > keeps one prelude side effect per package scope under default require mode',
+  'native-request-runtime': 'e2e app: app-prelude-native runtime > cold-starts independent packages and executes native APIs, Vue SFCs and network defaults',
   'legacy-es5-request-runtime': 'e2e app: app-prelude-native runtime > keeps minified ES5 request runtime and prelude side effects across package scopes',
   'default-request-runtime': 'e2e app: app-prelude-native runtime > installs request runtime globals through app.prelude.js under default require mode',
 } as const
@@ -325,6 +326,7 @@ const IDE_FULL_CORE_PATTERNS = [
   'ide/app-lifecycle.test.ts',
   'ide/auto-routes-define-app-json.runtime.test.ts',
   'ide/devtools-cli-workflow.runtime.test.ts',
+  'ide/app-prelude-native.runtime.test.ts',
   'ide/issue-1379-cold-start.runtime.test.ts',
   ...IDE_GITHUB_ISSUES_AGGREGATE_LABELS,
   'ide/github-issues.runtime.issue621.test.ts',

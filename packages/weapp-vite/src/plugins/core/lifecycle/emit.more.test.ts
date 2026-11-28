@@ -23,6 +23,7 @@ import {
 import MagicString from 'magic-string'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { FULL_REQUEST_GLOBAL_TARGETS, REQUEST_RUNTIME_REQUEST_TARGETS } from '../../../runtime/config/internal/injectRequestGlobals'
+import { WEB_RUNTIME_INJECT_RESOLVED_ID } from '../../../runtime/config/internal/injectRequestGlobals/nativeInject'
 import { createRuntimeState } from '../../../runtime/runtimeState'
 import { createGenerateBundleHook, createRenderStartHook } from './emit'
 import { collectActiveHmrImportedChunkIds, createSubPackageMatcher, shouldWarmupBundleScriptAnalysis } from './emit/generate'
@@ -2919,6 +2920,7 @@ describe('core lifecycle emit hook extra branches', () => {
               mode: 'entry',
               requestRuntime: {
                 enabled: true,
+                prelude: true,
               },
             },
           },
@@ -3050,6 +3052,7 @@ describe('core lifecycle emit hook extra branches', () => {
               mode: 'entry',
               requestRuntime: {
                 enabled: true,
+                prelude: true,
               },
             },
           },
@@ -3095,6 +3098,68 @@ describe('core lifecycle emit hook extra branches', () => {
     expect(appCode.indexOf(`/* ${REQUEST_GLOBAL_PRELUDE_MARKER} */`)).toBeLessThan(appCode.indexOf(`/* ${APP_PRELUDE_CHUNK_MARKER} */`))
   })
 
+  it.each([
+    { containsShim: true, prelude: true },
+    { containsShim: false, prelude: true },
+    { containsShim: true, prelude: false },
+    { containsShim: false, prelude: false },
+  ])('keeps the session native strategy when the partial bundle contains the shim=$containsShim and prelude=$prelude', async ({ containsShim, prelude }) => {
+    const state = createState({
+      nativeWebRuntimeInjectEnabled: true,
+      subPackageMeta: undefined,
+      entriesMap: new Map([
+        ['app', { type: 'app', path: 'app' }],
+      ]),
+      ctx: {
+        configService: {
+          packageJson: { dependencies: {} },
+          weappViteConfig: {
+            appPrelude: { mode: 'native' },
+            injectWebRuntimeGlobals: { enabled: true, targets: ['fetch'], prelude },
+          },
+          relativeAbsoluteSrcRoot: (id: string) => id.replace('/project/src/', ''),
+        },
+        scanService: {
+          subPackageMap: new Map(),
+          appEntry: { preludePath: '/project/src/app.prelude.ts' },
+        },
+      },
+    })
+    const hook = createGenerateBundleHook(state, false)
+    const sharedFileName = 'weapp-vendors/request-globals-web-apis-shared.js'
+    const sharedCode = 'module.exports = {}'
+    const bundle = {
+      'app.js': {
+        type: 'chunk',
+        fileName: 'app.js',
+        isEntry: true,
+        code: `require("./${sharedFileName}");App({})`,
+        imports: [sharedFileName],
+        dynamicImports: [],
+      },
+      [sharedFileName]: {
+        type: 'chunk',
+        fileName: sharedFileName,
+        code: sharedCode,
+        moduleIds: containsShim ? [WEB_RUNTIME_INJECT_RESOLVED_ID] : [],
+        imports: [],
+        dynamicImports: [],
+      },
+    } as any
+
+    await hook.call({ emitFile: createBundleAssetEmitter(bundle) }, {}, bundle)
+
+    expect(bundle[sharedFileName].code).toContain(sharedCode)
+    expect(bundle[sharedFileName].imports).toEqual([])
+    expect(bundle['app.js'].imports).toEqual([sharedFileName])
+    expect(bundle['app.js'].code).toBe(`require("./${sharedFileName}");App({})`)
+    expect(bundle['app.js'].code).not.toContain(APP_PRELUDE_REQUIRE_MARKER)
+    expect(bundle['app.js'].code).not.toContain(REQUEST_GLOBAL_PRELUDE_MARKER)
+    expect(bundle['app.js'].code).not.toContain(REQUEST_GLOBAL_LOCAL_BINDINGS_MARKER)
+    expect(bundle['app.js'].code).not.toContain(REQUEST_GLOBAL_PASSIVE_BINDINGS_MARKER)
+    expect(bundle['app.prelude.js']).toBeUndefined()
+  })
+
   it('emits request globals prelude into app.prelude.js when mode is require', async () => {
     const state = createState({
       subPackageMeta: undefined,
@@ -3113,6 +3178,7 @@ describe('core lifecycle emit hook extra branches', () => {
               mode: 'require',
               requestRuntime: {
                 enabled: true,
+                prelude: true,
               },
             },
           },
@@ -3184,6 +3250,7 @@ describe('core lifecycle emit hook extra branches', () => {
               mode: 'require',
               requestRuntime: {
                 enabled: true,
+                prelude: true,
               },
             },
           },
@@ -3253,6 +3320,7 @@ describe('core lifecycle emit hook extra branches', () => {
               mode: 'require',
               requestRuntime: {
                 enabled: true,
+                prelude: true,
               },
             },
           },
@@ -3389,7 +3457,11 @@ describe('core lifecycle emit hook extra branches', () => {
               axios: '^1.8.0',
             },
           },
-          weappViteConfig: {},
+          weappViteConfig: {
+            injectWebRuntimeGlobals: {
+              prelude: true,
+            },
+          },
           relativeAbsoluteSrcRoot: (id: string) => id.replace('/project/src/', ''),
         },
         scanService: {
@@ -3507,6 +3579,45 @@ describe('core lifecycle emit hook extra branches', () => {
     expect(code).toContain('Request,')
     expect(code).toContain('Response,')
     expect(code).toContain('fetch,')
+  })
+
+  it.each(['fetch', 'AbortController'])('does not patch axios or install eager state in native mode for %s', async (target) => {
+    const state = createState({
+      nativeWebRuntimeInjectEnabled: true,
+      nativeWebRuntimeInjectPlan: {
+        inject: { [target]: ['virtual:bindings', target] },
+        code: '',
+        bindingTargets: [target],
+        globalTargets: [],
+      },
+      ctx: {
+        configService: {
+          packageJson: { dependencies: { axios: '^1.8.0' } },
+          weappViteConfig: {
+            appPrelude: { mode: 'native' },
+            injectWebRuntimeGlobals: {
+              enabled: true,
+              targets: [target],
+            },
+          },
+        },
+      },
+    })
+    const hook = createGenerateBundleHook(state, false)
+    const bundle = {
+      'axios.js': {
+        type: 'chunk',
+        fileName: 'axios.js',
+        moduleIds: ['/project/node_modules/.pnpm/axios@1.15.0/node_modules/axios/index.js'],
+        code: 'export const value = 1',
+        imports: [],
+        dynamicImports: [],
+      },
+    } as any
+
+    await hook.call({}, {}, bundle)
+
+    expect(bundle['axios.js'].code).toBe('export const value = 1')
   })
 
   it('emits scoped app prelude modules and injects require calls by default', async () => {

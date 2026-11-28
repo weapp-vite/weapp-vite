@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { logger } from '../context/shared'
 import { REQUEST_GLOBAL_RUNTIME_CHUNK_FILE_BASENAME } from '../plugins/core/lifecycle/emit/constants'
 import { __clearSharedChunkDiagnosticsForTest } from './chunkStrategy'
+import { NATIVE_APP_PRELUDE_CHUNK_PRIORITY, WEB_RUNTIME_APP_PRELUDE_RESOLVED_ID } from './config/internal/injectRequestGlobals/nativeInject'
 import {
   createForceDuplicateTester,
   createSharedBuildConfig,
@@ -589,5 +590,102 @@ describe('sharedBuildConfig', () => {
     })
 
     expect(result).toBe('shared/deep/feature')
+  })
+})
+
+const SHIM_GROUP_DEBUG_NAME = 'weapp-vite:web-runtime-shim'
+
+interface OutputGroup {
+  debugName?: string
+  priority?: number
+  name?: unknown
+  test?: (id: string) => boolean
+}
+
+interface ShimBuildOutput {
+  codeSplitting: { groups: OutputGroup[] }
+  chunkFileNames: (chunk: { name: string, moduleIds?: string[], facadeModuleId?: string | null }) => string
+}
+
+/**
+ * @description 构造仅覆盖 native shim 分组读取字段的最小 ConfigService 替身。
+ */
+function createNativeConfigServiceStub(weappViteConfig: Record<string, unknown>): ConfigService {
+  return {
+    cwd: '/virtual/project',
+    isDev: false,
+    absoluteSrcRoot: '/virtual/project/src',
+    relativeAbsoluteSrcRoot: (id: string) => id.replace('/virtual/project/src/', ''),
+    packageJson: { dependencies: {} },
+    weappViteConfig,
+  } as unknown as ConfigService
+}
+
+/**
+ * @description 按 debugName 取出 Rolldown 原生分组规则。
+ */
+function findGroup(output: ShimBuildOutput, debugName: string) {
+  return output.codeSplitting.groups.find(group => group.debugName === debugName)
+}
+
+describe('native web runtime chunking', () => {
+  it('does not register a forced shim vendor group (precise bundler chunking)', () => {
+    const output = createSharedBuildOutput(
+      createNativeConfigServiceStub({
+        appPrelude: {
+          mode: 'native',
+          webRuntime: { targets: ['fetch'], globalTargets: ['fetch'] },
+        },
+      }),
+      () => [],
+    ) as unknown as ShimBuildOutput
+
+    // 精确优先：绑定与桥接的分包交给打包器自然分组，不再注册强制 shim vendor。
+    expect(findGroup(output, SHIM_GROUP_DEBUG_NAME)).toBeUndefined()
+  })
+})
+
+const APP_PRELUDE_GROUP_DEBUG_NAME = 'weapp-vite:web-runtime-app-prelude'
+const APP_PRELUDE_CHUNK_FILE_BASENAME = 'weapp-vendors/web-runtime-app-prelude.js'
+const APP_PRELUDE_CHUNK_NAME = APP_PRELUDE_CHUNK_FILE_BASENAME.replace(/\.js$/, '')
+
+describe('native app prelude vendor chunk', () => {
+  it('registers the app prelude group and its stable file name only for native mode', () => {
+    const output = createSharedBuildOutput(
+      createNativeConfigServiceStub({
+        appPrelude: { mode: 'native', webRuntime: false },
+      }),
+      () => [],
+    ) as unknown as ShimBuildOutput
+
+    // 关闭 Web Runtime 注入不影响自定义前置脚本的拆分：分组只依赖 native 模式本身。
+    const group = findGroup(output, APP_PRELUDE_GROUP_DEBUG_NAME)
+    expect(group?.priority).toBe(91)
+    expect(group?.name).toBe(APP_PRELUDE_CHUNK_NAME)
+    expect(group?.test?.(WEB_RUNTIME_APP_PRELUDE_RESOLVED_ID)).toBe(true)
+    expect(group?.test?.('/virtual/project/src/app.prelude.ts')).toBe(false)
+    expect(output.chunkFileNames({ name: APP_PRELUDE_CHUNK_NAME })).toBe(APP_PRELUDE_CHUNK_FILE_BASENAME)
+  })
+
+  it.each([
+    ['legacy require mode', { appPrelude: { mode: 'require' } }],
+    ['disabled native prelude', { appPrelude: { mode: 'native', enabled: false } }],
+    ['absent appPrelude config', {}],
+  ])('keeps the group list unchanged for %s', (_label, weappViteConfig) => {
+    const output = createSharedBuildOutput(
+      createNativeConfigServiceStub(weappViteConfig),
+      () => [],
+    ) as unknown as ShimBuildOutput
+
+    // 反向对照：native 之外不注册该分组，旧模式产物结构与分组数量保持原样。
+    expect(findGroup(output, APP_PRELUDE_GROUP_DEBUG_NAME)).toBeUndefined()
+    expect(output.chunkFileNames({ name: APP_PRELUDE_CHUNK_NAME })).not.toBe(APP_PRELUDE_CHUNK_FILE_BASENAME)
+  })
+})
+
+describe('native app prelude chunk priority', () => {
+  it('keeps the app prelude group above default groups', () => {
+    // 升级 Rolldown codeSplitting 语义时这条不变量必须复验：自定义前置脚本先于默认 advanced-chunk 分组独立成块。
+    expect(NATIVE_APP_PRELUDE_CHUNK_PRIORITY).toBeGreaterThan(0)
   })
 })

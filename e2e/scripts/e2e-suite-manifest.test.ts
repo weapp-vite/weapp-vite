@@ -417,15 +417,18 @@ describe('e2e suite manifest', () => {
       'default-request-runtime',
       'inline',
       'legacy-es5-request-runtime',
+      'native-request-runtime',
     ])
-    expect(new Set(tasks.map(task => task.label)).size).toBe(4)
+    expect(new Set(tasks.map(task => task.label)).size).toBe(5)
     const planned = await Promise.all(tasks.map(task => readPlannedTaskCases(task, 'devtools')))
     expect(planned.every(cases => cases.length === 1)).toBe(true)
     const sourceCases = readTaskCases(path.resolve(import.meta.dirname, '../..'), source)
       .map(({ name }) => ({ file: `e2e/${source}`, name }))
-    expect(sourceCases).toHaveLength(4)
+    const headlessCoreCase = sourceCases.find(({ name }) => name.endsWith('in the headless runtime'))
+    expect(headlessCoreCase).toBeDefined()
+    expect(sourceCases).toHaveLength(6)
     expect(planned.flat().sort((a, b) => a.name.localeCompare(b.name)))
-      .toEqual(sourceCases.sort((a, b) => a.name.localeCompare(b.name)))
+      .toEqual(sourceCases.filter(({ name }) => name !== headlessCoreCase!.name).sort((a, b) => a.name.localeCompare(b.name)))
     for (const task of tasks) {
       expect(task.env?.WEAPP_VITE_E2E_TARGET_FILE).toBe(source)
       expect(task.env?.WEAPP_VITE_E2E_TASK_TIMEOUT_MS).toBeUndefined()
@@ -435,7 +438,7 @@ describe('e2e suite manifest', () => {
       const headless = (await getSuiteTasks(suite)).filter(task => task.label === source)
       expect(headless).toHaveLength(1)
       expect(headless[0]?.env?.WEAPP_VITE_E2E_APP_PRELUDE_MODE).toBeUndefined()
-      await expect(readPlannedTaskCases(headless[0]!, 'headless')).resolves.toHaveLength(4)
+      await expect(readPlannedTaskCases(headless[0]!, 'headless')).resolves.toHaveLength(6)
     }
   })
 

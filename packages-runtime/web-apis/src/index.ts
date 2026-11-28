@@ -1,32 +1,13 @@
 import type { WebRuntimeGlobalTarget } from '@weapp-core/constants'
 import type { MiniProgramNetworkDefaults } from './networkDefaults'
-import { REQUEST_GLOBAL_ACTUALS_KEY, REQUEST_GLOBAL_INSTALLER_MARKER, REQUEST_GLOBAL_PLACEHOLDER_KEY, resolveWebRuntimeGlobalTargetDependencies, WEB_RUNTIME_GLOBAL_TARGETS } from '@weapp-core/constants'
-import { AbortControllerPolyfill, AbortSignalPolyfill } from './abort'
-import { atobPolyfill, btoaPolyfill } from './base64'
-import { cryptoPolyfill, randomUUIDPolyfill } from './crypto'
-import { CustomEventPolyfill, EventPolyfill } from './events'
-import { EventSourcePolyfill } from './eventsource'
-import { fetch as requestGlobalsFetch } from './fetch'
-import { HeadersPolyfill, RequestPolyfill, ResponsePolyfill } from './http'
+import { REQUEST_GLOBAL_INSTALLER_MARKER, resolveWebRuntimeGlobalTargetDependencies, WEB_RUNTIME_GLOBAL_TARGETS } from '@weapp-core/constants'
 import {
-  getMiniProgramNetworkDefaults,
-  resetMiniProgramNetworkDefaults,
-  setMiniProgramNetworkDefaults,
-} from './networkDefaults'
-import { performancePolyfill } from './performance'
-import {
-  installRequestGlobalBinding,
-  RequestGlobalsEventTarget,
-  resolveRequestGlobalsHost,
-  resolveRequestGlobalsHosts,
-} from './shared'
-import { ReadableStream, ReadableStreamPolyfill, TextDecoderStreamPolyfill, TransformStream, TransformStreamPolyfill, WritableStream, WritableStreamPolyfill } from './streams'
-import { queueMicrotaskPolyfill } from './task'
-import { hasUsableTextDecoderConstructor, TextDecoderPolyfill, TextEncoderPolyfill } from './textCodec'
-import { URLPolyfill, URLSearchParamsPolyfill } from './url'
-import { BlobPolyfill, FilePolyfill, FormDataPolyfill } from './web'
-import { WebSocketPolyfill } from './websocket'
-import { XMLHttpRequestPolyfill } from './xhr'
+  createWebRuntimeInstallContext,
+  finalizeWebRuntimeInstall,
+  installWebRuntimeTarget,
+  installWebRuntimeUrlGlobals,
+} from './installers'
+import { setMiniProgramNetworkDefaults } from './networkDefaults'
 
 export type WeappInjectWebRuntimeGlobalsTarget = WebRuntimeGlobalTarget
 
@@ -38,13 +19,8 @@ export interface InstallWebRuntimeGlobalsOptions {
 }
 
 export interface InstallRequestGlobalsOptions extends InstallWebRuntimeGlobalsOptions {}
-export type {
-  MiniProgramNetworkDefaults,
-  RequestGlobalsMiniProgramOptions,
-  WebSocketMiniProgramOptions,
-} from './networkDefaults'
 
-type WeappRequestGlobalActualTarget = WeappInjectWebRuntimeGlobalsTarget | 'URL' | 'URLSearchParams' | 'Blob' | 'File' | 'FormData'
+export { AbortControllerPolyfill, AbortSignalPolyfill } from './abort'
 
 function hasRequestRuntimeBinaryUsage(targets: WeappInjectWebRuntimeGlobalsTarget[]) {
   return targets.some(target => (
@@ -56,397 +32,6 @@ function hasRequestRuntimeBinaryUsage(targets: WeappInjectWebRuntimeGlobalsTarge
   ))
 }
 
-function resolveActualBindingTargets(targets: WeappInjectWebRuntimeGlobalsTarget[]): WeappRequestGlobalActualTarget[] {
-  const bindingTargets: WeappRequestGlobalActualTarget[] = [...targets]
-  const needsRequestRuntimeBinarySupport = hasRequestRuntimeBinaryUsage(targets)
-
-  if (needsRequestRuntimeBinarySupport) {
-    bindingTargets.push('TextEncoder', 'TextDecoder')
-    bindingTargets.push('URL', 'URLSearchParams', 'Blob', 'File', 'FormData')
-  }
-
-  return [...new Set(bindingTargets)]
-}
-
-function isPlaceholderRequestGlobal(value: unknown) {
-  return Boolean(
-    value
-    && (typeof value === 'function' || typeof value === 'object')
-    && (value as Record<string, any>)[REQUEST_GLOBAL_PLACEHOLDER_KEY] === true,
-  )
-}
-
-function hasUsableConstructor(value: unknown, args: unknown[] = []) {
-  if (typeof value !== 'function' || isPlaceholderRequestGlobal(value)) {
-    return false
-  }
-
-  try {
-    Reflect.construct(value, args)
-    return true
-  }
-  catch {
-    return false
-  }
-}
-
-function hasUsablePrototypeMethods(value: unknown, methods: string[], properties: string[] = []) {
-  if (typeof value !== 'function' || isPlaceholderRequestGlobal(value)) {
-    return false
-  }
-
-  const prototype = value.prototype as Record<string, unknown> | undefined
-  return Boolean(
-    prototype
-    && methods.every(method => typeof prototype[method] === 'function')
-    && properties.every(property => property in prototype),
-  )
-}
-
-function hasWebCompatibleUrlConstructor(value: unknown) {
-  if (!hasUsableConstructor(value, ['https://request-globals.invalid'])) {
-    return false
-  }
-
-  try {
-    const URLConstructor = value as new (input: string, base?: string) => { href?: unknown }
-    const resolved = new URLConstructor('123', 'fake://abc')
-    return resolved.href === 'fake://abc/123'
-  }
-  catch {
-    return false
-  }
-}
-
-function assignHostGlobal(host: Record<string, any>, key: string, value: unknown) {
-  try {
-    host[key] = value
-    return true
-  }
-  catch {
-    return false
-  }
-}
-
-function defineHostGlobal(host: Record<string, any>, key: string, descriptor: PropertyDescriptor) {
-  try {
-    Object.defineProperty(host, key, {
-      configurable: true,
-      ...descriptor,
-    })
-    return true
-  }
-  catch {
-    return false
-  }
-}
-
-function createUrlParser(URLConstructor: typeof URLPolyfill) {
-  return function parse(input: string | URLPolyfill, base?: string | URLPolyfill) {
-    try {
-      return new URLConstructor(input, base)
-    }
-    catch {
-      return null
-    }
-  }
-}
-
-function createUrlCanParser(URLConstructor: typeof URLPolyfill) {
-  return function canParse(input: string | URLPolyfill, base?: string | URLPolyfill) {
-    try {
-      Reflect.construct(URLConstructor, base === undefined ? [input] : [input, base])
-      return true
-    }
-    catch {
-      return false
-    }
-  }
-}
-
-function patchUrlConstructor(host: Record<string, any>) {
-  const URLConstructor = host.URL as typeof URLPolyfill
-
-  let patched = true
-  if (typeof URLConstructor.parse !== 'function') {
-    patched = assignHostGlobal(URLConstructor, 'parse', createUrlParser(URLConstructor)) && patched
-  }
-  if (typeof URLConstructor.canParse !== 'function') {
-    patched = assignHostGlobal(URLConstructor, 'canParse', createUrlCanParser(URLConstructor)) && patched
-  }
-  return patched
-}
-
-function compareUrlSearchParamKeys(leftKey: string, rightKey: string) {
-  if (leftKey < rightKey) {
-    return -1
-  }
-  if (leftKey > rightKey) {
-    return 1
-  }
-  return 0
-}
-
-function sortUrlSearchParams(this: URLSearchParams) {
-  const entries = Array.from(this.entries()).sort(([leftKey], [rightKey]) => compareUrlSearchParamKeys(leftKey, rightKey))
-  const keys = [...new Set(entries.map(([key]) => key))]
-  for (const key of keys) {
-    this.delete(key)
-  }
-  for (const [key, value] of entries) {
-    this.append(key, value)
-  }
-}
-
-function patchUrlSearchParamsConstructor(host: Record<string, any>) {
-  const URLSearchParamsConstructor = host.URLSearchParams
-  const prototype = URLSearchParamsConstructor?.prototype as Record<string, any> | undefined
-  if (
-    !prototype
-    || !['append', 'delete', 'entries', 'forEach'].every(method => typeof prototype[method] === 'function')
-  ) {
-    return false
-  }
-
-  let patched = true
-  if (!('size' in prototype)) {
-    patched = defineHostGlobal(prototype, 'size', {
-      get(this: URLSearchParams) {
-        let size = 0
-        this.forEach(() => {
-          size += 1
-        })
-        return size
-      },
-    }) && patched
-  }
-  if (typeof prototype.sort !== 'function') {
-    patched = assignHostGlobal(prototype, 'sort', sortUrlSearchParams) && patched
-  }
-  return patched
-}
-
-function patchHeadersConstructor(host: Record<string, any>) {
-  const HeadersConstructor = host.Headers
-  const prototype = HeadersConstructor?.prototype as Record<string, any> | undefined
-  if (!prototype) {
-    return false
-  }
-
-  if (typeof prototype.getSetCookie === 'function') {
-    return true
-  }
-
-  return assignHostGlobal(prototype, 'getSetCookie', function getSetCookie(this: Headers) {
-    const value = this.get('set-cookie')
-    return value == null ? [] : [value]
-  })
-}
-
-function patchResponseConstructor(host: Record<string, any>) {
-  const ResponseConstructor = host.Response as typeof ResponsePolyfill
-
-  let patched = true
-  if (typeof ResponseConstructor.json !== 'function') {
-    patched = assignHostGlobal(ResponseConstructor, 'json', ResponsePolyfill.json) && patched
-  }
-  if (typeof ResponseConstructor.error !== 'function') {
-    patched = assignHostGlobal(ResponseConstructor, 'error', ResponsePolyfill.error) && patched
-  }
-  return patched
-}
-
-function installSingleTarget(host: Record<string, any>, target: WeappInjectWebRuntimeGlobalsTarget) {
-  const streamConstructors = { ReadableStream, WritableStream, TransformStream }
-  if (target === 'ReadableStream' || target === 'WritableStream' || target === 'TransformStream') {
-    assignHostGlobal(host, target, streamConstructors[target])
-    return
-  }
-  if (target === 'TextDecoderStream') {
-    if (ReadableStream === ReadableStreamPolyfill || !hasUsableConstructor(host.TextDecoderStream)) {
-      assignHostGlobal(host, target, TextDecoderStreamPolyfill)
-    }
-    return
-  }
-  if (target === 'EventSource') {
-    if (typeof host.EventSource !== 'function' || isPlaceholderRequestGlobal(host.EventSource)) {
-      assignHostGlobal(host, target, EventSourcePolyfill)
-    }
-    return
-  }
-  if (target === 'fetch') {
-    if (typeof host.fetch !== 'function' || isPlaceholderRequestGlobal(host.fetch)) {
-      assignHostGlobal(host, 'fetch', requestGlobalsFetch)
-    }
-    return
-  }
-
-  if (target === 'Headers') {
-    if (typeof host.Headers !== 'function' || isPlaceholderRequestGlobal(host.Headers) || !patchHeadersConstructor(host)) {
-      assignHostGlobal(host, 'Headers', HeadersPolyfill)
-    }
-    return
-  }
-
-  if (target === 'Request') {
-    if (typeof host.Request !== 'function' || isPlaceholderRequestGlobal(host.Request)) {
-      assignHostGlobal(host, 'Request', RequestPolyfill)
-    }
-    return
-  }
-
-  if (target === 'Response') {
-    if (typeof host.Response !== 'function' || isPlaceholderRequestGlobal(host.Response) || !patchResponseConstructor(host)) {
-      assignHostGlobal(host, 'Response', ResponsePolyfill)
-    }
-    return
-  }
-
-  if (target === 'TextEncoder') {
-    if (typeof host.TextEncoder !== 'function' || isPlaceholderRequestGlobal(host.TextEncoder)) {
-      assignHostGlobal(host, 'TextEncoder', TextEncoderPolyfill)
-    }
-    return
-  }
-
-  if (target === 'TextDecoder') {
-    if (!hasUsableTextDecoderConstructor(host.TextDecoder)) {
-      assignHostGlobal(host, 'TextDecoder', TextDecoderPolyfill)
-    }
-    return
-  }
-
-  if (target === 'AbortController') {
-    if (typeof host.AbortController !== 'function' || isPlaceholderRequestGlobal(host.AbortController)) {
-      assignHostGlobal(host, 'AbortController', AbortControllerPolyfill)
-    }
-    return
-  }
-
-  if (target === 'AbortSignal') {
-    if (typeof host.AbortSignal !== 'function' || isPlaceholderRequestGlobal(host.AbortSignal)) {
-      assignHostGlobal(host, 'AbortSignal', AbortSignalPolyfill)
-    }
-    return
-  }
-
-  if (target === 'WebSocket') {
-    if (typeof host.WebSocket !== 'function' || isPlaceholderRequestGlobal(host.WebSocket)) {
-      assignHostGlobal(host, 'WebSocket', WebSocketPolyfill)
-    }
-    return
-  }
-
-  if (target === 'atob') {
-    if (typeof host.atob !== 'function' || isPlaceholderRequestGlobal(host.atob)) {
-      assignHostGlobal(host, 'atob', atobPolyfill)
-    }
-    return
-  }
-
-  if (target === 'btoa') {
-    if (typeof host.btoa !== 'function' || isPlaceholderRequestGlobal(host.btoa)) {
-      assignHostGlobal(host, 'btoa', btoaPolyfill)
-    }
-    return
-  }
-
-  if (target === 'queueMicrotask') {
-    if (typeof host.queueMicrotask !== 'function' || isPlaceholderRequestGlobal(host.queueMicrotask)) {
-      assignHostGlobal(host, 'queueMicrotask', queueMicrotaskPolyfill)
-    }
-    return
-  }
-
-  if (target === 'performance') {
-    if (!host.performance || isPlaceholderRequestGlobal(host.performance) || typeof host.performance.now !== 'function') {
-      assignHostGlobal(host, 'performance', performancePolyfill)
-    }
-    return
-  }
-
-  if (target === 'crypto') {
-    if (!host.crypto || isPlaceholderRequestGlobal(host.crypto) || typeof host.crypto.getRandomValues !== 'function') {
-      assignHostGlobal(host, 'crypto', cryptoPolyfill)
-    }
-    return
-  }
-
-  if (target === 'Event') {
-    if (typeof host.Event !== 'function' || isPlaceholderRequestGlobal(host.Event)) {
-      assignHostGlobal(host, 'Event', EventPolyfill)
-    }
-    return
-  }
-
-  if (target === 'CustomEvent') {
-    if (typeof host.CustomEvent !== 'function' || isPlaceholderRequestGlobal(host.CustomEvent)) {
-      assignHostGlobal(host, 'CustomEvent', CustomEventPolyfill)
-    }
-    return
-  }
-
-  if (target === 'XMLHttpRequest' && (typeof host.XMLHttpRequest !== 'function' || isPlaceholderRequestGlobal(host.XMLHttpRequest))) {
-    assignHostGlobal(host, 'XMLHttpRequest', XMLHttpRequestPolyfill)
-  }
-}
-
-function installUrlGlobals(host: Record<string, any>) {
-  if (!hasWebCompatibleUrlConstructor(host.URL) || !patchUrlConstructor(host)) {
-    assignHostGlobal(host, 'URL', URLPolyfill)
-  }
-  if (!patchUrlSearchParamsConstructor(host)) {
-    assignHostGlobal(host, 'URLSearchParams', URLSearchParamsPolyfill)
-  }
-  if (!hasUsablePrototypeMethods(host.Blob, ['arrayBuffer', 'slice'])) {
-    assignHostGlobal(host, 'Blob', BlobPolyfill)
-  }
-  if (!hasUsablePrototypeMethods(host.File, ['arrayBuffer', 'slice'], ['name'])) {
-    assignHostGlobal(host, 'File', FilePolyfill)
-  }
-  if (!hasUsablePrototypeMethods(host.FormData, ['append', 'entries'])) {
-    assignHostGlobal(host, 'FormData', FormDataPolyfill)
-  }
-}
-
-function installGlobalBindingIfNeeded(host: Record<string, any>, target: string) {
-  const value = host[target]
-  if (value == null) {
-    return
-  }
-
-  installRequestGlobalBinding(target, value)
-}
-
-function ensureRuntimeHostAliases(host: Record<string, any>) {
-  for (const alias of ['global', 'self', 'window']) {
-    try {
-      host[alias] = host
-    }
-    catch {
-    }
-    installRequestGlobalBinding(alias, host)
-  }
-}
-
-function syncWeappViteRequestGlobalsActuals(
-  host: Record<string, any>,
-  targets: WeappInjectWebRuntimeGlobalsTarget[],
-) {
-  let actuals = host[REQUEST_GLOBAL_ACTUALS_KEY]
-  if (!actuals || typeof actuals !== 'object') {
-    actuals = Object.create(null)
-    assignHostGlobal(host, REQUEST_GLOBAL_ACTUALS_KEY, actuals)
-  }
-
-  for (const target of resolveActualBindingTargets(targets)) {
-    const value = host[target]
-    if (value != null) {
-      actuals[target] = value
-    }
-  }
-}
-
 /**
  * @description 按需向小程序全局环境注入缺失的 Web Runtime 对象。
  */
@@ -454,36 +39,15 @@ export function installWebRuntimeGlobals(options: InstallWebRuntimeGlobalsOption
   if (options.networkDefaults !== undefined) {
     setMiniProgramNetworkDefaults(options.networkDefaults)
   }
-
   const targets = resolveWebRuntimeGlobalTargetDependencies(options.targets ?? WEB_RUNTIME_GLOBAL_TARGETS)
-  const hosts = resolveRequestGlobalsHosts()
-  const primaryHost = resolveRequestGlobalsHost()
-  const needsUrlGlobals = hasRequestRuntimeBinaryUsage(targets)
-
-  ensureRuntimeHostAliases(primaryHost)
-
-  for (const host of hosts) {
-    if (needsUrlGlobals) {
-      installUrlGlobals(host)
-    }
-    for (const target of targets) {
-      installSingleTarget(host, target)
-    }
-  }
-
-  if (needsUrlGlobals) {
-    installGlobalBindingIfNeeded(primaryHost, 'URL')
-    installGlobalBindingIfNeeded(primaryHost, 'URLSearchParams')
-    installGlobalBindingIfNeeded(primaryHost, 'Blob')
-    installGlobalBindingIfNeeded(primaryHost, 'File')
-    installGlobalBindingIfNeeded(primaryHost, 'FormData')
+  const context = createWebRuntimeInstallContext()
+  if (hasRequestRuntimeBinaryUsage(targets)) {
+    installWebRuntimeUrlGlobals(context)
   }
   for (const target of targets) {
-    installGlobalBindingIfNeeded(primaryHost, target)
+    installWebRuntimeTarget(context, target)
   }
-  syncWeappViteRequestGlobalsActuals(primaryHost, targets)
-
-  return hosts[0]
+  return finalizeWebRuntimeInstall(context, targets)
 }
 
 Object.defineProperty(installWebRuntimeGlobals, REQUEST_GLOBAL_INSTALLER_MARKER, { value: true })
@@ -499,43 +63,33 @@ export function installRequestGlobals(options: InstallRequestGlobalsOptions = {}
  * @description 仅安装 AbortController 与 AbortSignal 兼容层。
  */
 export function installAbortGlobals() {
-  const host = installWebRuntimeGlobals({
+  return installWebRuntimeGlobals({
     targets: ['AbortController', 'AbortSignal'],
   })
-  return host
 }
 
+export { atobPolyfill, btoaPolyfill } from './base64'
+export { cryptoPolyfill, randomUUIDPolyfill } from './crypto'
+export { CustomEventPolyfill, EventPolyfill } from './events'
+export { EventSourcePolyfill } from './eventsource'
+export { fetch } from './fetch'
+export { HeadersPolyfill, RequestPolyfill, ResponsePolyfill } from './http'
+export type {
+  MiniProgramNetworkDefaults,
+  RequestGlobalsMiniProgramOptions,
+  WebSocketMiniProgramOptions,
+} from './networkDefaults'
 export {
-  AbortControllerPolyfill,
-  AbortSignalPolyfill,
-  atobPolyfill,
-  BlobPolyfill,
-  btoaPolyfill,
-  cryptoPolyfill,
-  CustomEventPolyfill,
-  EventPolyfill,
-  EventSourcePolyfill,
-  requestGlobalsFetch as fetch,
-  FilePolyfill,
-  FormDataPolyfill,
   getMiniProgramNetworkDefaults,
-  HeadersPolyfill,
-  performancePolyfill,
-  queueMicrotaskPolyfill,
-  randomUUIDPolyfill,
-  ReadableStreamPolyfill,
-  RequestGlobalsEventTarget,
-  RequestPolyfill,
   resetMiniProgramNetworkDefaults,
-  ResponsePolyfill,
   setMiniProgramNetworkDefaults,
-  TextDecoderPolyfill,
-  TextDecoderStreamPolyfill,
-  TextEncoderPolyfill,
-  TransformStreamPolyfill,
-  URLPolyfill,
-  URLSearchParamsPolyfill,
-  WebSocketPolyfill,
-  WritableStreamPolyfill,
-  XMLHttpRequestPolyfill,
-}
+} from './networkDefaults'
+export { performancePolyfill } from './performance'
+export { RequestGlobalsEventTarget } from './shared'
+export { ReadableStream, ReadableStreamPolyfill, TextDecoderStreamPolyfill, TransformStream, TransformStreamPolyfill, WritableStream, WritableStreamPolyfill } from './streams'
+export { queueMicrotaskPolyfill } from './task'
+export { TextDecoderPolyfill, TextEncoderPolyfill } from './textCodec'
+export { URLPolyfill, URLSearchParamsPolyfill } from './url'
+export { BlobPolyfill, FilePolyfill, FormDataPolyfill } from './web'
+export { WebSocketPolyfill } from './websocket'
+export { XMLHttpRequestPolyfill } from './xhr'

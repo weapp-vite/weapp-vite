@@ -1,10 +1,11 @@
-import { getMiniProgramRuntimeGlobalKeys } from '@weapp-core/shared/platforms/runtime'
+import { MINI_PROGRAM_RUNTIME_GLOBAL_KEYS } from '@weapp-core/shared/platforms/runtime/global-keys'
+import { resolveGlobalValue } from './globalValue'
 
 const performanceTimeOrigin = Date.now()
 const PERFORMANCE_POLYFILL_MARKER = '__weappVitePerformancePolyfill'
 
 function resolveNativePerformance() {
-  const candidate = (globalThis as Record<string, any>).performance
+  const candidate = resolveGlobalValue<Performance & Record<string, unknown>>('performance')
   if (
     candidate
     && candidate?.[PERFORMANCE_POLYFILL_MARKER] !== true
@@ -13,7 +14,7 @@ function resolveNativePerformance() {
     return candidate
   }
 
-  for (const hostKey of getMiniProgramRuntimeGlobalKeys()) {
+  for (const hostKey of MINI_PROGRAM_RUNTIME_GLOBAL_KEYS) {
     const host = (globalThis as Record<string, any>)[hostKey]
     if (!host || typeof host.getPerformance !== 'function') {
       continue
