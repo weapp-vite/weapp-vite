@@ -418,7 +418,7 @@ export const read = () => fetch()
       'virtual:user-global-fetch': 'export default () => "global fetch"',
     })
     const module = { exports: {} as { read: () => string } }
-    const hostGlobal = {} as Record<string, unknown>
+    const hostGlobal = { fetch: () => 'host fetch' } as Record<string, unknown>
     runInNewContext(code, { module, exports: module.exports, globalThis: hostGlobal })
 
     expect(module.exports.read()).toBe('free fetch')

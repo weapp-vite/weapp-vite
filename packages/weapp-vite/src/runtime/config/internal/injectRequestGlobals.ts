@@ -554,12 +554,18 @@ export function resolveNativeGlobalTargets(code: string, allowedTargets: readonl
 
   const allowedTargetSet = new Set(allowedTargets)
   const referencedTargets = new Set<string>()
-  const globalAliases = new Set<string>()
+  const aliasBindings = new Set<object>()
+  const resolveBinding = (name: string, scope: any) => scope?.getBinding?.(name)
+  const isAliasObject = (name: string, scope: any) => {
+    const binding = resolveBinding(name, scope)
+    return Boolean(binding && aliasBindings.has(binding))
+  }
   const isGlobalObject = (name: string, scope: any) => {
-    if (globalAliases.has(name)) {
-      return true
+    const binding = resolveBinding(name, scope)
+    if (binding) {
+      return aliasBindings.has(binding)
     }
-    return GLOBAL_OBJECT_NAMES.has(name) && !scope?.getBinding?.(name)
+    return GLOBAL_OBJECT_NAMES.has(name)
   }
   const addPropertyTarget = (property: any) => {
     const name = property?.type === 'Identifier'
@@ -600,7 +606,7 @@ export function resolveNativeGlobalTargets(code: string, allowedTargets: readonl
     if (!node.computed && node.property?.type === 'Identifier') {
       // 直接全局对象的普通点号访问由 transform.inject 精确改写；可选链不在其覆盖范围，
       // 别名无法按固定键注入，因此这两种形式仍需桥接。
-      if (!globalAliases.has(objectName) && node.type !== 'OptionalMemberExpression') {
+      if (!isAliasObject(objectName, path.scope) && node.type !== 'OptionalMemberExpression') {
         return
       }
       addPropertyTarget(node.property)
@@ -612,7 +618,9 @@ export function resolveNativeGlobalTargets(code: string, allowedTargets: readonl
   }
 
   try {
-    traverse(parseJsLike(usageSource) as any, {
+    const ast = parseJsLike(usageSource) as any
+    // 先收集全部别名绑定，再分析访问，避免声明顺序影响；绑定对象同时用于区分参数/局部遮蔽。
+    traverse(ast, {
       VariableDeclarator(path: any) {
         const { id, init } = path.node
         if (
@@ -621,9 +629,14 @@ export function resolveNativeGlobalTargets(code: string, allowedTargets: readonl
           && GLOBAL_OBJECT_NAMES.has(init.name)
           && !path.scope?.getBinding?.(init.name)
         ) {
-          globalAliases.add(id.name)
+          const binding = path.scope?.getBinding?.(id.name)
+          if (binding) {
+            aliasBindings.add(binding)
+          }
         }
       },
+    })
+    traverse(ast, {
       ObjectPattern(path: any) {
         const declarator = path.parentPath
         if (!declarator?.isVariableDeclarator?.()) {

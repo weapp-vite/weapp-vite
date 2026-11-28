@@ -196,9 +196,11 @@ export function createWebRuntimeGlobalBridgeCode(plan: WebRuntimeNativeInject, t
     : target === 'TextDecoderStream'
       ? ', __weappViteUsesNativeStreams'
       : ''
-  const resolveValue = ensureExport
-    ? `__weappViteEnsureGlobal(__weappViteGlobalCurrent, ${localName}${ensureArgs})`
-    : `__weappViteShouldInstallGlobal(__weappViteGlobalCurrent) ? ${localName} : __weappViteGlobalCurrent`
+  const resolveValue = mapping
+    ? localName
+    : ensureExport
+      ? `__weappViteEnsureGlobal(__weappViteGlobalCurrent, ${localName}${ensureArgs})`
+      : `__weappViteShouldInstallGlobal(__weappViteGlobalCurrent) ? ${localName} : __weappViteGlobalCurrent`
   return [
     runtimeImport,
     ...(target === 'TextDecoderStream'
