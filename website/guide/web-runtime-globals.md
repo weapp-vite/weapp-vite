@@ -45,7 +45,7 @@ keywords:
 - `TextDecoderStream`
 - `EventSource`
 
-启用后，旧模式会安装 Web Runtime 提供的兼容对象。`native` 模式为 `fetch`、`XMLHttpRequest`、`URL` 等自由标识符，以及 `globalThis.fetch()` 等普通全局对象点号访问生成模块级绑定；`globalThis?.fetch()` 等可选链点号访问由目标桥接兜底；只有 `globalThis['fetch']` 等不可点号注入的访问才生成目标级桥接。这样第三方库在模块初始化阶段读取能力时也能获得正确实现，同时避免无关全局污染。
+启用后，旧模式会安装 Web Runtime 提供的兼容对象。`native` 模式为 `fetch`、`XMLHttpRequest`、`URL` 等自由标识符，以及 `globalThis.fetch()` 等普通全局对象点号访问生成模块级绑定；`globalThis?.fetch()` 等可选链点号访问由目标桥接兜底；只有读取形式的 `globalThis['fetch']` 等不可点号注入的访问才生成目标级桥接，写入/自增/删除不触发安装。这样第三方库在模块初始化阶段读取能力时也能获得正确实现，同时避免无关全局污染。
 
 ```ts
 import { defineConfig } from 'weapp-vite/config'

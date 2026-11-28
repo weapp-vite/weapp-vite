@@ -17,7 +17,7 @@
 - **虚拟模块**：`virtual:weapp-vite-web-runtime:bindings` 转发真实实现导入；自由标识符与 `globalThis.<target>` 等点号访问共用 Rolldown `transform.inject` 精确绑定；`virtual:weapp-vite-web-runtime:global:<target>` 只服务不可点号注入的显式全局语义；自定义 App Prelude 作为普通静态模块执行并参与同一套精确绑定，根入口先求值 `globalTargets` 桥接、再运行 prelude，保证动态全局读取在启动时已就绪；不再生成 `app.prelude.js`。
 - **单一真源**：`resolveInjectRequestGlobalsOptions` 的 native 分支固定返回精确行为（无入口前置安装时机），`globalTargets` 只收声明目标；依赖展开（`URL`/`URLSearchParams`/`Blob`/`File`/`FormData`）由注入计划在同一集合上补齐，下游注入与分组自动跟随。
 - **delete guard**：`transform.inject` 会把 `delete globalThis.fetch` 的操作数替换成导入绑定，生成非法严格模式代码。native 在注入前用 AST 只把注入计划命中的点号 delete 改写为等价的 `delete globalThis["fetch"]`，保留 CJS 注入；`injectPlugin` 不处理 `.cjs` 且直接解析失败，因此不切换。
-- **桥接写入**：使用受保护的 `globalThis[key]` 读写（不依赖 `Reflect.get/set`），写入后回读确认，并给 native 安装值打 `__wvRGN__` 所有权标记。完整宿主或用户实现保留；缺失、占位（`__rp`）或上一轮 native 安装的值可替换，HMR 能替换自身旧实例而不覆盖真实宿主。
+- **桥接写入**：使用受保护的 `globalThis[key]` 读写（不依赖 `Reflect.get/set`），写入后回读确认，并给 native 安装值打 `__wvRGN__` 所有权标记。完整宿主或用户实现保留；缺失、占位（`__rp`）或上一轮 native 安装的值可替换，HMR 能替换自身旧实例而不覆盖真实宿主。桥接只服务读取；`globalThis.<target> = ...`、自增和 `delete globalThis.<target>` 属于用户显式操作，不触发安装，delete guard 仅保证 inject 后的语法合法。用户 dotted 覆盖按 `globalThis` → `global` → `self` → `window` → 裸标识符统一解析。
 - **宿主能力修补**：轻量目标只做缺失/占位判定；`Headers.getSetCookie`、`Response.json/error`、`URL.parse/canParse`、`URLSearchParams.size/sort`、`TextDecoder` 增量行为、`TextDecoderStream` 等按目标修补并尽量保留构造器身份。桥接按目标只加载 `@wevu/web-apis/runtime-global` 或 `runtime-ensure`，避免单目标桥接带入无关 Web API。
 - **依赖边界**：更深的内置子路径单独登记别名，并在配置中排在父入口之前，`.../platforms/runtime/global-keys` 不会被父入口的字符串别名按前缀截获；内置别名保持字符串形状，用户别名语义不变。`@weapp-core/shared/platforms/runtime/global-keys` 提供轻量平台全局键列表，完整描述符从同一组常量派生。
 - **模块归属**：按 `@wevu/web-apis/runtime` 的**打包器解析**包根识别实现模块（前缀匹配，Windows 折叠大小写与分隔符），与模块图同基准；Node 解析仅 fallback。解析根由每个 core plugin 实例持有，并发构建互不覆盖；不用路径子串猜测。
@@ -55,7 +55,7 @@
 
 - 当前基线：已 rebase 到上游 `main` `ec17eeb0c`，Vite 8.4.0、Rolldown 1.3.4（与上游锁文件一致）。
 - `pnpm --filter weapp-vite typecheck`：0 错误；`test:types`（17 组 tsd）：通过。`@wevu/web-apis` 与 `@weapp-core/shared` 的 typecheck、`test:types`：通过。
-- 定向单测：native delete guard、注入计划（含 published runtime 启动）、`emit/requestGlobals/**`、上游 `emit.more` 自动模式 eager 识别、内置子路径别名与 package resolution、Web API 能力修补、nativeSize tree-shaking，共 12 文件 / 268 例通过；web-apis 2 文件 / 15 例通过；shared 平台键回归通过。ES5 minify 产物单独核对：`globalThis.fetch/Request/Response` 均存在、桥接文件无 ES2015 语法。
+- 定向单测：native delete guard、注入计划（含 published runtime 启动）、`emit/requestGlobals/**`、上游 `emit.more` 自动模式 eager 识别、内置子路径别名与 package resolution、Web API 能力修补、nativeSize tree-shaking，共 12 文件 / 275 例通过；web-apis 2 文件 / 15 例通过；shared 平台键回归通过。ES5 minify 产物单独核对：`globalThis.fetch/Request/Response` 均存在、桥接文件无 ES2015 语法。
 - 构建产物（直连 CLI 构建 `e2e-apps/app-prelude-native` fixture 核对）：精确安装 13 个全局目标（`globalTargets` 的 fetch/Request/Response + 依赖展开 + 源码显式 `globalThis` 引用），未声明未引用的 `XMLHttpRequest`/`WebSocket`/`EventSource` 全程模块内、无全局写入；无额外强制 vendor；自定义 App Prelude 独立成 `weapp-vendors/web-runtime-app-prelude.js` 且含 `runAppPrelude`，根入口依赖它、它不反向依赖入口，独立分包自包含不跨包引用主包 vendor。ES5+压缩变体含全局写入的产物无 `=>`/`const`/`let`、无 `Reflect.get/set`；全产物无 `installWebRuntime|axiosEnv|eagerBindings|__wvAXFE__`。
 - 体积（同一 fixture）：`require` 918,884 / 744,175 B（12 文件）；native 精确 840,582 / 660,119 B（11 文件）。
 - `e2e/ci` 构建契约锁定精确语义（独立 app-prelude vendor 用例 + 精确桥接 ES5 用例），上述直连构建即按其断言逐项核对；本机正式 vitest 套件仍受跨 worktree 机器租约阻塞，当前 head 的 PR CI 已启动并在跟进。

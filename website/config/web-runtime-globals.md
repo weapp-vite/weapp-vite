@@ -38,7 +38,7 @@ export default defineConfig({
 })
 ```
 
-`native` 不使用 `dependencies`，也没有策略选项。自由标识符与 `globalThis.fetch` 等普通全局对象点号访问由 Rolldown `transform.inject` 精确绑定，不写入全局；`globalThis?.fetch`、`window?.URL` 等可选链点号访问不在 inject 覆盖范围，由目标桥接兜底。`globalThis['fetch']` 等字符串计算属性、全局解构与无法按固定点号键注入的别名只安装涉及的目标。动态 key 无法静态推断时使用 `globalTargets` 精确补充，不需要为 axios 等具体库增加包名特例。
+`native` 不使用 `dependencies`，也没有策略选项。自由标识符与 `globalThis.fetch` 等普通全局对象点号访问由 Rolldown `transform.inject` 精确绑定，不写入全局；`globalThis?.fetch`、`window?.URL` 等可选链点号访问不在 inject 覆盖范围，由目标桥接兜底。读取形式的 `globalThis['fetch']` 等字符串计算属性、全局解构与无法按固定点号键注入的别名只安装涉及的目标；写入、自增或删除 `globalThis.<target>` 属于用户显式操作，不触发安装。动态 key 无法静态推断时使用 `globalTargets` 精确补充，不需要为 axios 等具体库增加包名特例。
 
 旧模式的 `weapp.injectWebRuntimeGlobals.prelude` 仍控制是否在业务入口前安装全局对象；嵌套 `weapp.appPrelude.webRuntime` 始终提前安装。
 

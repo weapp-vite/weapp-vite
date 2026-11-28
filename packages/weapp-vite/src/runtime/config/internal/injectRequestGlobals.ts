@@ -571,7 +571,27 @@ export function resolveNativeGlobalTargets(code: string, allowedTargets: readonl
       referencedTargets.add(name)
     }
   }
+  const isWriteOrDeleteTarget = (path: any) => {
+    const parent = path.parentPath
+    const node = path.node
+    if (!parent?.node) {
+      return false
+    }
+    if (parent.node.type === 'AssignmentExpression' && parent.node.left === node) {
+      return true
+    }
+    if (parent.node.type === 'UpdateExpression' && parent.node.argument === node) {
+      return true
+    }
+    return parent.node.type === 'UnaryExpression'
+      && parent.node.operator === 'delete'
+      && parent.node.argument === node
+  }
   const collectMemberTarget = (path: any) => {
+    // 写入/自增/删除是用户显式操作，不需要先安装 polyfill；delete 的语法保护由 transform 阶段处理。
+    if (isWriteOrDeleteTarget(path)) {
+      return
+    }
     const node = path.node
     const objectName = node?.object?.type === 'Identifier' ? node.object.name : undefined
     if (!objectName || !isGlobalObject(objectName, path.scope)) {
